@@ -258,6 +258,7 @@ export default function MapView() {
     const [portalTarget, setPortalTarget] = useState(null);
     const [panelWidthPx, setPanelWidthPx] = useState(440); // draggable pixel width
     const [chatContextSite, setChatContextSite] = useState(null); // site to pre-load in chat
+    const [siteAiVerdict, setSiteAiVerdict] = useState(null); // AI verdict from forecast panel
     const isDragging = useRef(false);
     const dragStartX = useRef(0);
     const dragStartW = useRef(440);
@@ -508,7 +509,7 @@ export default function MapView() {
                                         {/* Ask SkyPilot CTA */}
                                         <button
                                             onClick={() => {
-                                                setChatContextSite(selectedSite);
+                                                setChatContextSite({ ...selectedSite, aiVerdict: siteAiVerdict });
                                                 setChatOpen(true);
                                                 // Removed setSelectedSite(null) to keep the Forecast Panel open
                                             }}
@@ -543,7 +544,7 @@ export default function MapView() {
                                         </button>
                                     </div>
                                 </div>
-                                <SiteForecast site={selectedSite} onClose={() => setSelectedSite(null)} />
+                                <SiteForecast site={selectedSite} onClose={() => setSelectedSite(null)} onVerdictReady={(v) => setSiteAiVerdict(v)} />
                                 {/* Drag resize handle */}
                                 <div
                                     onMouseDown={handleDragStart}

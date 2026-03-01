@@ -54,33 +54,65 @@ function getGenAI() {
 }
 
 /**
+ * Build site context string for the system prompt.
+ * If an aiVerdict is available, inject it as ground truth so chat is consistent with the Forecast panel.
+ */
+function buildContextStr(userLocation) {
+    if (!userLocation) return '';
+
+    if (userLocation.name || userLocation.altitude) {
+        let ctx = `\n\nThe user is currently analyzing the following paragliding site:
+Name: ${userLocation.name || 'Unknown'}
+Coordinates: lat=${userLocation.lat}, lng=${userLocation.lng}
+Altitude (Launch): ${userLocation.altitude ? userLocation.altitude + 'ft ASL' : 'Unknown'}
+Takeoff Notes: ${userLocation.description || 'None provided'}
+Site Type Flags: ${JSON.stringify(userLocation.siteTypes || {})}`;
+
+        // Inject pre-computed AI verdict as ground truth if available.
+        // This ensures the chat NEVER contradicts what the Forecast panel shows.
+        if (userLocation.aiVerdict && !userLocation.aiVerdict._fallback) {
+            const v = userLocation.aiVerdict;
+            ctx += `
+
+CRITICAL — Pre-Computed SkyPilot Verdict (USE AS GROUND TRUTH — DO NOT CONTRADICT THIS):
+Rating: ${v.rating}
+Site Mode Today: ${v.siteModeLabel || v.siteMode}
+Headline: ${v.headline}
+Reasoning: ${v.reasoning}
+Best Flight Window: ${v.bestWindow || 'None identified'}
+Site Type Explanation: ${v.siteTypeExplanation || ''}
+Wind Limits Applied: ${v.windLimitsApplied || ''}
+Safety Notes: ${(v.safetyNotes || []).join('; ') || 'None'}
+
+When the user asks about flying conditions, today's verdict, or whether it is safe to fly, use the above verdict as your primary source of truth. You may add richer context or answer follow-up questions, but do NOT change the core rating or contradict the above analysis.`;
+        } else {
+            ctx += `\n\nRefer to these details (especially altitude and takeoff notes) to provide safer, more accurate flying guidance when answering questions.`;
+        }
+
+        return ctx;
+    }
+
+    if (userLocation.lat && userLocation.lng) {
+        return `\n\nThe user's current GPS location is: lat=${userLocation.lat.toFixed(4)}, lng=${userLocation.lng.toFixed(4)}. Use this when they ask about sites or weather "near me" or "here".`;
+    }
+
+    return '';
+}
+
+/**
  * Run the SkyPilot agent with multi-turn function calling
  * @param {string} userMessage - The user's current message
  * @param {Array} history - Previous conversation turns [{role, parts: [{text}]}]
- * @param {object|null} userLocation - Optional {lat, lng} for context
+ * @param {object|null} userLocation - Optional {lat, lng, name, altitude, aiVerdict, ...} for context
  * @returns {Promise<{reply: string, toolResults: Array, usage: object}>}
  */
 export async function runAgent({ userMessage, history = [], userLocation = null }) {
     const ai = getGenAI();
 
-    let contextStr = '';
-    if (userLocation) {
-        if (userLocation.name || userLocation.altitude) {
-            contextStr = `\n\nThe user is currently analyzing the following paragliding site:
-Name: ${userLocation.name || 'Unknown'}
-Coordinates: lat=${userLocation.lat}, lng=${userLocation.lng}
-Altitude (Launch): ${userLocation.altitude ? userLocation.altitude + 'ft ASL' : 'Unknown'}
-Takeoff Notes: ${userLocation.description || 'None provided'}
-Site Type Flags: ${JSON.stringify(userLocation.siteTypes || {})}
-
-Refer to these details (especially altitude and takeoff notes) to provide safer, more accurate flying guidance when answering questions.`;
-        } else if (userLocation.lat && userLocation.lng) {
-            contextStr = `\n\nThe user's current GPS location is: lat=${userLocation.lat.toFixed(4)}, lng=${userLocation.lng.toFixed(4)}. Use this when they ask about sites or weather "near me" or "here".`;
-        }
-    }
+    const contextStr = buildContextStr(userLocation);
 
     const model = ai.getGenerativeModel({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-2.0-flash',
         systemInstruction: SYSTEM_PROMPT + contextStr,
         tools: [{
             functionDeclarations: [

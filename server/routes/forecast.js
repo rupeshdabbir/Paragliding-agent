@@ -2,6 +2,7 @@ import express from 'express';
 import { getSites } from '../tools/getSites.js';
 import { getWeather } from '../tools/getWeather.js';
 import { degreesToCardinal, getSiteWindScore, isWindSpeedFlyable, scoreFlyingConditions } from '../utils/windUtils.js';
+import { getAiWeeklyVerdicts } from '../services/aiVerdict.js';
 
 const router = express.Router();
 
@@ -129,11 +130,22 @@ router.get('/', async (req, res) => {
             };
         });
 
+        // Get AI verdicts for all 7 days in a single Gemini call (non-blocking, cached)
+        const aiVerdicts = site
+            ? await getAiWeeklyVerdicts(site, rawWeather)
+            : null;
+
+        // For convenience also include the today verdict at the top level
+        const today = new Date().toISOString().slice(0, 10);
+        const aiVerdict = aiVerdicts?.[today] || null;
+
         res.json({
             site: site ? { name: site.name, description: site.description, windDirections: site.windDirections, lat: site.lat, lng: site.lng, altitude: site.altitude, siteTypes: site.siteTypes } : null,
             current: rawWeather.current,
             days,
             units: rawWeather.units,
+            aiVerdict,        // today's verdict (for backward compat)
+            aiVerdicts,       // full map: { [date]: verdict } for all 7 days
         });
     } catch (err) {
         console.error('[forecast]', err.message);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, Wind, AlertTriangle, ChevronRight, CheckCircle, XCircle, MinusCircle, RefreshCw, Info } from 'lucide-react';
+import { Calendar, Clock, Wind, AlertTriangle, ChevronRight, CheckCircle, XCircle, MinusCircle, RefreshCw, Info, Sparkles } from 'lucide-react';
 import WindChart from './WindChart.jsx';
 import { FlyabilityBadge } from './FlyabilityBadge.jsx';
 
@@ -48,13 +48,18 @@ function DayBadge({ day, index, active, onClick }) {
     );
 }
 
-function WeekSummary({ days, onDayClick }) {
+function WeekSummary({ days, onDayClick, aiVerdicts = {} }) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {days.map((day, i) => {
                 const label = formatDayLabel(day.date, i);
-                const color = RATING_COLOR[day.dayRating] || RATING_COLOR.NO_GO;
+                const aiV = aiVerdicts[day.date];
+                const aiPowered = aiV && !aiV._fallback;
+                // Use AI rating when available, fall back to rule-based
+                const displayRating = aiPowered ? aiV.rating : day.dayRating;
+                const color = RATING_COLOR[displayRating] || RATING_COLOR.NO_GO;
                 const pct = Math.round((day.flyableDaylightHours / Math.max(day.totalDaylightHours, 1)) * 100);
+                const ratingText = displayRating === 'GO' ? 'Good flying' : displayRating === 'MARGINAL' ? 'Marginal' : 'Not flyable';
 
                 return (
                     <button key={day.date} onClick={() => onDayClick(i)} style={{
@@ -73,16 +78,29 @@ function WeekSummary({ days, onDayClick }) {
                             <div style={{ fontSize: '0.68rem', color: 'rgba(232,237,245,0.4)' }}>{label.bottom}</div>
                         </div>
 
-                        {/* Rating icon */}
-                        <div style={{ flexShrink: 0 }}>{RATING_ICON[day.dayRating]}</div>
+                        {/* Rating icon + AI badge */}
+                        <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                            {RATING_ICON[displayRating]}
+                            {aiPowered && (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'rgba(0,200,255,0.1)', border: '1px solid rgba(0,200,255,0.2)', borderRadius: 100, padding: '1px 4px', fontSize: '0.55rem', fontWeight: 700, color: 'var(--color-sky)' }}>
+                                    <Sparkles size={7} /> AI
+                                </span>
+                            )}
+                        </div>
 
-                        {/* Flyability bar */}
+                        {/* Flyability bar + label */}
                         <div style={{ flex: 1 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
                                 <span style={{ fontSize: '0.72rem', color, fontWeight: 600 }}>
-                                    {day.dayRating === 'GO' ? 'Good flying' : day.dayRating === 'MARGINAL' ? 'Marginal' : 'Not flyable'}
+                                    {aiPowered && aiV.siteModeLabel ? aiV.siteModeLabel : ratingText}
                                 </span>
-                                <span style={{ fontSize: '0.7rem', color: 'rgba(232,237,245,0.4)' }}>{pct}% flyable hours</span>
+                                {aiPowered && aiV.bestWindow ? (
+                                    <span style={{ fontSize: '0.68rem', color: 'var(--color-go)', fontWeight: 600 }}>
+                                        🕐 {aiV.bestWindow}
+                                    </span>
+                                ) : (
+                                    <span style={{ fontSize: '0.7rem', color: 'rgba(232,237,245,0.4)' }}>{pct}% rule-hrs</span>
+                                )}
                             </div>
                             <div style={{ height: 5, background: 'rgba(255,255,255,0.06)', borderRadius: 100, overflow: 'hidden' }}>
                                 <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 100, transition: 'width 0.8s ease' }} />
@@ -94,18 +112,6 @@ function WeekSummary({ days, onDayClick }) {
                             <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fff' }}>{day.avgWindMph} mph</div>
                             <div style={{ fontSize: '0.65rem', color: 'rgba(232,237,245,0.35)' }}>avg wind</div>
                         </div>
-
-                        {/* Best window */}
-                        {day.bestWindowStart && day.bestWindowHours > 0 && (
-                            <div style={{ textAlign: 'right', flexShrink: 0, minWidth: 72 }}>
-                                <div style={{ fontSize: '0.68rem', color: 'var(--color-go)', fontWeight: 600 }}>
-                                    {formatTime(day.bestWindowStart)}
-                                </div>
-                                <div style={{ fontSize: '0.62rem', color: 'rgba(232,237,245,0.35)' }}>
-                                    {day.bestWindowHours}h window
-                                </div>
-                            </div>
-                        )}
                     </button>
                 );
             })}
@@ -135,7 +141,95 @@ function AslTooltip({ altitude, leftOffset = 180 }) {
     );
 }
 
-export default function SiteForecast({ site, onClose }) {
+const SITE_MODE_CONFIG = {
+    thermaling: { label: 'Thermaling Day', icon: '☀️', desc: 'Thermal conditions expected' },
+    ridgeSoaring: { label: 'Ridge Soaring Day', icon: '🌬️', desc: 'Ridge soaring conditions' },
+    sledRide: { label: 'Sled Ride Day', icon: '🎿', desc: 'Light conditions — quick flights only' },
+    mixed: { label: 'Mixed Conditions', icon: '⛅', desc: 'Conditions may vary during the day' },
+    noFly: { label: 'Non-Flyable', icon: '🚫', desc: 'Conditions not suitable for flight' },
+    unknown: { label: 'Analyzing...', icon: '🤖', desc: '' },
+};
+
+function AiVerdictCard({ verdict }) {
+    const [expanded, setExpanded] = useState(false);
+    if (!verdict) return null;
+
+    const ratingColor = RATING_COLOR[verdict.rating] || RATING_COLOR.NO_GO;
+    const ratingBg = { GO: 'rgba(34,197,94,0.08)', MARGINAL: 'rgba(245,158,11,0.08)', NO_GO: 'rgba(239,68,68,0.08)' }[verdict.rating] || 'rgba(255,255,255,0.04)';
+    const ratingBorder = { GO: 'rgba(34,197,94,0.25)', MARGINAL: 'rgba(245,158,11,0.25)', NO_GO: 'rgba(239,68,68,0.25)' }[verdict.rating] || 'rgba(255,255,255,0.1)';
+    const modeConf = SITE_MODE_CONFIG[verdict.siteMode] || SITE_MODE_CONFIG.unknown;
+
+    return (
+        <div style={{ background: ratingBg, border: `1px solid ${ratingBorder}`, borderRadius: 14, padding: '14px 16px', marginBottom: 4 }}>
+            {/* Header row */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg, var(--color-sky), #0055cc)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,200,255,0.3)' }}>
+                        <Sparkles size={14} color="#fff" fill="#fff" />
+                    </div>
+                    <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(232,237,245,0.5)', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1 }}>SkyPilot AI Recommendation</div>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fff', marginTop: 2 }}>{verdict.headline}</div>
+                    </div>
+                </div>
+                <div style={{ flexShrink: 0 }}>
+                    <FlyabilityBadge rating={verdict.rating} />
+                </div>
+            </div>
+
+            {/* Site mode pill */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 100, padding: '4px 10px', fontSize: '0.72rem', fontWeight: 600, color: '#fff' }}>
+                    {modeConf.icon} {verdict.siteModeLabel || modeConf.label}
+                </span>
+                {verdict.bestWindow && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 100, padding: '4px 10px', fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-go)' }}>
+                        🕐 Best: {verdict.bestWindow}
+                    </span>
+                )}
+                {verdict.confidence && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 100, padding: '4px 10px', fontSize: '0.7rem', color: 'rgba(232,237,245,0.45)' }}>
+                        Confidence: {verdict.confidence}
+                    </span>
+                )}
+            </div>
+
+            {/* Reasoning */}
+            <div style={{ fontSize: '0.78rem', color: 'rgba(232,237,245,0.75)', lineHeight: 1.55, marginBottom: verdict.siteTypeExplanation || verdict.safetyNotes?.length ? 10 : 0 }}>
+                {verdict.reasoning}
+            </div>
+
+            {/* Expandable details */}
+            {(verdict.siteTypeExplanation || verdict.safetyNotes?.length > 0) && (
+                <>
+                    <button onClick={() => setExpanded(e => !e)} style={{ background: 'none', border: 'none', color: 'var(--color-sky)', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', padding: '4px 0', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        {expanded ? '▲ Less' : '▼ More details'}
+                    </button>
+                    {expanded && (
+                        <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {verdict.siteTypeExplanation && (
+                                <div style={{ fontSize: '0.75rem', color: 'rgba(232,237,245,0.6)', lineHeight: 1.5 }}>
+                                    <strong style={{ color: 'rgba(232,237,245,0.8)' }}>Why this mode today:</strong> {verdict.siteTypeExplanation}
+                                </div>
+                            )}
+                            {verdict.safetyNotes?.length > 0 && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                    {verdict.safetyNotes.map((note, i) => (
+                                        <div key={i} style={{ display: 'flex', gap: 6, fontSize: '0.73rem', color: 'rgba(253,220,140,0.8)' }}>
+                                            <span style={{ flexShrink: 0 }}>⚠️</span> {note}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
+    );
+}
+
+export default function SiteForecast({ site, onClose, onVerdictReady }) {
     const [forecast, setForecast] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -151,6 +245,16 @@ export default function SiteForecast({ site, onClose }) {
             if (!res.ok) throw new Error('Failed to load forecast');
             const data = await res.json();
             setForecast(data);
+            // Propagate the AI verdict up to MapView so it can be passed to the chat
+            if (data.aiVerdicts || data.aiVerdict) {
+                const todayVerdict = data.aiVerdict;
+                if (todayVerdict?._fallback) {
+                    console.error('[SkyPilot] AI Verdict FALLBACK — reason:', todayVerdict._error || 'unknown');
+                } else {
+                    console.log('[SkyPilot] AI Verdicts received for', Object.keys(data.aiVerdicts || {}).length, 'days');
+                }
+                if (onVerdictReady) onVerdictReady(data.aiVerdict);
+            }
         } catch (err) {
             setError(err.message);
         } finally {
@@ -205,30 +309,46 @@ export default function SiteForecast({ site, onClose }) {
                         </div>
                     </div>
                     {today && (
-                        <FlyabilityBadge rating={today.dayRating} />
+                        <FlyabilityBadge rating={forecast?.aiVerdict?.rating || today.dayRating} />
                     )}
                 </div>
 
-                {/* Warning */}
-                <div style={{
-                    display: 'flex', gap: 8, padding: '8px 12px',
-                    background: 'rgba(245,158,11,0.08)', borderRadius: 10,
-                    border: '1px solid rgba(245,158,11,0.2)',
-                }}>
-                    <AlertTriangle size={13} color="var(--color-amber)" style={{ flexShrink: 0, marginTop: 1 }} />
-                    <span style={{ fontSize: '0.72rem', color: 'rgba(253,220,140,0.85)', lineHeight: 1.5 }}>
-                        Always verify conditions with local pilots, live sensors, and use your own judgement before flying. Forecast data is model-based and may not reflect site-specific nuances.
-                    </span>
-                </div>
             </div>
 
-            {/* Loading / Error */}
+            {/* AI SkyPilot Recommendation Card */}
+            {!loading && forecast?.aiVerdict && (
+                <div style={{ padding: '12px 0 0' }}>
+                    <AiVerdictCard verdict={forecast.aiVerdict} />
+                </div>
+            )}
+            {/* AI card loading skeleton */}
+            {loading && (
+                <div style={{ padding: '12px 0 0' }}>
+                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: '16px', marginBottom: 4 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(0,200,255,0.15)' }} className="shimmer" />
+                            <div style={{ flex: 1 }}>
+                                <div style={{ height: 9, width: '55%', borderRadius: 4, marginBottom: 6 }} className="shimmer" />
+                                <div style={{ height: 12, width: '80%', borderRadius: 4 }} className="shimmer" />
+                            </div>
+                        </div>
+                        <div style={{ height: 9, width: '90%', borderRadius: 4, marginBottom: 6 }} className="shimmer" />
+                        <div style={{ height: 9, width: '70%', borderRadius: 4, marginBottom: 6 }} className="shimmer" />
+                        <div style={{ height: 9, width: '85%', borderRadius: 4 }} className="shimmer" />
+                    </div>
+                </div>
+            )}
+
+            {/* Loading / Error for hourly data */}
             {loading && (
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'rgba(232,237,245,0.5)', fontSize: '0.85rem' }}>
                     <RefreshCw size={16} color="var(--color-sky)" style={{ animation: 'spin 1s linear infinite' }} />
                     Loading 7-day forecast...
                 </div>
             )}
+
+            {/* Disclaimer — in scrollable area so it doesn't eat header real estate */}
+
 
             {error && (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, color: 'rgba(232,237,245,0.5)', fontSize: '0.85rem', textAlign: 'center', padding: 20 }}>
@@ -241,14 +361,36 @@ export default function SiteForecast({ site, onClose }) {
             {!loading && !error && forecast && (
                 <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0 }}>
 
+                    {/* Disclaimer — scrolls with content */}
+                    <div style={{
+                        display: 'flex', gap: 7, padding: '8px 12px', marginBottom: 4,
+                        background: 'rgba(245,158,11,0.06)', borderRadius: 10,
+                        border: '1px solid rgba(245,158,11,0.15)',
+                    }}>
+                        <AlertTriangle size={12} color="var(--color-amber)" style={{ flexShrink: 0, marginTop: 1 }} />
+                        <span style={{ fontSize: '0.67rem', color: 'rgba(253,220,140,0.65)', lineHeight: 1.5 }}>
+                            Always verify with local pilots and live sensors before flying.
+                        </span>
+                    </div>
+
                     {/* Day summary quick-view (Today + Tomorrow) */}
                     {(today || tomorrow) && (
                         <div style={{ display: 'flex', gap: 8, padding: '14px 0' }}>
                             {today && (
-                                <DaySummaryCard day={today} label="Today" onClick={() => { setActiveTab('today'); setActiveDayIndex(0); }} active={activeTab === 'today'} />
+                                <DaySummaryCard
+                                    day={today} label="Today"
+                                    onClick={() => { setActiveTab('today'); setActiveDayIndex(0); }}
+                                    active={activeTab === 'today'}
+                                    aiVerdict={forecast?.aiVerdict}
+                                />
                             )}
                             {tomorrow && (
-                                <DaySummaryCard day={tomorrow} label="Tomorrow" onClick={() => { setActiveTab('tomorrow'); setActiveDayIndex(1); }} active={activeTab === 'tomorrow'} />
+                                <DaySummaryCard
+                                    day={tomorrow} label="Tomorrow"
+                                    onClick={() => { setActiveTab('tomorrow'); setActiveDayIndex(1); }}
+                                    active={activeTab === 'tomorrow'}
+                                    aiVerdict={forecast?.aiVerdicts?.[tomorrow.date]}
+                                />
                             )}
                         </div>
                     )}
@@ -280,85 +422,104 @@ export default function SiteForecast({ site, onClose }) {
                                     Viewing Detail: {formatDayLabel(displayDay.date, activeDayIndex).top} {formatDayLabel(displayDay.date, activeDayIndex).bottom}
                                 </div>
                             )}
-                            {/* Best window callout */}
-                            {displayDay.bestWindowStart && displayDay.bestWindowHours > 0 && (
-                                <div style={{
-                                    padding: '12px 14px', borderRadius: 12,
-                                    background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)',
-                                    display: 'flex', alignItems: 'flex-start', gap: 10,
-                                }}>
-                                    <CheckCircle size={16} color="var(--color-go)" style={{ marginTop: 2 }} />
-                                    <div>
-                                        <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-go)' }}>
-                                            Best window: {formatTime(displayDay.bestWindowStart)} – {formatTime(displayDay.bestWindowEnd)}
-                                        </div>
-                                        <div style={{ fontSize: '0.72rem', color: 'rgba(232,237,245,0.45)', marginBottom: 6 }}>
-                                            {displayDay.bestWindowHours} consecutive GO hour{displayDay.bestWindowHours !== 1 ? 's' : ''}
-                                        </div>
-                                        {(() => {
-                                            const bestHour = displayDay.hours.find(h => h.time === displayDay.bestWindowStart);
-                                            if (!bestHour) return null;
-                                            const allReasons = [...(bestHour.positives || []), ...(bestHour.issues || [])];
-                                            if (allReasons.length === 0) return null;
-                                            return (
-                                                <div style={{ fontSize: '0.7rem', color: 'rgba(34,197,94,0.8)', background: 'rgba(34,197,94,0.1)', padding: '6px 8px', borderRadius: 6, lineHeight: 1.4 }}>
-                                                    <strong>Why it's flyable:</strong> {allReasons.join(' • ')}
-                                                </div>
-                                            );
-                                        })()}
-                                    </div>
-                                </div>
-                            )}
+                            {/* ── AI Status Callout (authoritative) ───────────── */}
+                            {(() => {
+                                // Get the AI verdict for this specific day
+                                const dayVerdict = forecast?.aiVerdicts?.[displayDay.date] ||
+                                    (activeDayIndex === 0 ? forecast?.aiVerdict : null);
+                                const aiPowered = dayVerdict && !dayVerdict._fallback;
 
-                            {displayDay.dayRating === 'NO_GO' && displayDay.goHours === 0 && (
-                                <div style={{
-                                    padding: '12px 14px', borderRadius: 12,
-                                    background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
-                                    display: 'flex', alignItems: 'flex-start', gap: 10,
-                                }}>
-                                    <XCircle size={16} color="var(--color-no-go)" style={{ marginTop: 2 }} />
-                                    <div>
-                                        <div style={{ fontSize: '0.82rem', color: 'var(--color-no-go)', fontWeight: 600 }}>
-                                            No flyable windows expected
-                                        </div>
-                                        {(() => {
-                                            const midHour = displayDay.hours.find(h => h.hour === 12) || displayDay.hours[0];
-                                            if (!midHour || !midHour.issues || midHour.issues.length === 0) return null;
-                                            return (
-                                                <div style={{ fontSize: '0.7rem', color: 'rgba(239,68,68,0.8)', background: 'rgba(239,68,68,0.1)', padding: '6px 8px', borderRadius: 6, lineHeight: 1.4, marginTop: 6 }}>
-                                                    <strong>Main issues:</strong> {midHour.issues.join(' • ')}
-                                                </div>
-                                            );
-                                        })()}
-                                    </div>
-                                </div>
-                            )}
+                                if (aiPowered) {
+                                    // AI-powered callout based on rating
+                                    const ratingColor = {
+                                        GO: 'var(--color-go)',
+                                        MARGINAL: 'var(--color-marginal)',
+                                        NO_GO: 'var(--color-no-go)',
+                                    }[dayVerdict.rating] || 'var(--color-marginal)';
+                                    const ratingBg = {
+                                        GO: 'rgba(34,197,94,0.08)',
+                                        MARGINAL: 'rgba(245,158,11,0.08)',
+                                        NO_GO: 'rgba(239,68,68,0.08)',
+                                    }[dayVerdict.rating] || 'rgba(255,255,255,0.04)';
+                                    const ratingBorder = {
+                                        GO: 'rgba(34,197,94,0.2)',
+                                        MARGINAL: 'rgba(245,158,11,0.2)',
+                                        NO_GO: 'rgba(239,68,68,0.2)',
+                                    }[dayVerdict.rating] || 'rgba(255,255,255,0.1)';
+                                    const Icon = dayVerdict.rating === 'GO' ? CheckCircle : dayVerdict.rating === 'MARGINAL' ? MinusCircle : XCircle;
 
-                            {displayDay.dayRating === 'MARGINAL' && displayDay.goHours === 0 && (
-                                <div style={{
-                                    padding: '12px 14px', borderRadius: 12,
-                                    background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)',
-                                    display: 'flex', alignItems: 'flex-start', gap: 10,
-                                }}>
-                                    <MinusCircle size={16} color="var(--color-marginal)" style={{ marginTop: 2 }} />
-                                    <div>
-                                        <div style={{ fontSize: '0.82rem', color: 'var(--color-marginal)', fontWeight: 600 }}>
-                                            Marginal conditions expected
-                                        </div>
-                                        {(() => {
-                                            const midHour = displayDay.hours.find(h => h.hour === 12) || displayDay.hours[0];
-                                            if (!midHour) return null;
-                                            const allReasons = [...(midHour.issues || []), ...(midHour.positives || [])];
-                                            if (allReasons.length === 0) return null;
-                                            return (
-                                                <div style={{ fontSize: '0.7rem', color: 'rgba(245,158,11,0.8)', background: 'rgba(245,158,11,0.1)', padding: '6px 8px', borderRadius: 6, lineHeight: 1.4, marginTop: 6 }}>
-                                                    <strong>Conditions:</strong> {allReasons.join(' • ')}
+                                    return (
+                                        <div style={{ padding: '12px 14px', borderRadius: 12, background: ratingBg, border: `1px solid ${ratingBorder}`, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                                            <Icon size={16} color={ratingColor} style={{ marginTop: 2, flexShrink: 0 }} />
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: ratingColor }}>
+                                                        {dayVerdict.rating === 'GO' ? 'Good flying conditions' : dayVerdict.rating === 'MARGINAL' ? 'Marginal conditions' : 'Not recommended for flying'}
+                                                    </span>
+                                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'rgba(0,200,255,0.1)', border: '1px solid rgba(0,200,255,0.2)', borderRadius: 100, padding: '1px 6px', fontSize: '0.6rem', fontWeight: 700, color: 'var(--color-sky)' }}>
+                                                        <Sparkles size={8} /> AI
+                                                    </span>
                                                 </div>
-                                            );
-                                        })()}
-                                    </div>
-                                </div>
-                            )}
+                                                {dayVerdict.bestWindow && (
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-go)', fontWeight: 600, marginBottom: 4 }}>
+                                                        🕐 Best window: {dayVerdict.bestWindow}
+                                                    </div>
+                                                )}
+                                                {!dayVerdict.bestWindow && dayVerdict.rating !== 'NO_GO' && (
+                                                    <div style={{ fontSize: '0.72rem', color: 'rgba(232,237,245,0.45)', marginBottom: 4 }}>
+                                                        No ideal flight window identified — sled rides or short flights possible
+                                                    </div>
+                                                )}
+                                                <div style={{ fontSize: '0.72rem', color: 'rgba(232,237,245,0.6)', lineHeight: 1.5, background: 'rgba(255,255,255,0.04)', padding: '6px 8px', borderRadius: 6, marginTop: 4 }}>
+                                                    {dayVerdict.reasoning}
+                                                </div>
+                                                {dayVerdict.safetyNotes?.length > 0 && (
+                                                    <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                                        {dayVerdict.safetyNotes.map((note, i) => (
+                                                            <div key={i} style={{ fontSize: '0.68rem', color: 'rgba(253,220,140,0.75)', display: 'flex', gap: 5 }}>
+                                                                <span>⚠️</span> {note}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                // Fallback: rule-based callouts (only shown when AI is unavailable)
+                                return (
+                                    <>
+                                        {displayDay.bestWindowStart && displayDay.bestWindowHours > 0 && (
+                                            <div style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                                                <CheckCircle size={16} color="var(--color-go)" style={{ marginTop: 2 }} />
+                                                <div>
+                                                    <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-go)' }}>
+                                                        Best window: {formatTime(displayDay.bestWindowStart)} – {formatTime(displayDay.bestWindowEnd)}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.72rem', color: 'rgba(232,237,245,0.45)', marginBottom: 6 }}>
+                                                        {displayDay.bestWindowHours} consecutive GO hour{displayDay.bestWindowHours !== 1 ? 's' : ''} (rule-based estimate)
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {displayDay.goHours === 0 && (
+                                            <div style={{ padding: '12px 14px', borderRadius: 12, background: `rgba(${displayDay.dayRating === 'NO_GO' ? '239,68,68' : '245,158,11'},0.08)`, border: `1px solid rgba(${displayDay.dayRating === 'NO_GO' ? '239,68,68' : '245,158,11'},0.2)`, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                                                {displayDay.dayRating === 'NO_GO'
+                                                    ? <XCircle size={16} color="var(--color-no-go)" style={{ marginTop: 2 }} />
+                                                    : <MinusCircle size={16} color="var(--color-marginal)" style={{ marginTop: 2 }} />
+                                                }
+                                                <div>
+                                                    <div style={{ fontSize: '0.82rem', fontWeight: 600, color: displayDay.dayRating === 'NO_GO' ? 'var(--color-no-go)' : 'var(--color-marginal)' }}>
+                                                        {displayDay.dayRating === 'NO_GO' ? 'No flyable windows expected' : 'Marginal conditions expected'} (rule-based)
+                                                    </div>
+                                                    <div style={{ fontSize: '0.68rem', color: 'rgba(232,237,245,0.4)', marginTop: 4 }}>AI analysis unavailable — conditions assessed using wind rules only</div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })()}
 
                             {/* Wind multi-altitude stats */}
                             <div>
@@ -390,7 +551,7 @@ export default function SiteForecast({ site, onClose }) {
                             <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(232,237,245,0.4)', marginBottom: 12 }}>
                                 7-Day Flyability Outlook
                             </div>
-                            <WeekSummary days={forecast.days} onDayClick={(idx) => {
+                            <WeekSummary days={forecast.days} aiVerdicts={forecast.aiVerdicts || {}} onDayClick={(idx) => {
                                 setActiveDayIndex(idx);
                                 setActiveTab(idx === 0 ? 'today' : idx === 1 ? 'tomorrow' : 'custom');
                             }} />
@@ -408,8 +569,13 @@ export default function SiteForecast({ site, onClose }) {
 }
 
 // ─── Day quick-view card ─────────────────────────────────────────────────────
-function DaySummaryCard({ day, label, active, onClick }) {
-    const color = RATING_COLOR[day.dayRating] || RATING_COLOR.NO_GO;
+function DaySummaryCard({ day, label, active, onClick, aiVerdict }) {
+    // For "Today", use the AI verdict as the authoritative rating if available.
+    // For other days, fall back to the rule-based dayRating.
+    const displayRating = (aiVerdict && !aiVerdict._fallback) ? aiVerdict.rating : day.dayRating;
+    const aiPowered = aiVerdict && !aiVerdict._fallback;
+    const color = RATING_COLOR[displayRating] || RATING_COLOR.NO_GO;
+    const ratingLabel = displayRating === 'GO' ? '✓ GO' : displayRating === 'MARGINAL' ? '~ MARGINAL' : '✗ NO-GO';
 
     return (
         <button onClick={onClick} style={{
@@ -421,13 +587,25 @@ function DaySummaryCard({ day, label, active, onClick }) {
         }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <span style={{ fontSize: '0.75rem', fontWeight: 700, color: active ? '#fff' : 'rgba(232,237,245,0.5)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
-                {RATING_ICON[day.dayRating]}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    {aiPowered && (
+                        <span title="AI-powered verdict" style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'rgba(0,200,255,0.12)', border: '1px solid rgba(0,200,255,0.25)', borderRadius: 100, padding: '1px 6px', fontSize: '0.6rem', fontWeight: 700, color: 'var(--color-sky)', letterSpacing: '0.04em' }}>
+                            <Sparkles size={8} /> AI
+                        </span>
+                    )}
+                    {RATING_ICON[displayRating]}
+                </div>
             </div>
             <div style={{ fontSize: '1.1rem', fontWeight: 800, color, fontFamily: 'var(--font-heading)' }}>
-                {day.dayRating === 'GO' ? '✓ GO' : day.dayRating === 'MARGINAL' ? '~ MARGINAL' : '✗ NO-GO'}
+                {ratingLabel}
             </div>
-            <div style={{ fontSize: '0.7rem', color: 'rgba(232,237,245,0.4)', marginTop: 4 }}>
-                {day.flyableDaylightHours}/{day.totalDaylightHours} hrs · avg {day.avgWindMph} mph
+            {aiPowered && aiVerdict.siteModeLabel && (
+                <div style={{ fontSize: '0.68rem', color: 'rgba(232,237,245,0.5)', marginTop: 3, fontStyle: 'italic' }}>
+                    {aiVerdict.siteModeLabel}
+                </div>
+            )}
+            <div style={{ fontSize: '0.7rem', color: 'rgba(232,237,245,0.35)', marginTop: 4 }}>
+                {day.flyableDaylightHours}/{day.totalDaylightHours} rule-hrs · avg {day.avgWindMph} mph
             </div>
         </button>
     );
