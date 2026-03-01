@@ -16,6 +16,7 @@ import QuickStatsBar from '../components/QuickStatsBar.jsx';
 import DisclaimerModal from '../components/DisclaimerModal.jsx';
 import { useGeolocation } from '../hooks/useGeolocation.js';
 import { useChat } from '../hooks/useChat.js';
+import { useTheme } from '../context/ThemeContext.jsx';
 
 // ─── Suggested prompts ───────────────────────────────────────────────────────
 const SUGGESTED_PROMPTS = [
@@ -127,7 +128,7 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, width, onD
         zIndex: 6000,
         display: 'flex',
         flexDirection: 'column',
-        background: 'rgba(6, 10, 20, 0.99)',
+        background: 'var(--color-sheet-bg)',
         backdropFilter: 'blur(24px)',
         transform: open ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 0.35s cubic-bezier(0.34, 1.06, 0.64, 1)',
@@ -137,10 +138,10 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, width, onD
         position: 'absolute', right: 0, top: 0, bottom: 0, zIndex: 2500,
         width,
         display: 'flex', flexDirection: 'column',
-        background: 'rgba(6, 10, 20, 0.98)',
+        background: 'var(--color-sheet-bg)',
         backdropFilter: 'blur(24px)',
-        borderLeft: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '-20px 0 80px rgba(0,0,0,0.7)',
+        borderLeft: '1px solid var(--color-border-base)',
+        boxShadow: 'var(--color-elevation-lg)',
         transform: open ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 0.35s cubic-bezier(0.34, 1.06, 0.64, 1)',
     };
@@ -159,20 +160,20 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, width, onD
                 >
                     <div style={{
                         position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-                        width: 4, height: 40, borderRadius: 4, background: 'rgba(255,255,255,0.15)',
+                        width: 4, height: 40, borderRadius: 4, background: 'var(--color-border-strong)',
                     }} />
                 </div>
             )}
             {/* Header */}
             <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '14px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)',
+                padding: '14px 16px 12px', borderBottom: '1px solid var(--color-border-subtle)',
                 flexShrink: 0,
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{
                         width: 34, height: 34, borderRadius: 10,
-                        background: 'linear-gradient(135deg, var(--color-sky), #0044bb)',
+                        background: 'var(--color-sky-gradient)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         boxShadow: loading ? '0 0 0 0 rgba(0,200,255,0)' : '0 3px 12px rgba(0,200,255,0.35)',
                         animation: loading ? 'thinking-glow 1.4s ease-in-out infinite' : 'none',
@@ -180,16 +181,16 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, width, onD
                         <Wind size={16} color="#fff" />
                     </div>
                     <div>
-                        <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.95rem', color: '#fff' }}>
+                        <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text-heading)' }}>
                             Sky<span style={{ color: 'var(--color-sky)' }}>Pilot</span>
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: 'rgba(232,237,245,0.35)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-dim)', display: 'flex', alignItems: 'center', gap: 6 }}>
                             <span>{loading ? '✦ Thinking...' : 'AI Flight Advisor'}</span>
                             {messages.length > 0 && !loading && (
                                 <span style={{
                                     fontSize: '0.55rem', padding: '2px 6px', borderRadius: 4,
-                                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                                    color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace'
+                                    background: 'var(--color-surface-3)', border: '1px solid var(--color-border-base)',
+                                    color: 'var(--color-text-dim)', fontFamily: 'monospace'
                                 }}>
                                     {messages[messages.length - 1]?.usedModel || 'gemini-3-flash-preview'}
                                 </span>
@@ -203,7 +204,7 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, width, onD
                         <div style={{
                             display: 'flex', alignItems: 'center', gap: 5,
                             padding: '3px 8px', borderRadius: 100, maxWidth: 130,
-                            background: 'rgba(0,200,255,0.08)', border: '1px solid rgba(0,200,255,0.2)',
+                            background: 'var(--color-sky-dim)', border: '1px solid rgba(0,200,255,0.2)',
                             fontSize: '0.65rem', fontWeight: 600, color: 'var(--color-sky)',
                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                         }}>
@@ -213,22 +214,22 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, width, onD
                     )}
                     {messages.length > 0 && (
                         <button onClick={clearMessages} title="Clear chat" style={{
-                            background: 'transparent', border: '1px solid rgba(255,255,255,0.08)',
+                            background: 'transparent', border: '1px solid var(--color-border-base)',
                             borderRadius: 8, width: 30, height: 30, cursor: 'pointer',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: 'rgba(232,237,245,0.4)', transition: 'all 0.2s ease',
+                            color: 'var(--color-text-dim)', transition: 'all 0.2s ease',
                         }}
                             onMouseEnter={e => { e.currentTarget.style.color = 'rgba(239,68,68,0.7)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(232,237,245,0.4)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-dim)'; e.currentTarget.style.borderColor = 'var(--color-border-base)'; }}
                         >
                             <Trash2 size={13} />
                         </button>
                     )}
                     <button onClick={onClose} style={{
-                        background: 'rgba(255,255,255,0.06)', border: 'none',
+                        background: 'var(--color-surface-3)', border: 'none',
                         borderRadius: 8, width: 30, height: 30, cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: 'rgba(232,237,245,0.6)',
+                        color: 'var(--color-text-secondary)',
                     }}>
                         <X size={15} />
                     </button>
@@ -242,18 +243,18 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, width, onD
                         {/* Hero icon */}
                         <div style={{
                             width: 60, height: 60, borderRadius: 18, marginBottom: 18,
-                            background: 'linear-gradient(145deg, #0a1a40, #0d2060)',
-                            border: '1px solid rgba(0,200,255,0.3)',
+                            background: `linear-gradient(145deg, var(--color-hero-icon-from), var(--color-hero-icon-to))`,
+                            border: '1px solid var(--color-border-glow)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             boxShadow: '0 8px 40px rgba(0,200,255,0.2)',
                             animation: 'float-gentle 5s ease-in-out infinite',
                         }}>
                             <Wind size={28} color="var(--color-sky)" strokeWidth={1.8} style={{ filter: 'drop-shadow(0 0 6px rgba(0,200,255,0.6))' }} />
                         </div>
-                        <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.25rem', color: '#fff', marginBottom: 8, textAlign: 'center' }}>
+                        <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.25rem', color: 'var(--color-text-heading)', marginBottom: 8, textAlign: 'center' }}>
                             {contextSite ? `Flying at ${contextSite.name}` : 'Sky​Pilot AI'}
                         </div>
-                        <p style={{ fontSize: '0.82rem', color: 'rgba(232,237,245,0.45)', textAlign: 'center', marginBottom: 28, lineHeight: 1.65, maxWidth: 340 }}>
+                        <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', textAlign: 'center', marginBottom: 28, lineHeight: 1.65, maxWidth: 340 }}>
                             {contextSite
                                 ? `Ask me about conditions, best windows, thermals, or safety at this site.`
                                 : 'Ask me about flying conditions, nearby sites, wind at altitude, or the best time to fly.'
@@ -264,16 +265,16 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, width, onD
                             {SUGGESTED_PROMPTS.map(p => (
                                 <button key={p.text} onClick={() => { setInput(p.text); inputRef.current?.focus(); }}
                                     style={{
-                                        background: 'rgba(13,21,40,0.7)', border: '1px solid rgba(255,255,255,0.07)',
+                                        background: 'var(--color-glass-subtle-bg)', border: '1px solid var(--color-border-subtle)',
                                         borderRadius: 12, padding: '10px 12px',
                                         display: 'flex', flexDirection: 'column', gap: 5,
                                         cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s ease',
                                     }}
-                                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,200,255,0.3)'; e.currentTarget.style.background = 'rgba(0,200,255,0.06)'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.background = 'rgba(13,21,40,0.7)'; }}
+                                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-glow)'; e.currentTarget.style.background = 'var(--color-sky-dim)'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; e.currentTarget.style.background = 'var(--color-glass-subtle-bg)'; }}
                                 >
                                     <span style={{ fontSize: '1rem' }}>{p.icon}</span>
-                                    <span style={{ fontSize: '0.75rem', color: 'rgba(232,237,245,0.65)', lineHeight: 1.3 }}>{p.text}</span>
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', lineHeight: 1.3 }}>{p.text}</span>
                                 </button>
                             ))}
                         </div>
@@ -289,16 +290,16 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, width, onD
 
             {/* Input area */}
             <div style={{
-                padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.07)', flexShrink: 0,
+                padding: '12px 16px', borderTop: '1px solid var(--color-border-subtle)', flexShrink: 0,
                 paddingBottom: isMobile ? 'max(12px, env(safe-area-inset-bottom))' : '12px'
             }}>
                 {/* Location pill */}
                 <button onClick={() => setShareLocation(v => !v)} style={{
                     display: 'flex', alignItems: 'center', gap: 6,
                     padding: '4px 10px', borderRadius: 100, marginBottom: 10,
-                    background: shareLocation && effectiveLocation ? 'var(--color-sky-dim)' : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${shareLocation && effectiveLocation ? 'rgba(0,200,255,0.35)' : 'rgba(255,255,255,0.08)'}`,
-                    color: shareLocation && effectiveLocation ? 'var(--color-sky)' : 'rgba(232,237,245,0.4)',
+                    background: shareLocation && effectiveLocation ? 'var(--color-sky-dim)' : 'var(--color-surface-3)',
+                    border: `1px solid ${shareLocation && effectiveLocation ? 'var(--color-border-glow)' : 'var(--color-border-base)'}`,
+                    color: shareLocation && effectiveLocation ? 'var(--color-sky)' : 'var(--color-text-dim)',
                     fontSize: '0.73rem', cursor: 'pointer', fontWeight: 500, transition: 'all 0.2s ease',
                 }}>
                     <LocateFixed size={11} />
@@ -318,20 +319,20 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, width, onD
                         placeholder="Ask about conditions, sites, or weather..."
                         rows={1}
                         style={{
-                            flex: 1, background: 'rgba(13,21,40,0.85)',
-                            border: '1px solid rgba(255,255,255,0.1)',
+                            flex: 1, background: 'var(--color-input-bg)',
+                            border: '1px solid var(--color-border-base)',
                             borderRadius: 13, padding: '11px 14px',
-                            color: '#e8edf5', fontFamily: 'var(--font-body)', fontSize: '0.88rem',
+                            color: 'var(--color-text-primary)', fontFamily: 'var(--font-body)', fontSize: '0.88rem',
                             resize: 'none', outline: 'none', lineHeight: 1.5,
                             maxHeight: 100, overflowY: 'auto', transition: 'border-color 0.2s ease',
                         }}
-                        onFocus={e => e.target.style.borderColor = 'rgba(0,200,255,0.45)'}
-                        onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+                        onFocus={e => e.target.style.borderColor = 'var(--color-border-glow)'}
+                        onBlur={e => e.target.style.borderColor = 'var(--color-border-base)'}
                     />
                     <button onClick={handleSend} disabled={!input.trim() || loading} style={{
                         width: 42, height: 42, borderRadius: 11, border: 'none',
-                        background: input.trim() && !loading ? 'linear-gradient(135deg, var(--color-sky), #0055cc)' : 'rgba(255,255,255,0.05)',
-                        color: input.trim() && !loading ? '#fff' : 'rgba(232,237,245,0.25)',
+                        background: input.trim() && !loading ? 'var(--color-sky-gradient)' : 'var(--color-surface-3)',
+                        color: input.trim() && !loading ? '#fff' : 'var(--color-text-dim)',
                         cursor: input.trim() && !loading ? 'pointer' : 'not-allowed',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         transition: 'all 0.2s ease', flexShrink: 0,
@@ -343,7 +344,7 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, width, onD
                         }
                     </button>
                 </div>
-                <p style={{ fontSize: '0.65rem', color: 'rgba(232,237,245,0.18)', marginTop: 7, textAlign: 'center' }}>
+                <p style={{ fontSize: '0.65rem', color: 'var(--color-text-faint)', marginTop: 7, textAlign: 'center' }}>
                     Enter to send · Shift+Enter for new line
                 </p>
             </div>
@@ -373,7 +374,7 @@ function MobileForecaseSheet({ site, onClose, chatContextSite, setChatContextSit
                             style={{
                                 display: 'flex', alignItems: 'center', gap: 5,
                                 padding: '5px 10px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                                background: 'linear-gradient(135deg, var(--color-sky), #0055cc)',
+                                background: 'var(--color-sky-gradient)',
                                 color: '#fff', fontSize: '0.72rem', fontWeight: 700,
                                 boxShadow: '0 2px 8px rgba(0,200,255,0.3)',
                             }}
@@ -382,9 +383,9 @@ function MobileForecaseSheet({ site, onClose, chatContextSite, setChatContextSit
                             Ask SkyPilot
                         </button>
                         <button onClick={onClose} style={{
-                            background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 8,
+                            background: 'var(--color-border-base)', border: 'none', borderRadius: 8,
                             width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            cursor: 'pointer', color: 'rgba(232,237,245,0.6)',
+                            cursor: 'pointer', color: 'var(--color-text-secondary)',
                         }}>
                             <X size={15} />
                         </button>
@@ -401,6 +402,7 @@ function MobileForecaseSheet({ site, onClose, chatContextSite, setChatContextSit
 
 // ─── Main MapView ─────────────────────────────────────────────────────────────
 export default function MapView() {
+    const { theme } = useTheme();
     const { location, loading: locLoading, requestLocation } = useGeolocation();
     const isMobile = useIsMobile();
     const [sites, setSites] = useState([]);
@@ -500,7 +502,7 @@ export default function MapView() {
     };
 
     return (
-        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0d1117', paddingTop: 'var(--navbar-height)' }}>
+        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--color-surface-1)', paddingTop: 'var(--navbar-height)' }}>
             <DisclaimerModal />
             <div style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
 
@@ -512,11 +514,18 @@ export default function MapView() {
                         style={{ width: '100%', height: '100%' }}
                         zoomControl={!isMobile}
                     >
-                        {/* Stadia ALIDADE_SMOOTH_DARK — Uber-style: blue water, crisp roads */}
+                        {/* Tile layer: CartoDB Voyager for light (vivid blue water), Stadia dark for dark mode */}
                         <TileLayer
-                            url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
-                            attribution='&copy; <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                            maxZoom={20}
+                            key={theme}
+                            url={theme === 'light'
+                                ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+                                : 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'
+                            }
+                            attribution={theme === 'light'
+                                ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                                : '&copy; <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                            }
+                            maxZoom={19}
                         />
                         <FlyTo center={mapCenter} zoom={mapZoom} />
                         {location && (
@@ -544,9 +553,9 @@ export default function MapView() {
                             >
                                 <Popup>
                                     <div style={{ minWidth: 200, fontFamily: 'var(--font-body)' }}>
-                                        <div style={{ fontWeight: 700, marginBottom: 5, color: '#fff', fontSize: '0.9rem' }}>{site.name}</div>
+                                        <div style={{ fontWeight: 700, marginBottom: 5, color: 'var(--color-text-heading)', fontSize: '0.9rem' }}>{site.name}</div>
                                         <div style={{ marginBottom: 8 }}><FlyabilityBadge rating={site.rating} size="sm" /></div>
-                                        <div style={{ fontSize: '0.75rem', color: 'rgba(232,237,245,0.5)', marginBottom: 10 }}>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>
                                             ⛰️ {site.altitude}ft altitude
                                         </div>
                                         <div style={{ display: 'flex', gap: 6 }}>
@@ -554,12 +563,12 @@ export default function MapView() {
                                                 onClick={(e) => { e.stopPropagation(); setSelectedSite(site); setChatOpen(false); }}
                                                 style={{
                                                     flex: 1, padding: '7px 0',
-                                                    background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)',
-                                                    borderRadius: 8, color: '#fff', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
+                                                    background: 'var(--color-surface-3)', border: '1px solid var(--color-border-base)',
+                                                    borderRadius: 8, color: 'var(--color-text-heading)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
                                                     transition: 'background 0.2s',
                                                 }}
-                                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.18)'}
-                                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                                                onMouseEnter={e => e.currentTarget.style.background = 'var(--color-glass-subtle-bg)'}
+                                                onMouseLeave={e => e.currentTarget.style.background = 'var(--color-surface-3)'}
                                             >
                                                 Forecast
                                             </button>
@@ -568,7 +577,7 @@ export default function MapView() {
                                                 style={{
                                                     flex: 1, padding: '7px 0',
                                                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                                                    background: 'linear-gradient(135deg, var(--color-sky), #0055cc)',
+                                                    background: 'var(--color-sky-gradient)',
                                                     border: 'none', borderRadius: 8, color: '#fff', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
                                                 }}
                                             >
@@ -590,11 +599,11 @@ export default function MapView() {
                     {loadingSites && (
                         <div style={{
                             position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)',
-                            background: 'rgba(6,10,20,0.9)', backdropFilter: 'blur(16px)',
-                            border: '1px solid rgba(255,255,255,0.1)', borderRadius: 100,
+                            background: 'var(--color-surface-overlay)', backdropFilter: 'blur(16px)',
+                            border: '1px solid var(--color-border-base)', borderRadius: 100,
                             padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 10,
-                            color: '#e8edf5', fontSize: '0.82rem', zIndex: 1300,
-                            boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+                            color: 'var(--color-text-primary)', fontSize: '0.82rem', zIndex: 1300,
+                            boxShadow: 'var(--color-elevation-md)',
                         }}>
                             <div style={{ width: 13, height: 13, border: '2px solid var(--color-sky)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
                             Fetching paragliding sites...
@@ -605,11 +614,11 @@ export default function MapView() {
                     {!location && !locLoading && (
                         <div style={{
                             position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)',
-                            background: 'rgba(6,10,20,0.92)', backdropFilter: 'blur(16px)',
+                            background: 'var(--color-surface-overlay)', backdropFilter: 'blur(16px)',
                             border: '1px solid rgba(255,179,71,0.3)', borderRadius: 16,
                             padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10,
-                            color: '#e8edf5', fontSize: '0.85rem', zIndex: 1300, whiteSpace: 'nowrap',
-                            boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+                            color: 'var(--color-text-primary)', fontSize: '0.85rem', zIndex: 1300, whiteSpace: 'nowrap',
+                            boxShadow: 'var(--color-elevation-md)',
                         }}>
                             <AlertCircle size={16} color="var(--color-amber)" />
                             Enable location to see sites near you
@@ -630,17 +639,17 @@ export default function MapView() {
                             overflowX: 'auto', maxWidth: isMobile ? 'calc(100vw - 100px)' : 'auto',
                         }}>
                             {[
-                                { key: 'all', label: `All ${sites.length}`, color: 'rgba(255,255,255,0.8)' },
+                                { key: 'all', label: `All ${sites.length}`, color: 'var(--color-text-primary)' },
                                 { key: 'GO', label: `✓ GO ${counts.GO}`, color: 'var(--color-go)' },
                                 { key: 'MARGINAL', label: `⚠ ${counts.MARGINAL}`, color: 'var(--color-marginal)' },
                                 { key: 'NO_GO', label: `✗ ${counts.NO_GO}`, color: 'var(--color-no-go)' },
                             ].map(({ key, label, color }) => (
                                 <button key={key} onClick={() => setFilter(key)} style={{
-                                    background: filter === key ? 'rgba(8,13,26,0.97)' : 'rgba(8,13,26,0.75)',
+                                    background: filter === key ? 'var(--color-surface-overlay)' : 'var(--color-glass-subtle-bg)',
                                     backdropFilter: 'blur(14px)',
-                                    border: `1px solid ${filter === key ? color : 'rgba(255,255,255,0.1)'}`,
+                                    border: `1px solid ${filter === key ? color : 'var(--color-border-base)'}`,
                                     borderRadius: 100, padding: '7px 14px',
-                                    color: filter === key ? color : 'rgba(232,237,245,0.5)',
+                                    color: filter === key ? color : 'var(--color-text-muted)',
                                     fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
                                     transition: 'all 0.2s ease', whiteSpace: 'nowrap', flexShrink: 0,
                                     boxShadow: filter === key ? `0 0 16px ${color}33` : 'none',
@@ -667,8 +676,8 @@ export default function MapView() {
                                     width: 38, height: 38,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     background: location ? 'var(--color-sky-dim)' : 'transparent',
-                                    border: `1px solid ${location ? 'rgba(0,200,255,0.3)' : 'rgba(255,255,255,0.1)'}`,
-                                    borderRadius: 10, color: location ? 'var(--color-sky)' : 'rgba(232,237,245,0.7)',
+                                    border: `1px solid ${location ? 'rgba(0,200,255,0.3)' : 'var(--color-border-base)'}`,
+                                    borderRadius: 10, color: location ? 'var(--color-sky)' : 'var(--color-text-secondary)',
                                     cursor: 'pointer', transition: 'all 0.2s ease',
                                 }}
                             >
@@ -693,8 +702,8 @@ export default function MapView() {
                                         width: 38, height: 38,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         background: showFilters ? 'var(--color-sky-dim)' : 'transparent',
-                                        border: `1px solid ${showFilters ? 'rgba(0,200,255,0.3)' : 'rgba(255,255,255,0.1)'}`,
-                                        borderRadius: 10, color: showFilters ? 'var(--color-sky)' : 'rgba(232,237,245,0.7)',
+                                        border: `1px solid ${showFilters ? 'rgba(0,200,255,0.3)' : 'var(--color-border-base)'}`,
+                                        borderRadius: 10, color: showFilters ? 'var(--color-sky)' : 'var(--color-text-secondary)',
                                         cursor: 'pointer', transition: 'all 0.2s ease',
                                     }}
                                 >
@@ -705,21 +714,21 @@ export default function MapView() {
                                     <div style={{
                                         position: 'absolute', top: 48, right: 0,
                                         width: 260,
-                                        background: 'rgba(6,10,20,0.98)', backdropFilter: 'blur(24px)',
-                                        border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16,
-                                        padding: '16px', boxShadow: '0 12px 48px rgba(0,0,0,0.7)',
+                                        background: 'var(--color-surface-overlay)', backdropFilter: 'blur(24px)',
+                                        border: '1px solid var(--color-border-strong)', borderRadius: 16,
+                                        padding: '16px', boxShadow: 'var(--color-elevation-lg)',
                                         zIndex: 10000,
                                         animation: 'slide-down 0.2s ease',
                                     }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, alignItems: 'center' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                <span style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600 }}>Search Radius</span>
-                                                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-sky)', background: 'rgba(0,200,255,0.1)', padding: '2px 8px', borderRadius: 8 }}>
+                                                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-heading)', fontWeight: 600 }}>Search Radius</span>
+                                                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-sky)', background: 'var(--color-sky-dim)', padding: '2px 8px', borderRadius: 8 }}>
                                                     {distance} mi
                                                 </span>
                                             </div>
                                             <button onClick={() => setShowFilters(false)} style={{
-                                                background: 'transparent', border: 'none', color: 'rgba(232,237,245,0.5)',
+                                                background: 'transparent', border: 'none', color: 'var(--color-text-muted)',
                                                 cursor: 'pointer', padding: 4, borderRadius: 6,
                                             }}>
                                                 <X size={14} />
@@ -730,21 +739,21 @@ export default function MapView() {
                                             onChange={e => handleDistanceChange(parseInt(e.target.value))}
                                             style={{
                                                 width: '100%', appearance: 'none', height: 4,
-                                                background: `linear-gradient(to right, var(--color-sky) ${(distance - 5) / (60 - 5) * 100}%, rgba(255,255,255,0.1) ${(distance - 5) / (60 - 5) * 100}%)`,
+                                                background: `linear-gradient(to right, var(--color-sky) ${(distance - 5) / (60 - 5) * 100}%, var(--color-border-base) ${(distance - 5) / (60 - 5) * 100}%)`,
                                                 borderRadius: 100, outline: 'none', cursor: 'pointer', margin: '0 0 20px 0',
                                             }}
                                         />
 
                                         {sites.length > 0 && (
-                                            <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 12, border: '1px solid rgba(255,255,255,0.06)' }}>
-                                                <div style={{ fontSize: '0.72rem', color: 'rgba(232,237,245,0.45)', marginBottom: 10, textAlign: 'center', fontWeight: 500 }}>
+                                            <div style={{ background: 'var(--color-surface-3)', borderRadius: 12, padding: 12, border: '1px solid var(--color-border-subtle)' }}>
+                                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', marginBottom: 10, textAlign: 'center', fontWeight: 500 }}>
                                                     {sites.length} sites found
                                                 </div>
                                                 <div style={{ display: 'flex', gap: 6 }}>
                                                     {[['GO', counts.GO, 'var(--color-go)'], ['MARG.', counts.MARGINAL, 'var(--color-marginal)'], ['NO-GO', counts.NO_GO, 'var(--color-no-go)']].map(([label, count, color]) => (
-                                                        <div key={label} style={{ textAlign: 'center', flex: 1, background: 'rgba(0,0,0,0.2)', padding: '8px 4px', borderRadius: 8 }}>
+                                                        <div key={label} style={{ textAlign: 'center', flex: 1, background: 'var(--color-surface-3)', padding: '8px 4px', borderRadius: 8 }}>
                                                             <div style={{ fontSize: '1.05rem', fontWeight: 700, color, fontFamily: 'var(--font-heading)' }}>{count}</div>
-                                                            <div style={{ fontSize: '0.6rem', color: 'rgba(232,237,245,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>{label}</div>
+                                                            <div style={{ fontSize: '0.6rem', color: 'var(--color-text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>{label}</div>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -762,13 +771,13 @@ export default function MapView() {
                         <div style={{
                             position: 'absolute', left: 12, top: 12, bottom: 12,
                             width: panelWidthPx,
-                            background: 'rgba(6, 10, 20, 0.97)',
+                            background: 'var(--color-sheet-bg)',
                             backdropFilter: 'blur(24px)',
-                            borderRadius: 18, border: '1px solid rgba(255,255,255,0.09)',
+                            borderRadius: 18, border: '1px solid var(--color-border-base)',
                             overflowY: 'auto', padding: '14px 16px',
                             zIndex: 1000, animation: 'slide-in-right 0.3s ease',
                             display: 'flex', flexDirection: 'column',
-                            boxShadow: '0 8px 48px rgba(0,0,0,0.7)',
+                            boxShadow: 'var(--color-elevation-lg)',
                             transition: isDragging.current ? 'none' : 'width 0.25s ease',
                         }}>
                             {/* Panel header */}
@@ -782,7 +791,7 @@ export default function MapView() {
                                         style={{
                                             display: 'flex', alignItems: 'center', gap: 5,
                                             padding: '5px 10px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                                            background: 'linear-gradient(135deg, var(--color-sky), #0055cc)',
+                                            background: 'var(--color-sky-gradient)',
                                             color: '#fff', fontSize: '0.72rem', fontWeight: 700,
                                             boxShadow: '0 2px 8px rgba(0,200,255,0.3)',
                                             transition: 'all 0.2s ease',
@@ -794,19 +803,19 @@ export default function MapView() {
                                     </button>
                                     {[[440, <Minimize2 size={12} />, 'Compact'], [680, <Columns size={12} />, 'Wide'], [940, <Maximize2 size={12} />, 'Expand']].map(([w, icon, label]) => (
                                         <button key={w} onClick={() => setPanelWidthPx(w)} title={label} style={{
-                                            background: panelWidthPx === w ? 'rgba(0,200,255,0.15)' : 'rgba(255,255,255,0.05)',
-                                            border: `1px solid ${panelWidthPx === w ? 'rgba(0,200,255,0.35)' : 'rgba(255,255,255,0.08)'}`,
+                                            background: panelWidthPx === w ? 'var(--color-sky-dim)' : 'var(--color-surface-3)',
+                                            border: `1px solid ${panelWidthPx === w ? 'rgba(0,200,255,0.35)' : 'var(--color-border-subtle)'}`,
                                             borderRadius: 7, width: 26, height: 26, cursor: 'pointer',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            color: panelWidthPx === w ? 'var(--color-sky)' : 'rgba(232,237,245,0.4)',
+                                            color: panelWidthPx === w ? 'var(--color-sky)' : 'var(--color-text-dim)',
                                             transition: 'all 0.18s ease',
                                         }}>{icon}</button>
                                     ))}
                                     <button onClick={() => setSelectedSite(null)} style={{
-                                        background: 'rgba(255,255,255,0.06)', border: 'none',
+                                        background: 'var(--color-surface-3)', border: 'none',
                                         borderRadius: 7, width: 26, height: 26, cursor: 'pointer',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        color: 'rgba(232,237,245,0.6)', marginLeft: 2,
+                                        color: 'var(--color-text-secondary)', marginLeft: 2,
                                     }}>
                                         <X size={13} />
                                     </button>
@@ -825,7 +834,7 @@ export default function MapView() {
                                 <div style={{
                                     width: 14, height: 56, borderRadius: 8,
                                     background: 'rgba(0,200,255,0.35)',
-                                    border: '1px solid rgba(255,255,255,0.2)',
+                                    border: '1px solid var(--color-border-strong)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     transition: 'all 0.2s ease',
                                 }}
@@ -888,7 +897,7 @@ export default function MapView() {
                             style={{
                                 position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)',
                                 zIndex: 3000,
-                                background: 'linear-gradient(135deg, var(--color-sky), #0055cc)',
+                                background: 'var(--color-sky-gradient)',
                                 border: 'none', borderRadius: '12px 0 0 12px',
                                 padding: '14px 10px', cursor: 'pointer',
                                 boxShadow: '-4px 0 24px rgba(0,200,255,0.35)',

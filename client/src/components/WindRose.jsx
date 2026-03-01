@@ -7,13 +7,13 @@ export default function WindRose({ windDirections = {}, currentWindDeg, size = 1
     const innerR = outerR * 0.35;
 
     const ratingColors = {
-        0: 'rgba(255,255,255,0.06)',
+        0: 'var(--color-surface-3)',
         1: 'rgba(245,158,11,0.35)',
         2: 'rgba(34,197,94,0.5)',
     };
 
     const ratingStroke = {
-        0: 'rgba(255,255,255,0.1)',
+        0: 'var(--color-border-subtle)',
         1: 'rgba(245,158,11,0.6)',
         2: 'rgba(34,197,94,0.8)',
     };
@@ -71,8 +71,12 @@ export default function WindRose({ windDirections = {}, currentWindDeg, size = 1
         <svg width={size + 30} height={size + 30} style={{ overflow: 'visible', display: 'block' }}>
             <g transform="translate(15, 15)">
                 {/* Background circle */}
-                <circle cx={cx} cy={cy} r={outerR} fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
-                <circle cx={cx} cy={cy} r={innerR} fill="rgba(8,13,26,0.8)" stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
+                <circle cx={cx} cy={cy} r={outerR}
+                    style={{ fill: 'var(--color-surface-3)', stroke: 'var(--color-border-subtle)' }}
+                    strokeWidth={1} />
+                <circle cx={cx} cy={cy} r={innerR}
+                    style={{ fill: 'var(--color-windrose-center)', stroke: 'var(--color-border-subtle)' }}
+                    strokeWidth={1} />
 
                 {/* Slices */}
                 {slices.map(({ dir, rating, d }) => (
@@ -89,7 +93,7 @@ export default function WindRose({ windDirections = {}, currentWindDeg, size = 1
                         textAnchor="middle" dominantBaseline="middle"
                         fontSize={dir.length === 1 ? 9 : 7}
                         fontWeight={700}
-                        fill="rgba(232,237,245,0.5)"
+                        style={{ fill: 'var(--color-text-muted)' }}
                         fontFamily="var(--font-body)"
                     >
                         {dir}
@@ -116,7 +120,7 @@ export default function WindRose({ windDirections = {}, currentWindDeg, size = 1
                 )}
 
                 {/* Center dot */}
-                <circle cx={cx} cy={cy} r={4} fill="rgba(232,237,245,0.3)" />
+                <circle cx={cx} cy={cy} r={4} style={{ fill: 'var(--color-text-dim)' }} />
             </g>
         </svg>
     );

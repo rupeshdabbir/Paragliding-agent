@@ -24,7 +24,7 @@ export default function SiteCard({ site, analysis, weather, defaultExpanded = fa
 
     return (
         <div style={{
-            background: 'rgba(13,21,40,0.8)',
+            background: 'var(--color-glass-bg)',
             border: ratingBorder,
             borderRadius: 'var(--radius-lg)',
             overflow: 'hidden',
@@ -38,13 +38,13 @@ export default function SiteCard({ site, analysis, weather, defaultExpanded = fa
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                             <FlyabilityBadge rating={rating} />
                             {site.distanceFromSearch > 0 && (
-                                <span style={{ fontSize: '0.75rem', color: 'rgba(232,237,245,0.4)' }}>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)' }}>
                                     {(site.distanceFromSearch / 1000).toFixed(1)} km away
                                 </span>
                             )}
                         </div>
 
-                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', marginBottom: 6, fontFamily: 'var(--font-heading)' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-heading)', marginBottom: 6, fontFamily: 'var(--font-heading)' }}>
                             {site.name}
                         </h3>
 
@@ -66,7 +66,7 @@ export default function SiteCard({ site, analysis, weather, defaultExpanded = fa
                             size={80}
                         />
                         <button className="btn-ghost" style={{
-                            background: 'transparent', border: 'none', color: 'rgba(232,237,245,0.4)',
+                            background: 'transparent', border: 'none', color: 'var(--color-text-dim)',
                             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', padding: 0,
                         }}>
                             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -104,11 +104,11 @@ export default function SiteCard({ site, analysis, weather, defaultExpanded = fa
 
             {/* Expanded: full weather + details */}
             {expanded && (
-                <div style={{ padding: '0 20px 20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ padding: '0 20px 20px', borderTop: '1px solid var(--color-border-subtle)' }}>
                     <div style={{ paddingTop: 16 }}>
                         {/* Site description */}
                         {site.description && (
-                            <p style={{ fontSize: '0.82rem', color: 'rgba(232,237,245,0.5)', marginBottom: 14, fontStyle: 'italic' }}>
+                            <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginBottom: 14, fontStyle: 'italic' }}>
                                 {site.description}
                             </p>
                         )}
@@ -123,7 +123,7 @@ export default function SiteCard({ site, analysis, weather, defaultExpanded = fa
                         </div>
 
                         {/* Wind direction legend */}
-                        <div style={{ textAlign: 'center', marginBottom: 16, fontSize: '0.78rem', color: 'rgba(232,237,245,0.45)' }}>
+                        <div style={{ textAlign: 'center', marginBottom: 16, fontSize: '0.78rem', color: 'var(--color-text-dim)' }}>
                             <span style={{ color: 'var(--color-sky)' }}>→</span> Current wind &nbsp;|&nbsp;
                             <span style={{ color: 'var(--color-go)' }}>■</span> Ideal &nbsp;
                             <span style={{ color: 'var(--color-marginal)' }}>■</span> Marginal
@@ -133,7 +133,7 @@ export default function SiteCard({ site, analysis, weather, defaultExpanded = fa
                         {weather && <WeatherCard weather={weather} baseAlt={site.altitude || 0} expanded />}
 
                         {/* Coordinates */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, fontSize: '0.75rem', color: 'rgba(232,237,245,0.3)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, fontSize: '0.75rem', color: 'var(--color-text-faint)' }}>
                             <MapPin size={12} />
                             {site.lat?.toFixed(4)}, {site.lng?.toFixed(4)}
                         </div>
@@ -149,9 +149,9 @@ function SiteTag({ label, icon }) {
         <span style={{
             display: 'inline-flex', alignItems: 'center', gap: 4,
             padding: '2px 8px', borderRadius: 100,
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            fontSize: '0.72rem', color: 'rgba(232,237,245,0.45)',
+            background: 'var(--color-surface-3)',
+            border: '1px solid var(--color-border-base)',
+            fontSize: '0.72rem', color: 'var(--color-text-muted)',
         }}>
             {icon}{label}
         </span>

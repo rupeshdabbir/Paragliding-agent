@@ -64,14 +64,14 @@ export default function SiteSearch({ onSiteSelect, center, placeholder = 'Search
             {/* Input */}
             <div style={{
                 display: 'flex', alignItems: 'center', gap: 8,
-                background: 'rgba(13,21,40,0.9)', border: '1px solid rgba(255,255,255,0.1)',
+                background: 'var(--color-input-bg)', border: '1px solid var(--color-border-base)',
                 borderRadius: 12, padding: '10px 14px',
                 transition: 'border-color 0.2s ease',
-                ...(open ? { borderColor: 'rgba(0,200,255,0.4)', boxShadow: '0 0 0 3px rgba(0,200,255,0.08)' } : {}),
+                ...(open ? { borderColor: 'var(--color-border-glow)', boxShadow: '0 0 0 3px var(--color-sky-dim)' } : {}),
             }}>
                 {loading
                     ? <Loader size={15} color="var(--color-sky)" style={{ animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
-                    : <Search size={15} color="rgba(232,237,245,0.4)" style={{ flexShrink: 0 }} />
+                    : <Search size={15} color="var(--color-text-dim)" style={{ flexShrink: 0 }} />
                 }
                 <input
                     ref={inputRef}
@@ -81,11 +81,11 @@ export default function SiteSearch({ onSiteSelect, center, placeholder = 'Search
                     placeholder={placeholder}
                     style={{
                         flex: 1, background: 'transparent', border: 'none', outline: 'none',
-                        color: '#e8edf5', fontFamily: 'var(--font-body)', fontSize: '0.88rem',
+                        color: 'var(--color-text-primary)', fontFamily: 'var(--font-body)', fontSize: '0.88rem',
                     }}
                 />
                 {query && (
-                    <button onClick={handleClear} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(232,237,245,0.35)', padding: 2, display: 'flex' }}>
+                    <button onClick={handleClear} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-dim)', padding: 2, display: 'flex' }}>
                         <X size={13} />
                     </button>
                 )}
@@ -95,10 +95,10 @@ export default function SiteSearch({ onSiteSelect, center, placeholder = 'Search
             {open && results.length > 0 && (
                 <div style={{
                     position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 9999,
-                    background: 'rgba(10, 16, 30, 0.98)', backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12,
+                    background: 'var(--color-surface-overlay)', backdropFilter: 'blur(20px)',
+                    border: '1px solid var(--color-border-base)', borderRadius: 12,
                     overflow: 'hidden',
-                    boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
+                    boxShadow: 'var(--color-elevation-lg)',
                     animation: 'fade-up 0.2s ease',
                 }}>
                     {results.map((site, i) => (
@@ -107,31 +107,31 @@ export default function SiteSearch({ onSiteSelect, center, placeholder = 'Search
                                 display: 'flex', alignItems: 'center', gap: 10,
                                 width: '100%', padding: '11px 14px', textAlign: 'left',
                                 background: 'transparent', border: 'none', cursor: 'pointer',
-                                borderBottom: i < results.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                                transition: 'background 0.15s ease', color: '#e8edf5',
+                                borderBottom: i < results.length - 1 ? '1px solid var(--color-border-subtle)' : 'none',
+                                transition: 'background 0.15s ease', color: 'var(--color-text-primary)',
                             }}
-                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,200,255,0.07)'}
+                            onMouseEnter={e => e.currentTarget.style.background = 'var(--color-sky-dim)'}
                             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >
                             <div style={{
                                 width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-                                background: 'rgba(0,200,255,0.1)', border: '1px solid rgba(0,200,255,0.2)',
+                                background: 'var(--color-sky-dim)', border: '1px solid var(--color-border-glow)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                             }}>
                                 <Wind size={13} color="var(--color-sky)" />
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '0.87rem', fontWeight: 600, color: '#fff', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                <div style={{ fontSize: '0.87rem', fontWeight: 600, color: 'var(--color-text-heading)', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                     {site.name}
                                 </div>
-                                <div style={{ fontSize: '0.72rem', color: 'rgba(232,237,245,0.4)', display: 'flex', gap: 6 }}>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-dim)', display: 'flex', gap: 6 }}>
                                     {site.siteTypes?.paragliding && <span>Paragliding</span>}
                                     {site.siteTypes?.ridgeSoaring && <span>· Ridge Soaring</span>}
                                     {site.siteTypes?.thermaling && <span>· Thermals</span>}
                                     {site.altitude > 0 && <span>· {site.altitude}ft alt</span>}
                                 </div>
                             </div>
-                            <MapPin size={12} color="rgba(232,237,245,0.25)" style={{ flexShrink: 0 }} />
+                            <MapPin size={12} color="var(--color-text-faint)" style={{ flexShrink: 0 }} />
                         </button>
                     ))}
                 </div>
@@ -141,10 +141,10 @@ export default function SiteSearch({ onSiteSelect, center, placeholder = 'Search
             {open && !loading && results.length === 0 && query.length >= 2 && (
                 <div style={{
                     position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 9999,
-                    background: 'rgba(10,16,30,0.98)', backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12,
+                    background: 'var(--color-surface-overlay)', backdropFilter: 'blur(20px)',
+                    border: '1px solid var(--color-border-base)', borderRadius: 12,
                     padding: '14px', textAlign: 'center',
-                    fontSize: '0.82rem', color: 'rgba(232,237,245,0.4)',
+                    fontSize: '0.82rem', color: 'var(--color-text-dim)',
                 }}>
                     No sites found for "{query}"
                 </div>

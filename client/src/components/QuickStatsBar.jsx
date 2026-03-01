@@ -24,14 +24,14 @@ export default function QuickStatsBar({ sites, bestSite }) {
                 <>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                         {dot(bestSite.rating === 'GO' ? 'var(--color-go)' : 'var(--color-marginal)')}
-                        <span style={{ fontSize: '0.73rem', fontWeight: 700, color: '#fff', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: '0.73rem', fontWeight: 700, color: 'var(--color-text-heading)', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {bestSite.name}
                         </span>
                         <span style={{ fontSize: '0.65rem', fontWeight: 600, color: bestSite.rating === 'GO' ? 'var(--color-go)' : 'var(--color-marginal)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                             {bestSite.rating === 'GO' ? '· GO' : '· MARGINAL'}
                         </span>
                     </div>
-                    <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.12)' }} />
+                    <div style={{ width: 1, height: 16, background: 'var(--color-border-strong)' }} />
                 </>
             )}
 
@@ -55,8 +55,8 @@ export default function QuickStatsBar({ sites, bestSite }) {
             </div>
 
             {/* Total count */}
-            <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.12)' }} />
-            <span style={{ fontSize: '0.68rem', color: 'rgba(232,237,245,0.38)', fontWeight: 500 }}>
+            <div style={{ width: 1, height: 16, background: 'var(--color-border-strong)' }} />
+            <span style={{ fontSize: '0.68rem', color: 'var(--color-text-dim)', fontWeight: 500 }}>
                 {sites.length} sites
             </span>
         </div>

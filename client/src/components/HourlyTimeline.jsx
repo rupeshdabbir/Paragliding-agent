@@ -47,7 +47,7 @@ export default function HourlyTimeline({ hours, selectedDate }) {
                             onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
                         >
                             {/* Hour label */}
-                            <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'rgba(232,237,245,0.55)' }}>
+                            <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
                                 {formatHour(h.hour)}
                             </div>
 
@@ -62,27 +62,27 @@ export default function HourlyTimeline({ hours, selectedDate }) {
                             {/* Wind speed */}
                             <div style={{ fontSize: '0.78rem', fontWeight: 700, color, textAlign: 'center' }}>
                                 {Math.round(h.windSpeed10m ?? 0)}
-                                <div style={{ fontSize: '0.6rem', fontWeight: 400, color: 'rgba(232,237,245,0.35)' }}>mph</div>
+                                <div style={{ fontSize: '0.6rem', fontWeight: 400, color: 'var(--color-text-dim)' }}>mph</div>
                             </div>
 
                             {/* Gusts (if significantly higher) */}
                             {h.windGusts > (h.windSpeed10m ?? 0) * 1.2 && (
-                                <div style={{ fontSize: '0.65rem', color: 'rgba(232,237,245,0.4)', textAlign: 'center' }}>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-dim)', textAlign: 'center' }}>
                                     G{Math.round(h.windGusts)}
                                 </div>
                             )}
 
                             {/* Wind direction label */}
-                            <div style={{ fontSize: '0.63rem', color: 'rgba(232,237,245,0.4)', fontWeight: 600 }}>
+                            <div style={{ fontSize: '0.63rem', color: 'var(--color-text-dim)', fontWeight: 600 }}>
                                 {h.windDirectionCardinal}
                             </div>
 
                             {/* Cloud cover bar */}
-                            <div style={{ width: '100%', height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+                            <div style={{ width: '100%', height: 3, background: 'var(--color-border-subtle)', borderRadius: 2, overflow: 'hidden' }}>
                                 <div style={{
                                     height: '100%', borderRadius: 2,
                                     width: `${h.cloudCover ?? 0}%`,
-                                    background: h.cloudCover > 85 ? 'var(--color-marginal)' : 'rgba(255,255,255,0.25)',
+                                    background: h.cloudCover > 85 ? 'var(--color-marginal)' : 'var(--color-border-strong)',
                                 }} />
                             </div>
 
@@ -96,12 +96,12 @@ export default function HourlyTimeline({ hours, selectedDate }) {
             {/* Legend */}
             <div style={{ display: 'flex', gap: 14, marginTop: 10, paddingLeft: 2 }}>
                 {[['GO', 'var(--color-go)'], ['MARGINAL', 'var(--color-marginal)'], ['NO-GO', 'var(--color-no-go)']].map(([label, color]) => (
-                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.68rem', color: 'rgba(232,237,245,0.4)' }}>
+                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.68rem', color: 'var(--color-text-dim)' }}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
                         {label}
                     </div>
                 ))}
-                <div style={{ fontSize: '0.68rem', color: 'rgba(232,237,245,0.3)', marginLeft: 'auto' }}>
+                <div style={{ fontSize: '0.68rem', color: 'var(--color-text-faint)', marginLeft: 'auto' }}>
                     ↑ Wind direction · G = gusts
                 </div>
             </div>

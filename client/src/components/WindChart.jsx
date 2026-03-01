@@ -48,7 +48,7 @@ export default function WindChart({ hours, title = 'Wind Forecast', baseAlt = 0 
 
     // Daylight filter (5am–10pm)
     const data = (hours || []).filter(h => h.hour >= 5 && h.hour <= 22);
-    if (data.length === 0) return <div style={{ color: 'rgba(232,237,245,0.4)', fontSize: '0.82rem', padding: 20, textAlign: 'center' }}>No data</div>;
+    if (data.length === 0) return <div style={{ color: 'var(--color-text-dim)', fontSize: '0.82rem', padding: 20, textAlign: 'center' }}>No data</div>;
 
     // Chart dimensions
     const W = 900, H = 260;
@@ -124,27 +124,27 @@ export default function WindChart({ hours, title = 'Wind Forecast', baseAlt = 0 
                     <button key={key} onClick={() => toggleLayer(key)} style={{
                         display: 'flex', alignItems: 'center', gap: 5,
                         padding: '4px 10px', borderRadius: 100, cursor: 'pointer',
-                        background: activeLayers[key] ? `${line}22` : 'rgba(255,255,255,0.04)',
-                        border: `1px solid ${activeLayers[key] ? line : 'rgba(255,255,255,0.1)'}`,
-                        color: activeLayers[key] ? line : 'rgba(232,237,245,0.35)',
+                        background: activeLayers[key] ? `${line}22` : 'var(--color-surface-3)',
+                        border: `1px solid ${activeLayers[key] ? line : 'var(--color-border-base)'}`,
+                        color: activeLayers[key] ? line : 'var(--color-text-dim)',
                         fontSize: '0.73rem', fontWeight: 600, transition: 'all 0.2s ease',
                     }}>
-                        <span style={{ width: 16, height: 2, background: activeLayers[key] ? line : 'rgba(255,255,255,0.2)', display: 'inline-block', borderRadius: 1 }} />
+                        <span style={{ width: 16, height: 2, background: activeLayers[key] ? line : 'var(--color-border-strong)', display: 'inline-block', borderRadius: 1 }} />
                         Wind {baseAlt + ALT_COLORS[key].addFt}ft
                     </button>
                 ))}
                 <button onClick={() => toggleLayer('gusts')} style={{
                     display: 'flex', alignItems: 'center', gap: 5,
                     padding: '4px 10px', borderRadius: 100, cursor: 'pointer',
-                    background: activeLayers.gusts ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${activeLayers.gusts ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.1)'}`,
-                    color: activeLayers.gusts ? '#f87171' : 'rgba(232,237,245,0.35)',
+                    background: activeLayers.gusts ? 'rgba(239,68,68,0.1)' : 'var(--color-surface-3)',
+                    border: `1px solid ${activeLayers.gusts ? 'rgba(239,68,68,0.5)' : 'var(--color-border-base)'}`,
+                    color: activeLayers.gusts ? '#f87171' : 'var(--color-text-dim)',
                     fontSize: '0.73rem', fontWeight: 600, transition: 'all 0.2s ease',
                 }}>
-                    <span style={{ width: 16, height: '2px', background: activeLayers.gusts ? GUST_COLOR : 'rgba(255,255,255,0.2)', display: 'inline-block', borderRadius: 1, borderTop: '2px dashed currentColor', height: 0 }} />
+                    <span style={{ width: 16, height: '2px', background: activeLayers.gusts ? GUST_COLOR : 'var(--color-border-strong)', display: 'inline-block', borderRadius: 1, borderTop: '2px dashed currentColor', height: 0 }} />
                     Gusts
                 </button>
-                <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: 'rgba(232,237,245,0.25)' }}>
+                <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: 'var(--color-text-faint)' }}>
                     Open-Meteo · Hover to inspect
                 </span>
             </div>
@@ -179,15 +179,16 @@ export default function WindChart({ hours, title = 'Wind Forecast', baseAlt = 0 
                     {yGridSteps.map(v => (
                         <g key={v}>
                             <line x1={PAD.left} y1={yScale(v)} x2={PAD.left + chartW} y2={yScale(v)}
-                                stroke="rgba(255,255,255,0.06)" strokeWidth="1" strokeDasharray={v === 0 ? '0' : '3 4'} />
-                            <text x={PAD.left - 6} y={yScale(v) + 4} textAnchor="end" fill="rgba(232,237,245,0.4)" fontSize="11">
+                                style={{ stroke: 'var(--color-border-subtle)' }} strokeWidth="1" strokeDasharray={v === 0 ? '0' : '3 4'} />
+                            <text x={PAD.left - 6} y={yScale(v) + 4} textAnchor="end"
+                                style={{ fill: 'var(--color-text-dim)' }} fontSize="11">
                                 {v}
                             </text>
                         </g>
                     ))}
 
                     {/* Y axis label */}
-                    <text x={10} y={PAD.top + chartH / 2} fill="rgba(232,237,245,0.3)" fontSize="11"
+                    <text x={10} y={PAD.top + chartH / 2} style={{ fill: 'var(--color-text-faint)' }} fontSize="11"
                         transform={`rotate(-90, 10, ${PAD.top + chartH / 2})`} textAnchor="middle">mph</text>
 
                     {/* Area fills */}
@@ -214,9 +215,9 @@ export default function WindChart({ hours, title = 'Wind Forecast', baseAlt = 0 
                         return (
                             <g key={i}>
                                 <line x1={xScale(i)} y1={PAD.top + chartH} x2={xScale(i)} y2={PAD.top + chartH + 4}
-                                    stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+                                    style={{ stroke: 'var(--color-border-base)' }} strokeWidth="1" />
                                 <text x={xScale(i)} y={PAD.top + chartH + 14} textAnchor="middle"
-                                    fill="rgba(232,237,245,0.45)" fontSize="11">{formatHour(h.hour)}</text>
+                                    style={{ fill: 'var(--color-text-muted)' }} fontSize="11">{formatHour(h.hour)}</text>
                             </g>
                         );
                     })}
@@ -248,12 +249,12 @@ export default function WindChart({ hours, title = 'Wind Forecast', baseAlt = 0 
 
                     {/* Wind direction label row header */}
                     <text x={PAD.left - 6} y={PAD.top + chartH + 38 + 4} textAnchor="end"
-                        fill="rgba(232,237,245,0.25)" fontSize="10">Dir</text>
+                        style={{ fill: 'var(--color-text-faint)' }} fontSize="10">Dir</text>
 
                     {/* Hover vertical line */}
                     {tooltip && (
                         <line x1={tooltip.xPx} y1={PAD.top} x2={tooltip.xPx} y2={PAD.top + chartH}
-                            stroke="rgba(255,255,255,0.35)" strokeWidth="1" strokeDasharray="3 3" />
+                            style={{ stroke: 'var(--color-border-strong)' }} strokeWidth="1" strokeDasharray="3 3" />
                     )}
 
                     {/* Hover dots on each visible line */}
@@ -261,11 +262,11 @@ export default function WindChart({ hours, title = 'Wind Forecast', baseAlt = 0 
                         const v = values[tooltip.index];
                         if (v == null) return null;
                         return <circle key={`dot-${key}`} cx={tooltip.xPx} cy={yScale(v)} r="5"
-                            fill={ALT_COLORS[key].line} stroke="#080d1a" strokeWidth="2" />;
+                            fill={ALT_COLORS[key].line} style={{ stroke: 'var(--color-surface-1)' }} strokeWidth="2" />;
                     })}
                     {tooltip && activeLayers.gusts && (
                         <circle cx={tooltip.xPx} cy={yScale(gustValues[tooltip.index] ?? 0)} r="4"
-                            fill="#f87171" stroke="#080d1a" strokeWidth="2" />
+                            fill="#f87171" style={{ stroke: 'var(--color-surface-1)' }} strokeWidth="2" />
                     )}
                 </svg>
 
@@ -283,18 +284,18 @@ export default function WindChart({ hours, title = 'Wind Forecast', baseAlt = 0 
                             position: 'absolute', top: 8,
                             left: isRight ? 'auto' : `${tooltipX + 12}px`,
                             right: isRight ? `${rect.width - tooltipX + 12}px` : 'auto',
-                            background: 'rgba(6,10,20,0.96)',
+                            background: 'var(--color-surface-overlay)',
                             backdropFilter: 'blur(16px)',
-                            border: '1px solid rgba(255,255,255,0.12)',
+                            border: '1px solid var(--color-border-strong)',
                             borderRadius: 12, padding: '12px 14px',
                             minWidth: 180, pointerEvents: 'none',
-                            boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+                            boxShadow: 'var(--color-elevation-md)',
                             zIndex: 100,
                         }}>
-                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fff', marginBottom: 8 }}>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-heading)', marginBottom: 8 }}>
                                 {formatHour(tooltipHour.hour)}
                                 {tooltipHour.weatherCode != null && (
-                                    <span style={{ fontSize: '0.7rem', color: 'rgba(232,237,245,0.45)', marginLeft: 8 }}>
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginLeft: 8 }}>
                                         {wmoDesc(tooltipHour.weatherCode)}
                                     </span>
                                 )}
@@ -309,7 +310,7 @@ export default function WindChart({ hours, title = 'Wind Forecast', baseAlt = 0 
                                     <div key={key} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                             <span style={{ width: 10, height: 2, background: ALT_COLORS[key].line, display: 'inline-block', borderRadius: 1 }} />
-                                            <span style={{ fontSize: '0.72rem', color: 'rgba(232,237,245,0.55)' }}>Wind {baseAlt + ALT_COLORS[key].addFt}ft</span>
+                                            <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>Wind {baseAlt + ALT_COLORS[key].addFt}ft</span>
                                         </div>
                                         <span style={{ fontSize: '0.82rem', fontWeight: 700, color: ALT_COLORS[key].line }}>
                                             {Math.round(v)} mph
@@ -320,25 +321,25 @@ export default function WindChart({ hours, title = 'Wind Forecast', baseAlt = 0 
                                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                             <span style={{ width: 10, height: 0, borderTop: '2px dashed #f87171', display: 'inline-block' }} />
-                                            <span style={{ fontSize: '0.72rem', color: 'rgba(232,237,245,0.55)' }}>Gusts</span>
+                                            <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>Gusts</span>
                                         </div>
                                         <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f87171' }}>{Math.round(tooltipHour.windGusts)} mph</span>
                                     </div>
                                 )}
                             </div>
-                            <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem' }}>
-                                <span style={{ color: 'rgba(232,237,245,0.45)' }}>
-                                    Direction: <span style={{ color: '#00c8ff' }}>{degreesToCardinal(tooltipHour.windDirection)} ({Math.round(tooltipHour.windDirection)}°)</span>
+                            <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem' }}>
+                                <span style={{ color: 'var(--color-text-muted)' }}>
+                                    Direction: <span style={{ color: 'var(--color-sky)' }}>{degreesToCardinal(tooltipHour.windDirection)} ({Math.round(tooltipHour.windDirection)}°)</span>
                                 </span>
                                 <span style={{
                                     fontWeight: 700,
-                                    color: { GO: 'var(--color-go)', MARGINAL: 'var(--color-marginal)', NO_GO: 'var(--color-no-go)' }[tooltipHour.rating] || '#e8edf5',
+                                    color: { GO: 'var(--color-go)', MARGINAL: 'var(--color-marginal)', NO_GO: 'var(--color-no-go)' }[tooltipHour.rating] || 'var(--color-text-primary)',
                                 }}>
                                     {tooltipHour.rating === 'GO' ? '✓ GO' : tooltipHour.rating === 'MARGINAL' ? '~ MARG.' : '✗ NO-GO'}
                                 </span>
                             </div>
                             {tooltipHour.cloudCover != null && (
-                                <div style={{ marginTop: 6, fontSize: '0.7rem', color: 'rgba(232,237,245,0.35)', display: 'flex', gap: 10 }}>
+                                <div style={{ marginTop: 6, fontSize: '0.7rem', color: 'var(--color-text-dim)', display: 'flex', gap: 10 }}>
                                     <span>☁ {Math.round(tooltipHour.cloudCover)}%</span>
                                     {tooltipHour.precipitation > 0 && <span>🌧 {tooltipHour.precipitation.toFixed(1)}mm</span>}
                                     {tooltipHour.temperature != null && <span>🌡 {Math.round(tooltipHour.temperature)}°C</span>}
@@ -352,7 +353,7 @@ export default function WindChart({ hours, title = 'Wind Forecast', baseAlt = 0 
             {/* Footer: zone legend */}
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', paddingLeft: 46 }}>
                 {ZONES.map(z => (
-                    <div key={z.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.68rem', color: 'rgba(232,237,245,0.35)' }}>
+                    <div key={z.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.68rem', color: 'var(--color-text-dim)' }}>
                         <div style={{ width: 10, height: 5, borderRadius: 2, background: z.color.replace('0.06', '0.5').replace('0.08', '0.5').replace('0.10', '0.5').replace('0.12', '0.5') }} />
                         {z.label} {z.to < 999 ? `(${z.from}–${z.to} mph)` : `(>${z.from} mph)`}
                     </div>

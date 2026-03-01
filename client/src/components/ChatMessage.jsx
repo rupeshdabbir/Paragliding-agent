@@ -15,7 +15,7 @@ export function TypingIndicator() {
                 <Wind size={16} color="#fff" />
             </div>
             <div style={{
-                background: 'rgba(13,21,40,0.7)', border: '1px solid rgba(255,255,255,0.08)',
+                background: 'var(--color-bubble-bot-bg)', border: '1px solid var(--color-bubble-bot-border)',
                 borderRadius: '18px 18px 18px 4px', padding: '14px 18px',
                 display: 'flex', gap: 5, alignItems: 'center',
             }}>
@@ -66,14 +66,14 @@ export default function ChatMessage({ message }) {
                 <div style={{
                     background: isUser
                         ? 'linear-gradient(135deg, rgba(79,70,229,0.35), rgba(124,58,237,0.25))'
-                        : 'rgba(13,21,40,0.75)',
-                    border: `1px solid ${isUser ? 'rgba(79,70,229,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                        : 'var(--color-bubble-bot-bg)',
+                    border: `1px solid ${isUser ? 'rgba(79,70,229,0.3)' : 'var(--color-bubble-bot-border)'}`,
                     borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                     padding: '14px 18px',
                     backdropFilter: 'blur(12px)',
                     fontSize: '0.9rem',
                     lineHeight: 1.65,
-                    color: '#e8edf5',
+                    color: 'var(--color-text-primary)',
                 }}>
                     {isUser ? (
                         <span>{message.content}</span>
@@ -100,7 +100,7 @@ export default function ChatMessage({ message }) {
 
                 {/* Timestamp */}
                 {message.timestamp && (
-                    <div style={{ fontSize: '0.7rem', color: 'rgba(232,237,245,0.25)', textAlign: isUser ? 'right' : 'left' }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', textAlign: isUser ? 'right' : 'left' }}>
                         {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                 )}
@@ -113,9 +113,9 @@ function MarkdownRenderer({ content }) {
     return (
         <div style={{ fontSize: '0.9rem', lineHeight: 1.65 }}>
             {content.split('\n').map((line, i) => {
-                if (line.startsWith('# ')) return <h1 key={i} style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 8, color: '#fff', fontFamily: 'var(--font-heading)' }}>{line.slice(2)}</h1>;
-                if (line.startsWith('## ')) return <h2 key={i} style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: 6, color: '#fff', fontFamily: 'var(--font-heading)' }}>{line.slice(3)}</h2>;
-                if (line.startsWith('### ')) return <h3 key={i} style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: 4, color: 'rgba(232,237,245,0.9)' }}>{line.slice(4)}</h3>;
+                if (line.startsWith('# ')) return <h1 key={i} style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 8, color: 'var(--color-text-heading)', fontFamily: 'var(--font-heading)' }}>{line.slice(2)}</h1>;
+                if (line.startsWith('## ')) return <h2 key={i} style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: 6, color: 'var(--color-text-heading)', fontFamily: 'var(--font-heading)' }}>{line.slice(3)}</h2>;
+                if (line.startsWith('### ')) return <h3 key={i} style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: 4, color: 'var(--color-text-secondary)' }}>{line.slice(4)}</h3>;
                 if (line.startsWith('- ')) return (
                     <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 3 }}>
                         <span style={{ color: 'var(--color-sky)', marginTop: 2, flexShrink: 0 }}>•</span>
@@ -123,7 +123,7 @@ function MarkdownRenderer({ content }) {
                     </div>
                 );
                 if (line.startsWith('✅') || line.startsWith('⚠️') || line.startsWith('🚫')) {
-                    return <div key={i} style={{ marginBottom: 6, padding: '6px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: 8 }}>{formatInline(line)}</div>;
+                    return <div key={i} style={{ marginBottom: 6, padding: '6px 10px', background: 'var(--color-surface-3)', borderRadius: 8 }}>{formatInline(line)}</div>;
                 }
                 if (line === '') return <div key={i} style={{ height: 8 }} />;
                 return <p key={i} style={{ marginBottom: 4 }}>{formatInline(line)}</p>;
@@ -137,12 +137,12 @@ function formatInline(text) {
     const parts = text.split(/(\*\*[^*]+\*\*)/g);
     return parts.map((part, i) => {
         if (part.startsWith('**') && part.endsWith('**')) {
-            return <strong key={i} style={{ color: '#fff', fontWeight: 600 }}>{part.slice(2, -2)}</strong>;
+            return <strong key={i} style={{ color: 'var(--color-text-heading)', fontWeight: 600 }}>{part.slice(2, -2)}</strong>;
         }
         // Inline code `text`
         return part.split(/(`[^`]+`)/g).map((p, j) => {
             if (p.startsWith('`') && p.endsWith('`')) {
-                return <code key={j} style={{ background: 'rgba(0,200,255,0.1)', color: 'var(--color-sky)', padding: '1px 5px', borderRadius: 4, fontSize: '0.85em' }}>{p.slice(1, -1)}</code>;
+                return <code key={j} style={{ background: 'var(--color-sky-dim)', color: 'var(--color-sky)', padding: '1px 5px', borderRadius: 4, fontSize: '0.85em' }}>{p.slice(1, -1)}</code>;
             }
             return p;
         });

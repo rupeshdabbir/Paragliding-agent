@@ -31,8 +31,8 @@ export default function DisclaimerModal() {
             padding: 20
         }}>
             <div style={{
-                background: 'rgba(13, 21, 40, 0.95)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                background: 'var(--color-sheet-bg)',
+                border: '1px solid var(--color-border-base)',
                 borderRadius: 20,
                 padding: 32,
                 maxWidth: 480,
@@ -57,16 +57,16 @@ export default function DisclaimerModal() {
                         <AlertTriangle size={24} color="#f59e0b" />
                     </div>
                     <div>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '-0.02em' }}>
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-heading)', margin: 0, letterSpacing: '-0.02em' }}>
                             Educational Purposes Only
                         </h2>
-                        <div style={{ fontSize: '0.85rem', color: 'rgba(232, 237, 245, 0.6)', marginTop: 4 }}>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
                             Please read carefully before using SkyPilot
                         </div>
                     </div>
                 </div>
 
-                <div style={{ fontSize: '0.95rem', color: 'rgba(232, 237, 245, 0.85)', lineHeight: 1.6 }}>
+                <div style={{ fontSize: '0.95rem', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
                     <p style={{ margin: '0 0 16px 0' }}>
                         SkyPilot relies on algorithmic weather models and AI reasoning which <strong>can and will be wrong.</strong> Airflow near terrain is highly complex and micro-meteorological factors are often missed by these models.
                     </p>
@@ -97,14 +97,14 @@ export default function DisclaimerModal() {
                         style={{
                             flex: 1, padding: '14px 0', borderRadius: 12,
                             background: 'transparent',
-                            border: '1px solid rgba(232, 237, 245, 0.1)',
-                            color: 'rgba(232, 237, 245, 0.7)',
+                            border: '1px solid var(--color-border-base)',
+                            color: 'var(--color-text-secondary)',
                             fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer',
                             transition: 'all 0.2s',
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
                         }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#fff'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(232, 237, 245, 0.7)'; }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-3)'; e.currentTarget.style.color = 'var(--color-text-heading)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-secondary)'; }}
                     >
                         <X size={18} /> I Decline
                     </button>

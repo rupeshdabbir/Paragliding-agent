@@ -47,7 +47,7 @@ export default function Chat() {
     return (
         <div style={{
             display: 'flex', flexDirection: 'column', height: '100vh',
-            background: 'radial-gradient(ellipse at 30% -10%, rgba(0,50,120,0.4) 0%, var(--color-bg) 55%)',
+            background: `radial-gradient(ellipse at 30% -10%, var(--color-hero-glow) 0%, var(--color-bg) 55%)`,
             paddingTop: 'var(--navbar-height)',
         }}>
             {/* Messages area */}
@@ -63,14 +63,14 @@ export default function Chat() {
                                 {/* Outer glow ring */}
                                 <div style={{
                                     position: 'absolute', inset: -20, borderRadius: '50%',
-                                    background: 'radial-gradient(circle, rgba(0,200,255,0.15) 0%, transparent 70%)',
+                                    background: 'radial-gradient(circle, var(--color-sky-dim) 0%, transparent 70%)',
                                     animation: 'glow-pulse 3s ease-in-out infinite',
                                 }} />
                                 {/* Icon container */}
                                 <div style={{
                                     width: 76, height: 76, borderRadius: 22,
-                                    background: 'linear-gradient(145deg, #0a1a40, #0d2060)',
-                                    border: '1px solid rgba(0,200,255,0.3)',
+                                    background: `linear-gradient(145deg, var(--color-hero-icon-from), var(--color-hero-icon-to))`,
+                                    border: '1px solid var(--color-border-glow)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     position: 'relative', animation: 'float-gentle 5s ease-in-out infinite',
                                     boxShadow: '0 8px 48px rgba(0,200,255,0.25), 0 0 0 1px rgba(0,200,255,0.1)',
@@ -99,13 +99,13 @@ export default function Chat() {
                                 fontSize: 'clamp(1.6rem, 5vw, 2.1rem)',
                                 color: 'transparent',
                                 backgroundClip: 'text', WebkitBackgroundClip: 'text',
-                                backgroundImage: 'linear-gradient(135deg, #fff 20%, var(--color-sky) 80%)',
+                                backgroundImage: `linear-gradient(135deg, var(--color-hero-headline-from) 20%, var(--color-sky) 80%)`,
                                 marginBottom: 10, textAlign: 'center', letterSpacing: '-0.03em',
                             }}>
                                 Your AI Flight Advisor
                             </h1>
                             <p style={{
-                                color: 'rgba(232,237,245,0.5)', textAlign: 'center',
+                                color: 'var(--color-text-muted)', textAlign: 'center',
                                 maxWidth: 420, marginBottom: 36, lineHeight: 1.65, fontSize: '0.95rem',
                             }}>
                                 Ask about flying conditions, find nearby sites, and get personalized advice — powered by real-time weather data.
@@ -117,22 +117,22 @@ export default function Chat() {
                                     <button key={prompt.text}
                                         onClick={() => { setInput(prompt.text); inputRef.current?.focus(); }}
                                         style={{
-                                            background: 'rgba(10, 16, 30, 0.7)',
-                                            border: '1px solid rgba(255,255,255,0.08)',
+                                            background: 'var(--color-glass-subtle-bg)',
+                                            border: '1px solid var(--color-border-base)',
                                             borderRadius: 14, padding: '12px 14px',
                                             display: 'flex', alignItems: 'center', gap: 10,
                                             cursor: 'pointer', textAlign: 'left',
                                             transition: 'all 0.22s ease',
                                         }}
                                         onMouseEnter={e => {
-                                            e.currentTarget.style.borderColor = 'rgba(0,200,255,0.3)';
-                                            e.currentTarget.style.background = 'rgba(0,200,255,0.06)';
+                                            e.currentTarget.style.borderColor = 'var(--color-border-glow)';
+                                            e.currentTarget.style.background = 'var(--color-sky-dim)';
                                             e.currentTarget.style.transform = 'translateY(-2px)';
                                             e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.3)';
                                         }}
                                         onMouseLeave={e => {
-                                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-                                            e.currentTarget.style.background = 'rgba(10,16,30,0.7)';
+                                            e.currentTarget.style.borderColor = 'var(--color-border-base)';
+                                            e.currentTarget.style.background = 'var(--color-glass-subtle-bg)';
                                             e.currentTarget.style.transform = 'translateY(0)';
                                             e.currentTarget.style.boxShadow = 'none';
                                         }}
@@ -140,11 +140,11 @@ export default function Chat() {
                                         <span style={{
                                             fontSize: '1.2rem', lineHeight: 1,
                                             width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            background: 'rgba(255,255,255,0.06)', borderRadius: 8, flexShrink: 0,
+                                            background: 'var(--color-surface-3)', borderRadius: 8, flexShrink: 0,
                                         }}>{prompt.icon}</span>
                                         <div>
-                                            <div style={{ fontSize: '0.82rem', color: 'rgba(232,237,245,0.8)', fontWeight: 500, lineHeight: 1.3 }}>{prompt.text}</div>
-                                            <div style={{ fontSize: '0.68rem', color: 'rgba(232,237,245,0.35)', marginTop: 2 }}>{prompt.category}</div>
+                                            <div style={{ fontSize: '0.82rem', color: 'var(--color-text-secondary)', fontWeight: 500, lineHeight: 1.3 }}>{prompt.text}</div>
+                                            <div style={{ fontSize: '0.68rem', color: 'var(--color-text-dim)', marginTop: 2 }}>{prompt.category}</div>
                                         </div>
                                     </button>
                                 ))}
@@ -165,8 +165,8 @@ export default function Chat() {
 
             {/* Input bar */}
             <div style={{
-                borderTop: '1px solid rgba(255,255,255,0.07)',
-                background: 'rgba(6, 10, 20, 0.95)',
+                borderTop: '1px solid var(--color-border-subtle)',
+                background: 'var(--color-surface-overlay)',
                 backdropFilter: 'blur(24px)',
                 padding: '14px 16px',
                 paddingBottom: 'max(14px, env(safe-area-inset-bottom))',
@@ -178,9 +178,9 @@ export default function Chat() {
                         <button onClick={handleLocationToggle} style={{
                             display: 'flex', alignItems: 'center', gap: 6,
                             padding: '5px 12px', borderRadius: 100,
-                            background: useLocation && location ? 'var(--color-sky-dim)' : 'rgba(255,255,255,0.05)',
-                            border: `1px solid ${useLocation && location ? 'rgba(0,200,255,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                            color: useLocation && location ? 'var(--color-sky)' : 'rgba(232,237,245,0.45)',
+                            background: useLocation && location ? 'var(--color-sky-dim)' : 'var(--color-surface-3)',
+                            border: `1px solid ${useLocation && location ? 'var(--color-border-glow)' : 'var(--color-border-base)'}`,
+                            color: useLocation && location ? 'var(--color-sky)' : 'var(--color-text-muted)',
                             fontSize: '0.78rem', cursor: 'pointer', fontWeight: 500, transition: 'all 0.2s ease',
                         }}>
                             {locLoading
@@ -194,18 +194,18 @@ export default function Chat() {
                             <button onClick={clearMessages} style={{
                                 display: 'flex', alignItems: 'center', gap: 5,
                                 padding: '5px 12px', borderRadius: 100,
-                                background: 'transparent', border: '1px solid rgba(255,255,255,0.08)',
-                                color: 'rgba(232,237,245,0.35)', fontSize: '0.78rem', cursor: 'pointer', transition: 'all 0.2s ease',
+                                background: 'transparent', border: '1px solid var(--color-border-base)',
+                                color: 'var(--color-text-dim)', fontSize: '0.78rem', cursor: 'pointer', transition: 'all 0.2s ease',
                             }}
                                 onMouseEnter={e => { e.currentTarget.style.color = 'rgba(239,68,68,0.7)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; }}
-                                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(232,237,245,0.35)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-dim)'; e.currentTarget.style.borderColor = 'var(--color-border-base)'; }}
                             >
                                 <Trash2 size={12} /> Clear
                             </button>
                         )}
 
                         {/* Powered by tag */}
-                        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.7rem', color: 'rgba(232,237,245,0.25)' }}>
+                        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.7rem', color: 'var(--color-text-faint)' }}>
                             <Sparkles size={10} />
                             Powered by Gemini
                         </div>
@@ -223,20 +223,20 @@ export default function Chat() {
                                 rows={1}
                                 style={{
                                     width: '100%',
-                                    background: 'rgba(13, 21, 40, 0.85)',
-                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    background: 'var(--color-input-bg)',
+                                    border: '1px solid var(--color-border-base)',
                                     borderRadius: 16, padding: '13px 16px',
-                                    color: '#e8edf5', fontFamily: 'var(--font-body)', fontSize: '0.92rem',
+                                    color: 'var(--color-text-primary)', fontFamily: 'var(--font-body)', fontSize: '0.92rem',
                                     resize: 'none', outline: 'none',
                                     transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
                                     lineHeight: 1.5, maxHeight: 120, overflowY: 'auto',
                                 }}
                                 onFocus={e => {
-                                    e.target.style.borderColor = 'rgba(0,200,255,0.5)';
-                                    e.target.style.boxShadow = '0 0 0 3px rgba(0,200,255,0.1)';
+                                    e.target.style.borderColor = 'var(--color-border-glow)';
+                                    e.target.style.boxShadow = '0 0 0 3px var(--color-sky-dim)';
                                 }}
                                 onBlur={e => {
-                                    e.target.style.borderColor = 'rgba(255,255,255,0.1)';
+                                    e.target.style.borderColor = 'var(--color-border-base)';
                                     e.target.style.boxShadow = 'none';
                                 }}
                             />
@@ -248,8 +248,8 @@ export default function Chat() {
                                 width: 48, height: 48, borderRadius: 14, border: 'none', flexShrink: 0,
                                 background: input.trim() && !loading
                                     ? 'linear-gradient(135deg, var(--color-sky), #0055cc)'
-                                    : 'rgba(255,255,255,0.06)',
-                                color: input.trim() && !loading ? '#fff' : 'rgba(232,237,245,0.3)',
+                                    : 'var(--color-surface-3)',
+                                color: input.trim() && !loading ? '#fff' : 'var(--color-text-dim)',
                                 cursor: input.trim() && !loading ? 'pointer' : 'not-allowed',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 transition: 'all 0.2s ease',
@@ -263,7 +263,7 @@ export default function Chat() {
                             }
                         </button>
                     </div>
-                    <p style={{ fontSize: '0.68rem', color: 'rgba(232,237,245,0.2)', marginTop: 8, textAlign: 'center' }}>
+                    <p style={{ fontSize: '0.68rem', color: 'var(--color-text-faint)', marginTop: 8, textAlign: 'center' }}>
                         Enter to send · Shift+Enter for new line
                     </p>
                 </div>

@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { MessageSquare, Map, Wind, Search, X } from 'lucide-react';
+import { MessageSquare, Map, Wind, Search, X, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext.jsx';
 
 export default function Navbar({ onSearchSelect }) {
     const location = useLocation();
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [themeHover, setThemeHover] = useState(false);
     const searchInputRef = useRef(null);
+    const { theme, toggleTheme } = useTheme();
 
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth < 768);
@@ -25,17 +28,17 @@ export default function Navbar({ onSearchSelect }) {
             <NavLink to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
                 <div style={{
                     width: isMobile ? 30 : 34, height: isMobile ? 30 : 34,
-                    background: 'linear-gradient(135deg, var(--color-sky), #0055cc)',
+                    background: 'var(--color-sky-gradient)',
                     borderRadius: 10,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 4px 14px rgba(0,200,255,0.4)',
+                    boxShadow: '0 4px 14px var(--color-sky-glow)',
                 }}>
                     <Wind size={isMobile ? 16 : 18} color="#fff" strokeWidth={2.5} />
                 </div>
                 <span style={{
                     fontFamily: 'var(--font-heading)', fontWeight: 700,
                     fontSize: isMobile ? '0.95rem' : '1.05rem',
-                    color: '#fff', letterSpacing: '-0.02em'
+                    color: 'var(--color-text-heading)', letterSpacing: '-0.02em'
                 }}>
                     Sky<span style={{ color: 'var(--color-sky)' }}>Pilot</span>
                 </span>
@@ -61,6 +64,25 @@ export default function Navbar({ onSearchSelect }) {
                         {!isMobile && 'Map'}
                     </NavLink>
                 )}
+
+                {/* Theme toggle */}
+                <button
+                    onClick={toggleTheme}
+                    onMouseEnter={() => setThemeHover(true)}
+                    onMouseLeave={() => setThemeHover(false)}
+                    title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                    style={{
+                        width: 36, height: 36, borderRadius: '50%',
+                        background: themeHover ? 'var(--color-sky-dim)' : 'var(--color-surface-3)',
+                        border: `1px solid ${themeHover ? 'var(--color-border-glow)' : 'var(--color-border-base)'}`,
+                        color: themeHover ? 'var(--color-sky)' : 'var(--color-text-muted)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', flexShrink: 0,
+                        transition: 'all 0.2s ease',
+                    }}
+                >
+                    {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                </button>
             </div>
         </nav>
     );

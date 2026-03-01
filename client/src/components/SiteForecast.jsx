@@ -4,8 +4,8 @@ import WindChart from './WindChart.jsx';
 import { FlyabilityBadge } from './FlyabilityBadge.jsx';
 
 const RATING_COLOR = { GO: 'var(--color-go)', MARGINAL: 'var(--color-marginal)', NO_GO: 'var(--color-no-go)' };
-const RATING_BG = { GO: 'rgba(34,197,94,0.08)', MARGINAL: 'rgba(245,158,11,0.08)', NO_GO: 'rgba(239,68,68,0.08)' };
-const RATING_BORDER = { GO: 'rgba(34,197,94,0.25)', MARGINAL: 'rgba(245,158,11,0.25)', NO_GO: 'rgba(239,68,68,0.25)' };
+const RATING_BG = { GO: 'var(--color-rating-go-bg)', MARGINAL: 'var(--color-rating-marginal-bg)', NO_GO: 'var(--color-rating-nogo-bg)' };
+const RATING_BORDER = { GO: 'var(--color-rating-go-border)', MARGINAL: 'var(--color-rating-marginal-border)', NO_GO: 'var(--color-rating-nogo-border)' };
 const RATING_ICON = {
     GO: <CheckCircle size={15} color="var(--color-go)" />,
     MARGINAL: <MinusCircle size={15} color="var(--color-marginal)" />,
@@ -43,19 +43,19 @@ function WeekHeatmap({ days, onDayClick, aiVerdicts = {} }) {
                         <button key={day.date} onClick={() => onDayClick(i)} style={{
                             flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
                             padding: '10px 4px', borderRadius: 12,
-                            background: `${RATING_BG[displayRating] || 'rgba(255,255,255,0.03)'}`,
-                            border: `1px solid ${RATING_BORDER[displayRating] || 'rgba(255,255,255,0.06)'}`,
+                            background: `${RATING_BG[displayRating] || 'var(--color-surface-3)'}`,
+                            border: `1px solid ${RATING_BORDER[displayRating] || 'var(--color-border-subtle)'}`,
                             cursor: 'pointer', transition: 'all 0.2s ease',
                             boxShadow: `0 2px 12px ${color}22`,
                         }}
                             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 6px 20px ${color}44`; }}
                             onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = `0 2px 12px ${color}22`; }}
                         >
-                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'rgba(232,237,245,0.45)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                                 {label.top.slice(0, 3)}
                             </div>
                             <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}` }} />
-                            <div style={{ fontSize: '0.62rem', color: 'rgba(232,237,245,0.35)' }}>
+                            <div style={{ fontSize: '0.62rem', color: 'var(--color-text-dim)' }}>
                                 {day.avgWindMph}mph
                             </div>
                         </button>
@@ -75,24 +75,24 @@ function WeekHeatmap({ days, onDayClick, aiVerdicts = {} }) {
 
                     return (
                         <button key={day.date} onClick={() => onDayClick(i)} style={{
-                            background: 'rgba(13,21,40,0.5)', borderRadius: 12,
-                            border: '1px solid rgba(255,255,255,0.06)',
+                            background: 'var(--color-glass-subtle-bg)', borderRadius: 12,
+                            border: '1px solid var(--color-border-subtle)',
                             padding: '11px 14px', cursor: 'pointer',
                             display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
                             transition: 'all 0.2s ease', color: 'inherit', width: '100%',
                         }}
-                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(13,21,40,0.85)'; e.currentTarget.style.borderColor = `${color}44`; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(13,21,40,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-glass-bg)'; e.currentTarget.style.borderColor = `${color}44`; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-glass-subtle-bg)'; e.currentTarget.style.borderColor = 'var(--color-border-subtle)'; }}
                         >
                             <div style={{ width: 66, flexShrink: 0 }}>
-                                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fff' }}>{label.top}</div>
-                                <div style={{ fontSize: '0.65rem', color: 'rgba(232,237,245,0.38)' }}>{label.bottom}</div>
+                                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-heading)' }}>{label.top}</div>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-dim)' }}>{label.bottom}</div>
                             </div>
 
                             <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
                                 {RATING_ICON[displayRating]}
                                 {aiPowered && (
-                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'rgba(0,200,255,0.1)', border: '1px solid rgba(0,200,255,0.2)', borderRadius: 100, padding: '1px 4px', fontSize: '0.52rem', fontWeight: 700, color: 'var(--color-sky)' }}>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'var(--color-sky-dim)', border: '1px solid rgba(0,200,255,0.2)', borderRadius: 100, padding: '1px 4px', fontSize: '0.52rem', fontWeight: 700, color: 'var(--color-sky)' }}>
                                         <Sparkles size={6} /> AI
                                     </span>
                                 )}
@@ -106,17 +106,17 @@ function WeekHeatmap({ days, onDayClick, aiVerdicts = {} }) {
                                     {aiPowered && aiV.bestWindow ? (
                                         <span style={{ fontSize: '0.67rem', color: 'var(--color-go)', fontWeight: 600 }}>🕐 {aiV.bestWindow}</span>
                                     ) : (
-                                        <span style={{ fontSize: '0.67rem', color: 'rgba(232,237,245,0.35)' }}>{pct}%</span>
+                                        <span style={{ fontSize: '0.67rem', color: 'var(--color-text-dim)' }}>{pct}%</span>
                                     )}
                                 </div>
-                                <div style={{ height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 100, overflow: 'hidden' }}>
+                                <div style={{ height: 4, background: 'var(--color-border-subtle)', borderRadius: 100, overflow: 'hidden' }}>
                                     <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 100, transition: 'width 0.8s ease' }} />
                                 </div>
                             </div>
 
                             <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fff' }}>{day.avgWindMph}</div>
-                                <div style={{ fontSize: '0.6rem', color: 'rgba(232,237,245,0.32)' }}>mph</div>
+                                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-heading)' }}>{day.avgWindMph}</div>
+                                <div style={{ fontSize: '0.6rem', color: 'var(--color-text-faint)' }}>mph</div>
                             </div>
                         </button>
                     );
@@ -134,12 +134,12 @@ function AslTooltip({ altitude, leftOffset = 180 }) {
                 onMouseEnter={() => setVisible(true)}
                 onMouseLeave={() => setVisible(false)}
                 onClick={() => setVisible(v => !v)}
-                style={{ cursor: 'help', display: 'flex', alignItems: 'center', color: 'rgba(232,237,245,0.3)', marginTop: -2 }}
+                style={{ cursor: 'help', display: 'flex', alignItems: 'center', color: 'var(--color-text-dim)', marginTop: -2 }}
             >
                 <Info size={12} />
             </div>
             {visible && (
-                <div style={{ position: 'absolute', left: leftOffset, top: -10, width: 220, background: 'rgba(6,10,20,0.97)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 10, padding: '10px 12px', fontSize: '0.7rem', color: '#e8edf5', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', zIndex: 100, lineHeight: 1.4, backdropFilter: 'blur(12px)', pointerEvents: 'none' }}>
+                <div style={{ position: 'absolute', left: leftOffset, top: -10, width: 220, background: 'var(--color-surface-overlay)', border: '1px solid var(--color-border-base)', borderRadius: 10, padding: '10px 12px', fontSize: '0.7rem', color: 'var(--color-text-primary)', boxShadow: 'var(--color-elevation-md)', zIndex: 100, lineHeight: 1.4, backdropFilter: 'blur(12px)', pointerEvents: 'none' }}>
                     <strong style={{ color: 'var(--color-sky)' }}>Above Sea Level</strong><br />
                     Wind altitudes are calculated by adding the site's launch altitude ({altitude}ft) to the AGL forecast models.
                 </div>
@@ -163,8 +163,8 @@ function AiVerdictCard({ verdict }) {
     if (!verdict) return null;
 
     const ratingColor = RATING_COLOR[verdict.rating] || RATING_COLOR.NO_GO;
-    const ratingBg = RATING_BG[verdict.rating] || 'rgba(255,255,255,0.04)';
-    const ratingBorder = RATING_BORDER[verdict.rating] || 'rgba(255,255,255,0.1)';
+    const ratingBg = RATING_BG[verdict.rating] || 'var(--color-surface-3)';
+    const ratingBorder = RATING_BORDER[verdict.rating] || 'var(--color-border-base)';
     const modeConf = SITE_MODE_CONFIG[verdict.siteMode] || SITE_MODE_CONFIG.unknown;
 
     return (
@@ -187,7 +187,7 @@ function AiVerdictCard({ verdict }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                     <div style={{
                         width: 32, height: 32, borderRadius: 10,
-                        background: 'linear-gradient(135deg, var(--color-sky), #0044bb)',
+                        background: 'var(--color-sky-gradient)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         boxShadow: '0 3px 12px rgba(0,200,255,0.35)',
                     }}>
@@ -195,20 +195,20 @@ function AiVerdictCard({ verdict }) {
                     </div>
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1 }}>
-                            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'rgba(232,237,245,0.45)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
                                 SkyPilot AI
                             </span>
                             {verdict.usedModel && (
                                 <span style={{
                                     fontSize: '0.5rem', padding: '1px 5px', borderRadius: 4,
-                                    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-                                    color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace'
+                                    background: 'var(--color-surface-3)', border: '1px solid var(--color-border-base)',
+                                    color: 'var(--color-text-dim)', fontFamily: 'monospace'
                                 }}>
                                     {verdict.usedModel}
                                 </span>
                             )}
                         </div>
-                        <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff', marginTop: 3 }}>
+                        <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-text-heading)', marginTop: 3 }}>
                             {verdict.headline}
                         </div>
                     </div>
@@ -222,15 +222,15 @@ function AiVerdictCard({ verdict }) {
             <div style={{ display: 'flex', gap: 7, marginBottom: 12, flexWrap: 'wrap' }}>
                 <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: 5,
-                    background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
-                    borderRadius: 100, padding: '4px 10px', fontSize: '0.73rem', fontWeight: 600, color: '#fff',
+                    background: 'var(--color-surface-3)', border: '1px solid var(--color-border-base)',
+                    borderRadius: 100, padding: '4px 10px', fontSize: '0.73rem', fontWeight: 600, color: 'var(--color-text-heading)',
                 }}>
                     {modeConf.icon} {verdict.siteModeLabel || modeConf.label}
                 </span>
                 {verdict.bestWindow && (
                     <span style={{
                         display: 'inline-flex', alignItems: 'center', gap: 5,
-                        background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)',
+                        background: 'var(--color-rating-go-bg)', border: '1px solid var(--color-rating-go-border)',
                         borderRadius: 100, padding: '4px 10px', fontSize: '0.73rem', fontWeight: 600, color: 'var(--color-go)',
                     }}>
                         🕐 Best: {verdict.bestWindow}
@@ -239,8 +239,8 @@ function AiVerdictCard({ verdict }) {
                 {verdict.confidence && (
                     <span style={{
                         display: 'inline-flex', alignItems: 'center',
-                        background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                        borderRadius: 100, padding: '4px 10px', fontSize: '0.68rem', color: 'rgba(232,237,245,0.4)',
+                        background: 'var(--color-surface-3)', border: '1px solid var(--color-border-subtle)',
+                        borderRadius: 100, padding: '4px 10px', fontSize: '0.68rem', color: 'var(--color-text-dim)',
                     }}>
                         Confidence: {verdict.confidence}
                     </span>
@@ -248,7 +248,7 @@ function AiVerdictCard({ verdict }) {
             </div>
 
             {/* Reasoning */}
-            <div style={{ fontSize: '0.78rem', color: 'rgba(232,237,245,0.72)', lineHeight: 1.6, marginBottom: verdict.siteTypeExplanation || verdict.safetyNotes?.length ? 10 : 0 }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', lineHeight: 1.6, marginBottom: verdict.siteTypeExplanation || verdict.safetyNotes?.length ? 10 : 0 }}>
                 {verdict.reasoning}
             </div>
 
@@ -265,14 +265,14 @@ function AiVerdictCard({ verdict }) {
                     {expanded && (
                         <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
                             {verdict.siteTypeExplanation && (
-                                <div style={{ fontSize: '0.74rem', color: 'rgba(232,237,245,0.58)', lineHeight: 1.5 }}>
-                                    <strong style={{ color: 'rgba(232,237,245,0.78)' }}>Why this mode today:</strong> {verdict.siteTypeExplanation}
+                                <div style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+                                    <strong style={{ color: 'var(--color-text-secondary)' }}>Why this mode today:</strong> {verdict.siteTypeExplanation}
                                 </div>
                             )}
                             {verdict.safetyNotes?.length > 0 && (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                     {verdict.safetyNotes.map((note, i) => (
-                                        <div key={i} style={{ display: 'flex', gap: 6, fontSize: '0.72rem', color: 'rgba(253,220,140,0.82)' }}>
+                                        <div key={i} style={{ display: 'flex', gap: 6, fontSize: '0.72rem', color: 'var(--color-warning-text)' }}>
                                             <span style={{ flexShrink: 0 }}>⚠️</span> {note}
                                         </div>
                                     ))}
@@ -296,19 +296,19 @@ function DaySummaryCard({ day, label, active, onClick, aiVerdict }) {
         <button onClick={onClick} style={{
             flex: 1, padding: '13px', borderRadius: 14, cursor: 'pointer', textAlign: 'left',
             background: active
-                ? `linear-gradient(135deg, ${RATING_BG[displayRating] || 'rgba(13,21,40,0.9)'}, rgba(13,21,40,0.9))`
-                : 'rgba(13,21,40,0.45)',
-            border: `1px solid ${active ? color + '55' : 'rgba(255,255,255,0.07)'}`,
+                ? `linear-gradient(135deg, ${RATING_BG[displayRating] || 'var(--color-glass-subtle-bg)'}, var(--color-glass-bg))`
+                : 'var(--color-glass-subtle-bg)',
+            border: `1px solid ${active ? color + '55' : 'var(--color-border-subtle)'}`,
             transition: 'all 0.22s ease',
             boxShadow: active ? `0 0 20px ${color}22` : 'none',
         }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontSize: '0.73rem', fontWeight: 700, color: active ? '#fff' : 'rgba(232,237,245,0.5)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <span style={{ fontSize: '0.73rem', fontWeight: 700, color: active ? 'var(--color-text-heading)' : 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     {label}
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                     {aiPowered && (
-                        <span title="AI-powered verdict" style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'rgba(0,200,255,0.12)', border: '1px solid rgba(0,200,255,0.25)', borderRadius: 100, padding: '1px 6px', fontSize: '0.58rem', fontWeight: 700, color: 'var(--color-sky)' }}>
+                        <span title="AI-powered verdict" style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'var(--color-sky-dim)', border: '1px solid rgba(0,200,255,0.25)', borderRadius: 100, padding: '1px 6px', fontSize: '0.58rem', fontWeight: 700, color: 'var(--color-sky)' }}>
                             <Sparkles size={8} /> AI
                         </span>
                     )}
@@ -319,11 +319,11 @@ function DaySummaryCard({ day, label, active, onClick, aiVerdict }) {
                 {displayRating === 'GO' ? '✓ GO' : displayRating === 'MARGINAL' ? '~ MARGINAL' : '✗ NO-GO'}
             </div>
             {aiPowered && aiVerdict.siteModeLabel && (
-                <div style={{ fontSize: '0.68rem', color: 'rgba(232,237,245,0.48)', fontStyle: 'italic' }}>
+                <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
                     {aiVerdict.siteModeLabel}
                 </div>
             )}
-            <div style={{ fontSize: '0.67rem', color: 'rgba(232,237,245,0.3)', marginTop: 5 }}>
+            <div style={{ fontSize: '0.67rem', color: 'var(--color-text-dim)', marginTop: 5 }}>
                 avg {day.avgWindMph} mph · {day.flyableDaylightHours}/{day.totalDaylightHours} hrs
             </div>
         </button>
@@ -349,21 +349,20 @@ function WindAltBar({ hours, baseAlt = 0 }) {
                 const avgSpeed = avg(values.filter(Boolean));
                 const pct = maxSpeed > 0 ? (avgSpeed / maxSpeed) * 100 : 0;
 
-                // Use hex directly because appending '99' to var(--color-go) breaks CSS
-                const hexColor = avgSpeed > 22 ? '#ef4444' : avgSpeed > 12 ? '#f59e0b' : '#22c55e';
-                const varColor = avgSpeed > 22 ? 'var(--color-no-go)' : avgSpeed > 12 ? 'var(--color-marginal)' : 'var(--color-go)';
+                const cssColorVar = avgSpeed > 22 ? 'var(--color-no-go)' : avgSpeed > 12 ? 'var(--color-marginal)' : 'var(--color-go)';
+                const cssHalfVar = avgSpeed > 22 ? 'var(--color-no-go-half)' : avgSpeed > 12 ? 'var(--color-marginal-half)' : 'var(--color-go-half)';
 
                 return (
                     <div key={label} style={{ flex: 1, textAlign: 'center' }}>
-                        <div style={{ position: 'relative', height: 64, background: 'rgba(255,255,255,0.04)', borderRadius: 8, overflow: 'hidden', marginBottom: 6 }}>
+                        <div style={{ position: 'relative', height: 64, background: 'var(--color-surface-3)', borderRadius: 8, overflow: 'hidden', marginBottom: 6 }}>
                             <div style={{
                                 position: 'absolute', bottom: 0, left: 0, width: '100%', height: `${pct}%`,
-                                background: `linear-gradient(to top, ${hexColor}, ${hexColor}99)`,
+                                background: `linear-gradient(to top, ${cssColorVar}, ${cssHalfVar})`,
                                 transition: `height 0.8s ease ${idx * 0.08}s`,
                             }} />
                         </div>
-                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: varColor }}>{Math.round(avgSpeed)}</div>
-                        <div style={{ fontSize: '0.62rem', color: 'rgba(232,237,245,0.28)', marginTop: 1 }}>mph · {label}</div>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: cssColorVar }}>{Math.round(avgSpeed)}</div>
+                        <div style={{ fontSize: '0.62rem', color: 'var(--color-text-faint)', marginTop: 1 }}>mph · {label}</div>
                     </div>
                 );
             })}
@@ -418,7 +417,7 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
             {/* ── Site Hero Header ── */}
             <div style={{
                 padding: '16px 0 14px',
-                borderBottom: '1px solid rgba(255,255,255,0.07)',
+                borderBottom: '1px solid var(--color-border-subtle)',
                 position: 'relative',
             }}>
                 {/* Glow background */}
@@ -431,24 +430,24 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
                 )}
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
                     <div style={{ flex: 1 }}>
-                        <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.1rem', fontWeight: 800, color: '#fff', marginBottom: 5, letterSpacing: '-0.01em' }}>
+                        <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-text-heading)', marginBottom: 5, letterSpacing: '-0.01em' }}>
                             {site?.name}
                         </h3>
                         {site?.description && (
-                            <div style={{ fontSize: '0.74rem', color: 'rgba(232,237,245,0.62)', marginBottom: 8, lineHeight: 1.45, maxWidth: '96%' }}>
-                                <strong style={{ color: 'rgba(255,255,255,0.75)' }}>Takeoff:</strong> {site.description}
+                            <div style={{ fontSize: '0.74rem', color: 'var(--color-text-secondary)', marginBottom: 8, lineHeight: 1.45, maxWidth: '96%' }}>
+                                <strong style={{ color: 'var(--color-text-secondary)' }}>Takeoff:</strong> {site.description}
                             </div>
                         )}
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: '0.71rem', color: 'rgba(232,237,245,0.42)', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: '0.71rem', color: 'var(--color-text-dim)', alignItems: 'center' }}>
                             {site?.altitude > 0 && <span>⛰️ {site.altitude}ft</span>}
                             {site?.siteTypes?.paragliding && <span>🪂 Paragliding</span>}
-                            <span style={{ color: 'rgba(255,255,255,0.15)' }}>·</span>
+                            <span style={{ color: 'var(--color-border-strong)' }}>·</span>
                             <select
                                 value={weatherModel}
                                 onChange={(e) => setWeatherModel(e.target.value)}
                                 style={{
-                                    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)',
-                                    color: '#e8edf5', fontSize: '0.67rem', padding: '2px 8px', borderRadius: 6,
+                                    background: 'var(--color-surface-3)', border: '1px solid var(--color-border-base)',
+                                    color: 'var(--color-text-primary)', fontSize: '0.67rem', padding: '2px 8px', borderRadius: 6,
                                     outline: 'none', cursor: 'pointer', fontFamily: 'inherit',
                                 }}
                             >
@@ -476,9 +475,9 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
             {/* Skeleton */}
             {loading && (
                 <div style={{ padding: '12px 0 0' }}>
-                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 16, marginBottom: 4 }}>
+                    <div style={{ background: 'var(--color-surface-3)', border: '1px solid var(--color-border-subtle)', borderRadius: 16, padding: 16, marginBottom: 4 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                            <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(0,200,255,0.15)' }} className="shimmer" />
+                            <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--color-sky-dim)' }} className="shimmer" />
                             <div style={{ flex: 1 }}>
                                 <div style={{ height: 9, width: '50%', borderRadius: 4, marginBottom: 7 }} className="shimmer" />
                                 <div style={{ height: 13, width: '80%', borderRadius: 4 }} className="shimmer" />
@@ -493,14 +492,14 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
 
             {/* Loading state */}
             {loading && (
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'rgba(232,237,245,0.45)', fontSize: '0.85rem' }}>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
                     <RefreshCw size={16} color="var(--color-sky)" style={{ animation: 'spin 1s linear infinite' }} />
                     Loading 7-day forecast...
                 </div>
             )}
 
             {error && (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, color: 'rgba(232,237,245,0.5)', fontSize: '0.85rem', textAlign: 'center', padding: 20 }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, color: 'var(--color-text-muted)', fontSize: '0.85rem', textAlign: 'center', padding: 20 }}>
                     <XCircle size={28} color="var(--color-no-go)" />
                     <div>Failed to load forecast<br /><span style={{ fontSize: '0.75rem' }}>{error}</span></div>
                     <button onClick={fetchForecast} className="btn btn-primary" style={{ fontSize: '0.8rem', padding: '8px 16px' }}>Retry</button>
@@ -517,7 +516,7 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
                         border: '1px solid rgba(245,158,11,0.14)',
                     }}>
                         <AlertTriangle size={11} color="var(--color-amber)" style={{ flexShrink: 0, marginTop: 2 }} />
-                        <span style={{ fontSize: '0.65rem', color: 'rgba(253,220,140,0.6)', lineHeight: 1.5 }}>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--color-warning-text)', lineHeight: 1.5 }}>
                             Always verify with local pilots and live sensors before flying.
                         </span>
                     </div>
@@ -545,7 +544,7 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
                     )}
 
                     {/* Tabs — pill style */}
-                    <div style={{ display: 'flex', gap: 5, marginBottom: 14, background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 4 }}>
+                    <div style={{ display: 'flex', gap: 5, marginBottom: 14, background: 'var(--color-surface-3)', borderRadius: 12, padding: 4 }}>
                         {[
                             { key: 'today', label: '☀️ Today' },
                             { key: 'tomorrow', label: '🌤 Tomorrow' },
@@ -560,8 +559,8 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
                                 }} style={{
                                     flex: 1, padding: '8px 10px', borderRadius: 9, border: 'none', cursor: 'pointer',
                                     fontSize: '0.78rem', fontWeight: 600,
-                                    background: isActive ? 'rgba(0,200,255,0.15)' : 'transparent',
-                                    color: isActive ? 'var(--color-sky)' : 'rgba(232,237,245,0.45)',
+                                    background: isActive ? 'var(--color-sky-dim)' : 'transparent',
+                                    color: isActive ? 'var(--color-sky)' : 'var(--color-text-dim)',
                                     transition: 'all 0.2s ease',
                                     boxShadow: isActive ? 'inset 0 0 0 1px rgba(0,200,255,0.25)' : 'none',
                                 }}>
@@ -588,8 +587,8 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
 
                                 if (aiPowered) {
                                     const ratingColor = RATING_COLOR[dayVerdict.rating] || RATING_COLOR.NO_GO;
-                                    const ratingBg = RATING_BG[dayVerdict.rating] || 'rgba(255,255,255,0.04)';
-                                    const ratingBorder = RATING_BORDER[dayVerdict.rating] || 'rgba(255,255,255,0.1)';
+                                    const ratingBg = RATING_BG[dayVerdict.rating] || 'var(--color-surface-3)';
+                                    const ratingBorder = RATING_BORDER[dayVerdict.rating] || 'var(--color-border-base)';
                                     const Icon = dayVerdict.rating === 'GO' ? CheckCircle : dayVerdict.rating === 'MARGINAL' ? MinusCircle : XCircle;
                                     return (
                                         <div style={{ padding: '12px 14px', borderRadius: 13, background: ratingBg, border: `1px solid ${ratingBorder}`, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
@@ -599,7 +598,7 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
                                                     <span style={{ fontSize: '0.82rem', fontWeight: 700, color: ratingColor }}>
                                                         {dayVerdict.rating === 'GO' ? 'Good flying conditions' : dayVerdict.rating === 'MARGINAL' ? 'Marginal conditions' : 'Not recommended'}
                                                     </span>
-                                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'rgba(0,200,255,0.1)', border: '1px solid rgba(0,200,255,0.2)', borderRadius: 100, padding: '1px 6px', fontSize: '0.58rem', fontWeight: 700, color: 'var(--color-sky)' }}>
+                                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'var(--color-sky-dim)', border: '1px solid rgba(0,200,255,0.2)', borderRadius: 100, padding: '1px 6px', fontSize: '0.58rem', fontWeight: 700, color: 'var(--color-sky)' }}>
                                                         <Sparkles size={8} /> AI
                                                     </span>
                                                 </div>
@@ -608,13 +607,13 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
                                                         🕐 Best window: {dayVerdict.bestWindow}
                                                     </div>
                                                 )}
-                                                <div style={{ fontSize: '0.72rem', color: 'rgba(232,237,245,0.58)', lineHeight: 1.5, background: 'rgba(255,255,255,0.04)', padding: '6px 8px', borderRadius: 7, marginTop: 4 }}>
+                                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', lineHeight: 1.5, background: 'var(--color-surface-3)', padding: '6px 8px', borderRadius: 7, marginTop: 4 }}>
                                                     {dayVerdict.reasoning}
                                                 </div>
                                                 {dayVerdict.safetyNotes?.length > 0 && (
                                                     <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 3 }}>
                                                         {dayVerdict.safetyNotes.map((note, i) => (
-                                                            <div key={i} style={{ fontSize: '0.67rem', color: 'rgba(253,220,140,0.75)', display: 'flex', gap: 5 }}>
+                                                            <div key={i} style={{ fontSize: '0.67rem', color: 'var(--color-warning-text)', display: 'flex', gap: 5 }}>
                                                                 <span>⚠️</span> {note}
                                                             </div>
                                                         ))}
@@ -629,20 +628,20 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
                                 return (
                                     <>
                                         {displayDay.bestWindowStart && displayDay.bestWindowHours > 0 && (
-                                            <div style={{ padding: '12px 14px', borderRadius: 13, background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.2)', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                                            <div style={{ padding: '12px 14px', borderRadius: 13, background: 'var(--color-rating-go-bg)', border: '1px solid var(--color-rating-go-border)', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                                                 <CheckCircle size={16} color="var(--color-go)" style={{ marginTop: 2 }} />
                                                 <div>
                                                     <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-go)' }}>
                                                         Best window: {formatTime(displayDay.bestWindowStart)} – {formatTime(displayDay.bestWindowEnd)}
                                                     </div>
-                                                    <div style={{ fontSize: '0.7rem', color: 'rgba(232,237,245,0.42)', marginTop: 3 }}>
+                                                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-dim)', marginTop: 3 }}>
                                                         {displayDay.bestWindowHours} consecutive GO hours (rule-based)
                                                     </div>
                                                 </div>
                                             </div>
                                         )}
                                         {displayDay.goHours === 0 && (
-                                            <div style={{ padding: '12px 14px', borderRadius: 13, background: `rgba(${displayDay.dayRating === 'NO_GO' ? '239,68,68' : '245,158,11'},0.07)`, border: `1px solid rgba(${displayDay.dayRating === 'NO_GO' ? '239,68,68' : '245,158,11'},0.2)`, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                                            <div style={{ padding: '12px 14px', borderRadius: 13, background: displayDay.dayRating === 'NO_GO' ? 'var(--color-rating-nogo-bg)' : 'var(--color-rating-marginal-bg)', border: `1px solid ${displayDay.dayRating === 'NO_GO' ? 'var(--color-rating-nogo-border)' : 'var(--color-rating-marginal-border)'}`, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                                                 {displayDay.dayRating === 'NO_GO'
                                                     ? <XCircle size={16} color="var(--color-no-go)" style={{ marginTop: 2 }} />
                                                     : <MinusCircle size={16} color="var(--color-marginal)" style={{ marginTop: 2 }} />
@@ -651,7 +650,7 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
                                                     <div style={{ fontSize: '0.82rem', fontWeight: 600, color: displayDay.dayRating === 'NO_GO' ? 'var(--color-no-go)' : 'var(--color-marginal)' }}>
                                                         {displayDay.dayRating === 'NO_GO' ? 'No flyable windows expected' : 'Marginal conditions expected'}
                                                     </div>
-                                                    <div style={{ fontSize: '0.67rem', color: 'rgba(232,237,245,0.38)', marginTop: 4 }}>AI analysis unavailable — wind rules only</div>
+                                                    <div style={{ fontSize: '0.67rem', color: 'var(--color-text-dim)', marginTop: 4 }}>AI analysis unavailable — wind rules only</div>
                                                 </div>
                                             </div>
                                         )}
@@ -662,7 +661,7 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
                             {/* Wind altitude bars */}
                             <div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, position: 'relative' }}>
-                                    <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(232,237,245,0.38)' }}>
+                                    <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-dim)' }}>
                                         Wind by Altitude (ASL)
                                     </div>
                                     <AslTooltip altitude={site?.altitude || 0} leftOffset={160} />
@@ -673,7 +672,7 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
                             {/* Wind chart */}
                             <div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, position: 'relative' }}>
-                                    <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(232,237,245,0.38)' }}>
+                                    <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-dim)' }}>
                                         Hourly Wind Forecast (ASL)
                                     </div>
                                     <AslTooltip altitude={site?.altitude || 0} leftOffset={200} />
@@ -686,16 +685,16 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
                     {/* Week view */}
                     {activeTab === 'week' && forecast.days && (
                         <div>
-                            <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(232,237,245,0.38)', marginBottom: 14 }}>
+                            <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-dim)', marginBottom: 14 }}>
                                 7-Day Flyability Outlook
                             </div>
                             <WeekHeatmap days={forecast.days} aiVerdicts={forecast.aiVerdicts || {}} onDayClick={(idx) => {
                                 setActiveDayIndex(idx);
                                 setActiveTab(idx === 0 ? 'today' : idx === 1 ? 'tomorrow' : 'custom');
                             }} />
-                            <div style={{ marginTop: 14, padding: '10px 14px', background: 'rgba(0,200,255,0.04)', borderRadius: 11, border: '1px solid rgba(0,200,255,0.1)' }}>
-                                <div style={{ fontSize: '0.72rem', color: 'rgba(232,237,245,0.42)', lineHeight: 1.6 }}>
-                                    💡 <strong style={{ color: 'rgba(232,237,245,0.6)' }}>Tip:</strong> Click any day in the heatmap for hourly detail, or ask SkyPilot for personalized advice.
+                            <div style={{ marginTop: 14, padding: '10px 14px', background: 'var(--color-sky-dim)', borderRadius: 11, border: '1px solid rgba(0,200,255,0.1)' }}>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-dim)', lineHeight: 1.6 }}>
+                                    💡 <strong style={{ color: 'var(--color-text-secondary)' }}>Tip:</strong> Click any day in the heatmap for hourly detail, or ask SkyPilot for personalized advice.
                                 </div>
                             </div>
                         </div>

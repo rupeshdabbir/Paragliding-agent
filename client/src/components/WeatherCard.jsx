@@ -24,13 +24,13 @@ function wmoDescription(code) {
 
 function MetricRow({ icon, label, value, unit, color }) {
     return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(232,237,245,0.55)', fontSize: '0.82rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--color-border-subtle)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text-muted)', fontSize: '0.82rem' }}>
                 {icon}
                 {label}
             </div>
-            <span style={{ fontWeight: 600, fontSize: '0.9rem', color: color || '#e8edf5' }}>
-                {value}<span style={{ fontSize: '0.75rem', color: 'rgba(232,237,245,0.45)', marginLeft: 2 }}>{unit}</span>
+            <span style={{ fontWeight: 600, fontSize: '0.9rem', color: color || 'var(--color-text-primary)' }}>
+                {value}<span style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)', marginLeft: 2 }}>{unit}</span>
             </span>
         </div>
     );
@@ -41,18 +41,18 @@ export default function WeatherCard({ weather, baseAlt = 0, expanded = false }) 
     const w = weather;
 
     const windColor = w.windSpeed10m > 22 ? 'var(--color-no-go)' : w.windSpeed10m > 12 ? 'var(--color-marginal)' : 'var(--color-go)';
-    const gustColor = w.windGusts > 28 ? 'var(--color-no-go)' : w.windGusts > 19 ? 'var(--color-marginal)' : '#e8edf5';
+    const gustColor = w.windGusts > 28 ? 'var(--color-no-go)' : w.windGusts > 19 ? 'var(--color-marginal)' : 'var(--color-text-primary)';
     const visColor = w.visibility < 3218 ? 'var(--color-no-go)' : w.visibility < 8046 ? 'var(--color-marginal)' : 'var(--color-go)';
-    const cloudColor = w.cloudCover > 85 ? 'var(--color-marginal)' : '#e8edf5';
+    const cloudColor = w.cloudCover > 85 ? 'var(--color-marginal)' : 'var(--color-text-primary)';
     const precipColor = w.precipitation > 0.5 ? 'var(--color-no-go)' : w.precipitation > 0 ? 'var(--color-marginal)' : 'var(--color-go)';
 
     return (
         <div style={{
-            background: 'rgba(13,21,40,0.6)', borderRadius: 'var(--radius-md)',
-            border: '1px solid rgba(255,255,255,0.06)', padding: '16px',
+            background: 'var(--color-glass-subtle-bg)', borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--color-border-subtle)', padding: '16px',
         }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgba(232,237,245,0.7)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     Current Weather
                 </h4>
                 {w.weatherCode !== undefined && (
@@ -97,12 +97,12 @@ function WindAlt({ label, value, color }) {
     return (
         <div style={{
             flex: 1, textAlign: 'center', padding: '8px 4px',
-            background: 'rgba(255,255,255,0.04)', borderRadius: 8,
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'var(--color-surface-3)', borderRadius: 8,
+            border: '1px solid var(--color-border-subtle)',
         }}>
-            <div style={{ fontSize: '0.7rem', color: 'rgba(232,237,245,0.4)', marginBottom: 4 }}>{label}</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-dim)', marginBottom: 4 }}>{label}</div>
             <div style={{ fontSize: '0.95rem', fontWeight: 700, color }}>{Math.round(value)}</div>
-            <div style={{ fontSize: '0.7rem', color: 'rgba(232,237,245,0.3)' }}>mph</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-dim)' }}>mph</div>
         </div>
     );
 }
