@@ -48,7 +48,7 @@ function DayBadge({ day, index, active, onClick }) {
     );
 }
 
-function WeekSummary({ days }) {
+function WeekSummary({ days, onDayClick }) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {days.map((day, i) => {
@@ -57,12 +57,16 @@ function WeekSummary({ days }) {
                 const pct = Math.round((day.flyableDaylightHours / Math.max(day.totalDaylightHours, 1)) * 100);
 
                 return (
-                    <div key={day.date} style={{
+                    <button key={day.date} onClick={() => onDayClick(i)} style={{
                         background: 'rgba(13,21,40,0.5)', borderRadius: 12,
                         border: '1px solid rgba(255,255,255,0.06)',
-                        padding: '12px 14px',
-                        display: 'flex', alignItems: 'center', gap: 12,
-                    }}>
+                        padding: '12px 14px', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
+                        transition: 'all 0.2s ease', color: 'inherit', width: '100%',
+                    }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(13,21,40,0.8)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(13,21,40,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}
+                    >
                         {/* Day label */}
                         <div style={{ width: 68, flexShrink: 0 }}>
                             <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fff' }}>{label.top}</div>
@@ -102,7 +106,7 @@ function WeekSummary({ days }) {
                                 </div>
                             </div>
                         )}
-                    </div>
+                    </button>
                 );
             })}
         </div>
@@ -113,14 +117,15 @@ export default function SiteForecast({ site, onClose }) {
     const [forecast, setForecast] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState('today'); // today | tomorrow | week
+    const [activeTab, setActiveTab] = useState('today'); // today | tomorrow | week | custom
     const [activeDayIndex, setActiveDayIndex] = useState(0);
+    const [weatherModel, setWeatherModel] = useState('best_match');
 
     const fetchForecast = async () => {
         if (!site?.lat || !site?.lng) return;
         setLoading(true); setError(null);
         try {
-            const res = await fetch(`/api/forecast?lat=${site.lat}&lng=${site.lng}`);
+            const res = await fetch(`/api/forecast?lat=${site.lat}&lng=${site.lng}&models=${weatherModel}`);
             if (!res.ok) throw new Error('Failed to load forecast');
             const data = await res.json();
             setForecast(data);
@@ -131,13 +136,13 @@ export default function SiteForecast({ site, onClose }) {
         }
     };
 
-    useEffect(() => { fetchForecast(); }, [site?.lat, site?.lng]);
+    useEffect(() => { fetchForecast(); }, [site?.lat, site?.lng, weatherModel]);
 
     const today = forecast?.days?.[0];
     const tomorrow = forecast?.days?.[1];
 
-    // Which day's hours to show for "today" / "tomorrow" tab
-    const displayDay = activeTab === 'today' ? today : activeTab === 'tomorrow' ? tomorrow : forecast?.days?.[activeDayIndex];
+    // Which day's hours to show for detail view
+    const displayDay = forecast?.days?.[activeDayIndex];
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -152,9 +157,24 @@ export default function SiteForecast({ site, onClose }) {
                         <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.05rem', fontWeight: 700, color: '#fff', marginBottom: 4 }}>
                             {site?.name}
                         </h3>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: '0.72rem', color: 'rgba(232,237,245,0.45)' }}>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: '0.72rem', color: 'rgba(232,237,245,0.45)', alignItems: 'center', marginTop: 4 }}>
                             {site?.altitude > 0 && <span>⛰️ {site.altitude}m altitude</span>}
                             {site?.siteTypes?.paragliding && <span>🪂 Paragliding</span>}
+                            <div style={{ margin: '0 4px', width: 4, height: 4, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
+                            <select
+                                value={weatherModel}
+                                onChange={(e) => setWeatherModel(e.target.value)}
+                                style={{
+                                    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
+                                    color: '#fff', fontSize: '0.68rem', padding: '2px 8px', borderRadius: 6,
+                                    outline: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                                }}
+                            >
+                                <option value="best_match" style={{ color: '#000' }}>Model: Auto (HRRR+GFS/ECMWF)</option>
+                                <option value="gfs_seamless" style={{ color: '#000' }}>Model: GFS (Global)</option>
+                                <option value="ecmwf_ifs04" style={{ color: '#000' }}>Model: ECMWF (Global)</option>
+                                <option value="icon_seamless" style={{ color: '#000' }}>Model: ICON (Global)</option>
+                            </select>
                         </div>
                     </div>
                     {today && (
@@ -213,11 +233,11 @@ export default function SiteForecast({ site, onClose }) {
                             { key: 'tomorrow', label: '🌤 Tomorrow' },
                             { key: 'week', label: '📅 This Week' },
                         ].map(t => (
-                            <button key={t.key} onClick={() => setActiveTab(t.key)} style={{
+                            <button key={t.key} onClick={() => { setActiveTab(t.key); if (t.key === 'today') setActiveDayIndex(0); else if (t.key === 'tomorrow') setActiveDayIndex(1); }} style={{
                                 flex: 1, padding: '8px 10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
-                                background: activeTab === t.key ? 'rgba(0,200,255,0.12)' : 'rgba(255,255,255,0.04)',
-                                color: activeTab === t.key ? 'var(--color-sky)' : 'rgba(232,237,245,0.5)',
-                                borderBottom: activeTab === t.key ? '2px solid var(--color-sky)' : '2px solid transparent',
+                                background: (activeTab === t.key || (activeTab === 'custom' && ((t.key === 'today' && activeDayIndex === 0) || (t.key === 'tomorrow' && activeDayIndex === 1)))) ? 'rgba(0,200,255,0.12)' : 'rgba(255,255,255,0.04)',
+                                color: (activeTab === t.key || (activeTab === 'custom' && ((t.key === 'today' && activeDayIndex === 0) || (t.key === 'tomorrow' && activeDayIndex === 1)))) ? 'var(--color-sky)' : 'rgba(232,237,245,0.5)',
+                                borderBottom: (activeTab === t.key || (activeTab === 'custom' && ((t.key === 'today' && activeDayIndex === 0) || (t.key === 'tomorrow' && activeDayIndex === 1)))) ? '2px solid var(--color-sky)' : '2px solid transparent',
                                 transition: 'all 0.2s ease',
                             }}>
                                 {t.label}
@@ -225,9 +245,14 @@ export default function SiteForecast({ site, onClose }) {
                         ))}
                     </div>
 
-                    {/* Today / Tomorrow: Hourly timeline + day stats */}
-                    {(activeTab === 'today' || activeTab === 'tomorrow') && displayDay && (
+                    {/* Detail View: Hourly timeline + day stats (active for today/tomorrow/custom) */}
+                    {activeTab !== 'week' && displayDay && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                            {activeTab === 'custom' && activeDayIndex > 1 && (
+                                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-sky)', marginBottom: -6 }}>
+                                    Viewing Detail: {formatDayLabel(displayDay.date, activeDayIndex).top} {formatDayLabel(displayDay.date, activeDayIndex).bottom}
+                                </div>
+                            )}
                             {/* Best window callout */}
                             {displayDay.bestWindowStart && displayDay.bestWindowHours > 0 && (
                                 <div style={{
@@ -285,7 +310,10 @@ export default function SiteForecast({ site, onClose }) {
                             <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(232,237,245,0.4)', marginBottom: 12 }}>
                                 7-Day Flyability Outlook
                             </div>
-                            <WeekSummary days={forecast.days} />
+                            <WeekSummary days={forecast.days} onDayClick={(idx) => {
+                                setActiveDayIndex(idx);
+                                setActiveTab(idx === 0 ? 'today' : idx === 1 ? 'tomorrow' : 'custom');
+                            }} />
                             <div style={{ marginTop: 14, padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
                                 <div style={{ fontSize: '0.72rem', color: 'rgba(232,237,245,0.4)', lineHeight: 1.6 }}>
                                     💡 <strong style={{ color: 'rgba(232,237,245,0.6)' }}>AI Tip:</strong> Use the "Ask SkyPilot" chat to ask detailed questions about any day this week, get personalized advice, or explore alternate sites nearby.

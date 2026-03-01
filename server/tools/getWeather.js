@@ -15,10 +15,12 @@ export const getWeatherDeclaration = {
     },
 };
 
-export async function getWeather({ lat, lng, timezone = 'auto' }) {
-    const cached = cache.getWeather(lat, lng);
+export async function getWeather({ lat, lng, timezone = 'auto', models = 'best_match' }) {
+    // Generate cache key incorporating models
+    const cacheKey = `${lat},${lng},${models}`;
+    const cached = cache.getWeather(cacheKey);
     if (cached) {
-        console.log(`[getWeather] Cache hit for ${lat},${lng}`);
+        console.log(`[getWeather] Cache hit for ${cacheKey}`);
         return cached;
     }
 
@@ -41,16 +43,19 @@ export async function getWeather({ lat, lng, timezone = 'auto' }) {
         'relative_humidity_2m', 'surface_pressure', 'weather_code',
     ];
 
+    const params = {
+        latitude: lat,
+        longitude: lng,
+        hourly: hourlyVars.join(','),
+        current: currentVars.join(','),
+        forecast_days: 2,
+        timezone,
+        wind_speed_unit: 'mph',
+    };
+    if (models) params.models = models;
+
     const response = await axios.get('https://api.open-meteo.com/v1/forecast', {
-        params: {
-            latitude: lat,
-            longitude: lng,
-            hourly: hourlyVars.join(','),
-            current: currentVars.join(','),
-            forecast_days: 2,
-            timezone,
-            wind_speed_unit: 'mph',
-        },
+        params,
         timeout: 10000,
     });
 
@@ -105,6 +110,6 @@ export async function getWeather({ lat, lng, timezone = 'auto' }) {
         },
     };
 
-    cache.setWeather(lat, lng, result);
+    cache.setWeather(cacheKey, result);
     return result;
 }

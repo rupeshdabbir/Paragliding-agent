@@ -10,7 +10,7 @@ const router = express.Router();
  * Returns 7-day hourly forecast with per-hour and per-day flyability analysis for a site
  */
 router.get('/', async (req, res) => {
-    const { lat, lng, siteLat, siteLng } = req.query;
+    const { lat, lng, siteLat, siteLng, models = 'best_match' } = req.query;
     if (!lat || !lng) return res.status(400).json({ error: 'lat and lng are required' });
 
     const fLat = parseFloat(lat);
@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
         // Fetch nearby sites and weather in parallel
         const [sites, rawWeather] = await Promise.all([
             getSites({ lat: fLat, lng: fLng, distance: 5, limit: 3 }),
-            getExtendedWeather(weatherLat, weatherLng),
+            getExtendedWeather(weatherLat, weatherLng, models),
         ]);
 
         // Pick the closest/most relevant site for wind direction analysis
@@ -144,7 +144,7 @@ router.get('/', async (req, res) => {
 /**
  * Extended weather fetch — 7 full days of hourly data
  */
-async function getExtendedWeather(lat, lng) {
+async function getExtendedWeather(lat, lng, modelsStr = 'best_match') {
     const axios = (await import('axios')).default;
 
     const hourlyVars = [
@@ -159,15 +159,18 @@ async function getExtendedWeather(lat, lng) {
         'relative_humidity_2m', 'surface_pressure', 'weather_code',
     ];
 
+    const params = {
+        latitude: lat, longitude: lng,
+        hourly: hourlyVars.join(','),
+        current: currentVars.join(','),
+        forecast_days: 7,
+        timezone: 'auto',
+        wind_speed_unit: 'mph',
+    };
+    if (modelsStr) params.models = modelsStr;
+
     const resp = await axios.get('https://api.open-meteo.com/v1/forecast', {
-        params: {
-            latitude: lat, longitude: lng,
-            hourly: hourlyVars.join(','),
-            current: currentVars.join(','),
-            forecast_days: 7,
-            timezone: 'auto',
-            wind_speed_unit: 'mph',
-        },
+        params,
         timeout: 12000,
     });
 
