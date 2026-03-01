@@ -112,7 +112,7 @@ export async function runAgent({ userMessage, history = [], userLocation = null 
     const contextStr = buildContextStr(userLocation);
 
     const model = ai.getGenerativeModel({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-3-flash-preview',
         systemInstruction: SYSTEM_PROMPT + contextStr,
         tools: [{
             functionDeclarations: [
