@@ -2,10 +2,10 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 
 // ─── Colour palette ────────────────────────────────────────────────────────────
 const ALT_COLORS = {
-    '10m': { line: '#00c8ff', area: 'rgba(0,200,255,0.12)', label: '10m' },
-    '80m': { line: '#a78bfa', area: 'rgba(167,139,250,0.10)', label: '80m' },
-    '120m': { line: '#34d399', area: 'rgba(52,211,153,0.10)', label: '120m' },
-    '180m': { line: '#fb923c', area: 'rgba(251,146,60,0.08)', label: '180m' },
+    '10m': { line: '#00c8ff', area: 'rgba(0,200,255,0.12)', label: '33ft' },
+    '80m': { line: '#a78bfa', area: 'rgba(167,139,250,0.10)', label: '262ft' },
+    '120m': { line: '#34d399', area: 'rgba(52,211,153,0.10)', label: '394ft' },
+    '180m': { line: '#fb923c', area: 'rgba(251,146,60,0.08)', label: '591ft' },
 };
 
 const GUST_COLOR = 'rgba(239,68,68,0.55)';
@@ -309,7 +309,7 @@ export default function WindChart({ hours, title = 'Wind Forecast' }) {
                                     <div key={key} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                             <span style={{ width: 10, height: 2, background: ALT_COLORS[key].line, display: 'inline-block', borderRadius: 1 }} />
-                                            <span style={{ fontSize: '0.72rem', color: 'rgba(232,237,245,0.55)' }}>Wind {key}</span>
+                                            <span style={{ fontSize: '0.72rem', color: 'rgba(232,237,245,0.55)' }}>Wind {ALT_COLORS[key].label}</span>
                                         </div>
                                         <span style={{ fontSize: '0.82rem', fontWeight: 700, color: ALT_COLORS[key].line }}>
                                             {Math.round(v)} mph
