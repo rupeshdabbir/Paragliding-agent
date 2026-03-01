@@ -16,6 +16,8 @@ export default function SettingsModal({ open, onClose }) {
 
     if (!open) return null;
 
+    const hasStoredKey = !!localStorage.getItem('geminiApiKey');
+
     const handleSave = () => {
         if (apiKey.trim()) {
             localStorage.setItem('geminiApiKey', apiKey.trim());
@@ -107,22 +109,40 @@ export default function SettingsModal({ open, onClose }) {
                     </p>
                 </div>
 
-                <button
-                    onClick={handleSave}
-                    style={{
-                        width: '100%', padding: '14px', borderRadius: 12, border: 'none',
-                        background: saved ? 'var(--color-go)' : 'var(--color-sky-gradient)',
-                        color: '#fff', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer',
-                        transition: 'all 0.2s ease', boxShadow: saved ? '0 4px 16px rgba(16,185,129,0.3)' : '0 4px 16px rgba(0,200,255,0.25)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
-                    }}
-                >
-                    {saved ? (
-                        <>Saved Successfully</>
-                    ) : (
-                        <>Save Settings</>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <button
+                        onClick={handleSave}
+                        style={{
+                            width: '100%', padding: '14px', borderRadius: 12, border: 'none',
+                            background: saved ? 'var(--color-go)' : 'var(--color-sky-gradient)',
+                            color: '#fff', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer',
+                            transition: 'all 0.2s ease', boxShadow: saved ? '0 4px 16px rgba(16,185,129,0.3)' : '0 4px 16px rgba(0,200,255,0.25)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+                        }}
+                    >
+                        {saved ? (
+                            <>Saved Successfully</>
+                        ) : (
+                            <>Save Settings</>
+                        )}
+                    </button>
+
+                    {!hasStoredKey && (
+                        <button
+                            onClick={onClose}
+                            style={{
+                                width: '100%', padding: '10px', borderRadius: 12, border: 'none',
+                                background: 'transparent',
+                                color: 'var(--color-text-muted)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.color = 'var(--color-text-primary)'}
+                            onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
+                        >
+                            Ask me later
+                        </button>
                     )}
-                </button>
+                </div>
             </div>
         </div>,
         document.body

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, Wind, AlertTriangle, ChevronRight, CheckCircle, XCircle, MinusCircle, RefreshCw, Info, Sparkles } from 'lucide-react';
+import { Calendar, Clock, Wind, AlertTriangle, ChevronRight, CheckCircle, XCircle, MinusCircle, RefreshCw, Info, Sparkles, Key } from 'lucide-react';
 import WindChart from './WindChart.jsx';
 import { FlyabilityBadge } from './FlyabilityBadge.jsx';
 
@@ -378,6 +378,15 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
     const [activeTab, setActiveTab] = useState('today');
     const [activeDayIndex, setActiveDayIndex] = useState(0);
     const [weatherModel, setWeatherModel] = useState('best_match');
+    const [hasKey, setHasKey] = useState(!!localStorage.getItem('geminiApiKey'));
+
+    useEffect(() => {
+        // Poll for key changes since storage events only fire across tabs
+        const interval = setInterval(() => {
+            setHasKey(!!localStorage.getItem('geminiApiKey'));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     const fetchForecast = async () => {
         if (!site?.lat || !site?.lng) return;
@@ -471,10 +480,57 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
                 </div>
             </div>
 
-            {/* ── AI Verdict Card ── */}
-            {!loading && forecast?.aiVerdict && (
+            {/* ── AI Verdict Card / Upsell ── */}
+            {!loading && forecast && (
                 <div style={{ padding: '12px 0 0' }}>
-                    <AiVerdictCard verdict={forecast.aiVerdict} />
+                    {hasKey && forecast.aiVerdict ? (
+                        <AiVerdictCard verdict={forecast.aiVerdict} />
+                    ) : !hasKey ? (
+                        <div style={{
+                            background: 'var(--color-glass-subtle-bg)',
+                            border: '1px solid var(--color-border-glow)',
+                            borderRadius: 16, padding: '16px 20px',
+                            boxShadow: '0 4px 20px rgba(0,200,255,0.1)',
+                            display: 'flex', flexDirection: 'column', gap: 12,
+                            position: 'relative', overflow: 'hidden'
+                        }}>
+                            <div style={{
+                                position: 'absolute', top: -30, right: -30, width: 100, height: 100,
+                                background: 'radial-gradient(circle, var(--color-sky-dim) 0%, transparent 70%)',
+                                opacity: 0.5, pointerEvents: 'none'
+                            }} />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div style={{
+                                    width: 32, height: 32, borderRadius: 10,
+                                    background: 'var(--color-sky-gradient)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    flexShrink: 0
+                                }}>
+                                    <Sparkles size={16} color="#fff" />
+                                </div>
+                                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-heading)' }}>Unlock AI Verdicts</h4>
+                            </div>
+                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+                                You are currently viewing basic rule-based forecasts. Connect your API key to unlock precision AI weather intelligence and safety recommendations.
+                            </p>
+                            <button
+                                onClick={() => window.dispatchEvent(new Event('open-settings'))}
+                                style={{
+                                    alignSelf: 'flex-start',
+                                    padding: '8px 16px', borderRadius: 100,
+                                    background: 'var(--color-surface-3)', color: 'var(--color-text-primary)',
+                                    fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: 6,
+                                    border: '1px solid var(--color-border-strong)',
+                                    transition: 'all 0.2s ease',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-border-base)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-surface-3)'; }}
+                            >
+                                <Key size={14} /> Connect API Key
+                            </button>
+                        </div>
+                    ) : null}
                 </div>
             )}
             {/* Skeleton */}
@@ -629,12 +685,55 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
                                     );
                                 }
 
-                                // Rule-based fallback
+                                // Upsell for no key
+                                if (!hasKey) {
+                                    return (
+                                        <div style={{
+                                            padding: '16px 20px', borderRadius: 16,
+                                            background: 'var(--color-surface-3)', border: '1px solid var(--color-border-subtle)',
+                                            display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', textAlign: 'center',
+                                        }}>
+                                            <div style={{
+                                                width: 40, height: 40, borderRadius: 12,
+                                                background: 'var(--color-sky-gradient)',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                marginBottom: 4, boxShadow: '0 4px 16px rgba(0,200,255,0.2)'
+                                            }}>
+                                                <Sparkles size={20} color="#fff" />
+                                            </div>
+                                            <div>
+                                                <h5 style={{ margin: '0 0 6px 0', fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text-heading)' }}>
+                                                    Get the full picture
+                                                </h5>
+                                                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-secondary)', lineHeight: 1.5, maxWidth: 300 }}>
+                                                    Unlock the SkyPilot AI daily breakdown for safety notes, thermaling details, and personalized flight window recommendations.
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={() => window.dispatchEvent(new Event('open-settings'))}
+                                                style={{
+                                                    padding: '10px 20px', borderRadius: 100,
+                                                    background: 'transparent', color: 'var(--color-sky)',
+                                                    fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+                                                    display: 'flex', alignItems: 'center', gap: 6,
+                                                    border: '1px solid rgba(0,200,255,0.3)',
+                                                    transition: 'all 0.2s ease', marginTop: 4,
+                                                }}
+                                                onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-sky-dim)'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                                            >
+                                                <Key size={14} /> Connect API Key
+                                            </button>
+                                        </div>
+                                    );
+                                }
+
+                                // Rule-based fallback (if AI failed but they have a key)
                                 return (
                                     <>
                                         {displayDay.bestWindowStart && displayDay.bestWindowHours > 0 && (
                                             <div style={{ padding: '12px 14px', borderRadius: 13, background: 'var(--color-rating-go-bg)', border: '1px solid var(--color-rating-go-border)', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                                                <CheckCircle size={16} color="var(--color-go)" style={{ marginTop: 2 }} />
+                                                <CheckCircle size={16} color="var(--color-go)" style={{ marginTop: 2, flexShrink: 0 }} />
                                                 <div>
                                                     <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-go)' }}>
                                                         Best window: {formatTime(displayDay.bestWindowStart)} – {formatTime(displayDay.bestWindowEnd)}
@@ -648,8 +747,8 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
                                         {displayDay.goHours === 0 && (
                                             <div style={{ padding: '12px 14px', borderRadius: 13, background: displayDay.dayRating === 'NO_GO' ? 'var(--color-rating-nogo-bg)' : 'var(--color-rating-marginal-bg)', border: `1px solid ${displayDay.dayRating === 'NO_GO' ? 'var(--color-rating-nogo-border)' : 'var(--color-rating-marginal-border)'}`, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                                                 {displayDay.dayRating === 'NO_GO'
-                                                    ? <XCircle size={16} color="var(--color-no-go)" style={{ marginTop: 2 }} />
-                                                    : <MinusCircle size={16} color="var(--color-marginal)" style={{ marginTop: 2 }} />
+                                                    ? <XCircle size={16} color="var(--color-no-go)" style={{ marginTop: 2, flexShrink: 0 }} />
+                                                    : <MinusCircle size={16} color="var(--color-marginal)" style={{ marginTop: 2, flexShrink: 0 }} />
                                                 }
                                                 <div>
                                                     <div style={{ fontSize: '0.82rem', fontWeight: 600, color: displayDay.dayRating === 'NO_GO' ? 'var(--color-no-go)' : 'var(--color-marginal)' }}>

@@ -141,7 +141,7 @@ export default function WindChart({ hours, title = 'Wind Forecast', baseAlt = 0 
                     color: activeLayers.gusts ? '#f87171' : 'var(--color-text-dim)',
                     fontSize: '0.73rem', fontWeight: 600, transition: 'all 0.2s ease',
                 }}>
-                    <span style={{ width: 16, height: '2px', background: activeLayers.gusts ? GUST_COLOR : 'var(--color-border-strong)', display: 'inline-block', borderRadius: 1, borderTop: '2px dashed currentColor', height: 0 }} />
+                    <span style={{ width: 16, background: activeLayers.gusts ? GUST_COLOR : 'var(--color-border-strong)', display: 'inline-block', borderRadius: 1, borderTop: '2px dashed currentColor', height: 0 }} />
                     Gusts
                 </button>
                 <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: 'var(--color-text-faint)' }}>

@@ -8,6 +8,10 @@
  * Cache: per site + week-start date, refreshed every 6 hours.
  */
 import { getGenAI } from '../utils/geminiClient.js';
+import { degreesToCardinal } from '../utils/windUtils.js';
+
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const verdictCache = new Map();
 
 /**
  * Build a compact per-day weather summary (daylight hours only).

@@ -14,6 +14,18 @@ export default function Navbar({ onSearchSelect }) {
     const { theme, toggleTheme } = useTheme();
     const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
+    // Auto-open settings if no API key is found
+    useEffect(() => {
+        const storedKey = localStorage.getItem('geminiApiKey');
+        if (!storedKey) {
+            setSettingsModalOpen(true);
+        }
+
+        const handleOpenSettings = () => setSettingsModalOpen(true);
+        window.addEventListener('open-settings', handleOpenSettings);
+        return () => window.removeEventListener('open-settings', handleOpenSettings);
+    }, []);
+
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth < 768);
         check();

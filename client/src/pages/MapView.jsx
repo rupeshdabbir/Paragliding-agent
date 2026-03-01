@@ -5,7 +5,7 @@ import L from 'leaflet';
 import {
     LocateFixed, SlidersHorizontal, X, AlertCircle,
     MessageSquare, Send, Trash2, ChevronRight, Wind, LocateFixed as LocIcon,
-    Minimize2, Maximize2, Columns, Sparkles, GripVertical, MapPin, ChevronDown
+    Minimize2, Maximize2, Columns, Sparkles, GripVertical, MapPin, ChevronDown, Key
 } from 'lucide-react';
 import SiteCard from '../components/SiteCard.jsx';
 import { FlyabilityBadge } from '../components/FlyabilityBadge.jsx';
@@ -115,6 +115,16 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, chatWidthP
     const [shareLocation, setShareLocation] = useState(true);
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
+
+    const [hasKey, setHasKey] = useState(!!localStorage.getItem('geminiApiKey'));
+
+    useEffect(() => {
+        // Poll for key changes since storage events only fire across tabs
+        const interval = setInterval(() => {
+            setHasKey(!!localStorage.getItem('geminiApiKey'));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => { setShareLocation(true); }, [contextSite?.name]);
     useEffect(() => {
@@ -271,7 +281,46 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, chatWidthP
             </div>
 
             {/* Messages */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                {!hasKey ? (
+                    <div style={{
+                        position: 'absolute', inset: 0,
+                        background: 'var(--color-surface-overlay)', backdropFilter: 'blur(12px)',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        zIndex: 100, padding: 30, textAlign: 'center'
+                    }}>
+                        <div style={{
+                            width: 64, height: 64, borderRadius: 20, marginBottom: 20,
+                            background: `linear-gradient(145deg, var(--color-hero-icon-from), var(--color-hero-icon-to))`,
+                            border: '1px solid var(--color-border-glow)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: '0 8px 40px rgba(0,200,255,0.2)',
+                            animation: 'float-gentle 5s ease-in-out infinite',
+                        }}>
+                            <Sparkles size={32} color="var(--color-sky)" strokeWidth={1.8} style={{ filter: 'drop-shadow(0 0 6px rgba(0,200,255,0.6))' }} />
+                        </div>
+                        <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text-heading)', margin: '0 0 12px 0' }}>Wake SkyPilot</h3>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', lineHeight: 1.6, marginBottom: 30, maxWidth: 320 }}>
+                            Provide your free Gemini API key to unlock personalized flying advice, real-time wind analysis, and site recommendations.
+                        </p>
+                        <button
+                            onClick={() => window.dispatchEvent(new Event('open-settings'))}
+                            style={{
+                                padding: '14px 24px', borderRadius: 100, border: 'none',
+                                background: 'var(--color-sky-gradient)', color: '#fff',
+                                fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', gap: 8,
+                                boxShadow: '0 6px 20px rgba(0,200,255,0.3)',
+                                transition: 'all 0.2s ease',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                        >
+                            <Key size={16} /> Connect API Key
+                        </button>
+                    </div>
+                ) : null}
+
                 {isEmpty ? (
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0, animation: 'fade-up 0.5s ease' }}>
                         {/* Hero icon */}
@@ -325,7 +374,9 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, chatWidthP
             {/* Input area */}
             <div style={{
                 padding: '12px 16px', borderTop: '1px solid var(--color-border-subtle)', flexShrink: 0,
-                paddingBottom: isMobile ? 'max(12px, env(safe-area-inset-bottom))' : '12px'
+                paddingBottom: isMobile ? 'max(12px, env(safe-area-inset-bottom))' : '12px',
+                opacity: hasKey ? 1 : 0.4, pointerEvents: hasKey ? 'auto' : 'none',
+                filter: hasKey ? 'none' : 'grayscale(100%)',
             }}>
                 {/* Location pill */}
                 <button onClick={() => setShareLocation(v => !v)} style={{
