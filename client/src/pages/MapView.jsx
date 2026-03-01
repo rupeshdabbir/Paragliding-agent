@@ -4,7 +4,7 @@ import L from 'leaflet';
 import {
     LocateFixed, SlidersHorizontal, X, AlertCircle,
     MessageSquare, Send, Trash2, ChevronRight, Wind, LocateFixed as LocIcon,
-    Minimize2, Maximize2, Columns,
+    Minimize2, Maximize2, Columns, Sparkles
 } from 'lucide-react';
 import SiteCard from '../components/SiteCard.jsx';
 import { FlyabilityBadge } from '../components/FlyabilityBadge.jsx';
@@ -316,10 +316,29 @@ export default function MapView() {
                             <Marker key={i} position={[site.lat, site.lng]} icon={createMarkerIcon(site.rating)}
                                 eventHandlers={{ click: () => { setSelectedSite(site); setChatOpen(false); } }}>
                                 <Popup>
-                                    <div style={{ minWidth: 180 }}>
+                                    <div style={{ minWidth: 200 }}>
                                         <div style={{ fontWeight: 700, marginBottom: 4, color: '#fff', fontFamily: 'Inter, sans-serif' }}>{site.name}</div>
                                         <div style={{ marginBottom: 6 }}><FlyabilityBadge rating={site.rating} size="sm" /></div>
-                                        <div style={{ fontSize: '0.78rem', color: 'rgba(232,237,245,0.6)' }}>Alt: {site.altitude}ft · Click for details</div>
+                                        <div style={{ fontSize: '0.78rem', color: 'rgba(232,237,245,0.6)', marginBottom: 8 }}>Alt: {site.altitude}ft</div>
+                                        <div style={{ display: 'flex', gap: 6 }}>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setSelectedSite(site); setChatOpen(false); }}
+                                                style={{ flex: 1, padding: '6px 0', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 6, color: '#fff', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s' }}
+                                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+                                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                                            >
+                                                Details
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setChatContextSite(site); setChatOpen(true); setSelectedSite(null); }}
+                                                style={{ flex: 1, padding: '6px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'linear-gradient(135deg, var(--color-sky), #0055cc)', border: 'none', borderRadius: 6, color: '#fff', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', transition: 'opacity 0.2s' }}
+                                                onMouseEnter={e => e.currentTarget.style.opacity = 0.9}
+                                                onMouseLeave={e => e.currentTarget.style.opacity = 1}
+                                            >
+                                                <Sparkles size={11} />
+                                                SkyPilot
+                                            </button>
+                                        </div>
                                     </div>
                                 </Popup>
                             </Marker>
