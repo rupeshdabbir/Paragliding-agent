@@ -4,7 +4,7 @@ SkyPilot is a full-stack AI-powered paragliding conditions advisor. It helps pil
 
 ## 📸 Screenshots & Walkthrough
 
-| Map View | Forecast & Model Selection |
+| Map View & Controls | Forecast & Model Selection |
 |----------|----------------------------|
 | <img src="docs/assets/map.png" alt="Map View" width="400"/> | <img src="docs/assets/demo.webp" alt="Forecast Selection" width="400"/> |
 | **Site Lookup & Detailed Forecast** | **Conversational Agent** |
