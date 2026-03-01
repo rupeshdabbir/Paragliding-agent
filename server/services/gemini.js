@@ -63,11 +63,25 @@ function getGenAI() {
 export async function runAgent({ userMessage, history = [], userLocation = null }) {
     const ai = getGenAI();
 
+    let contextStr = '';
+    if (userLocation) {
+        if (userLocation.name || userLocation.altitude) {
+            contextStr = `\n\nThe user is currently analyzing the following paragliding site:
+Name: ${userLocation.name || 'Unknown'}
+Coordinates: lat=${userLocation.lat}, lng=${userLocation.lng}
+Altitude (Launch): ${userLocation.altitude ? userLocation.altitude + 'ft ASL' : 'Unknown'}
+Takeoff Notes: ${userLocation.description || 'None provided'}
+Site Type Flags: ${JSON.stringify(userLocation.siteTypes || {})}
+
+Refer to these details (especially altitude and takeoff notes) to provide safer, more accurate flying guidance when answering questions.`;
+        } else if (userLocation.lat && userLocation.lng) {
+            contextStr = `\n\nThe user's current GPS location is: lat=${userLocation.lat.toFixed(4)}, lng=${userLocation.lng.toFixed(4)}. Use this when they ask about sites or weather "near me" or "here".`;
+        }
+    }
+
     const model = ai.getGenerativeModel({
         model: 'gemini-3-flash-preview',
-        systemInstruction: SYSTEM_PROMPT + (userLocation
-            ? `\n\nThe user's current location is: lat=${userLocation.lat.toFixed(4)}, lng=${userLocation.lng.toFixed(4)}. Use this when they ask about "near me" or "here".`
-            : ''),
+        systemInstruction: SYSTEM_PROMPT + contextStr,
         tools: [{
             functionDeclarations: [
                 getSitesDeclaration,

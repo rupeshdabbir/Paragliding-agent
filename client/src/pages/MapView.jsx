@@ -61,9 +61,8 @@ function ChatDrawer({ open, onClose, location, contextSite }) {
     useEffect(() => { setShareLocation(true); }, [contextSite?.name]);
 
     // The effective location to pass to AI: site takes precedence over GPS
-    const effectiveLocation = contextSite
-        ? { lat: contextSite.lat, lng: contextSite.lng, name: contextSite.name }
-        : location;
+    // We pass the full contextSite object so Gemini knows altitude, description, etc.
+    const effectiveLocation = contextSite ? contextSite : location;
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
