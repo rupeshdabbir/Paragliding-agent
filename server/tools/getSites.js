@@ -37,7 +37,7 @@ export async function getSites({ lat, lng, distance = 50, limit = 10 }) {
             name: p.name,
             lat: coords[1],
             lng: coords[0],
-            altitude: parseInt(p.takeoff_altitude || '0', 10),
+            altitude: Math.round(parseInt(p.takeoff_altitude || '0', 10) * 3.28084),
             description: p.takeoff_description || '',
             country: p.countryCode,
             distanceFromSearch: parseInt(p.distance || '0', 10),

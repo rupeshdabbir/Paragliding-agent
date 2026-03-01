@@ -22,21 +22,40 @@ export function getSiteWindScore(siteProperties, windDegrees) {
 }
 
 /**
- * Determine if wind speed is flyable for paragliding
- * Typical range: 4–25 mph sustained, gusts < 31 mph
+ * Determine if wind speed is flyable based on site type
+ * Soaring: Needs 10-25 mph, gusts < 30
+ * Thermaling: Needs 0-16 mph, gusts < 24
+ * Default: Needs 4-25 mph, gusts < 31
  */
-export function isWindSpeedFlyable(speedMph, gustsMph) {
-  const tooCalm = speedMph < 3;
-  const tooStrong = speedMph > 25;
-  const gustsTooStrong = gustsMph > 31;
+export function isWindSpeedFlyable(speedMph, gustsMph, siteTypes = {}) {
+  let minSpeed = 3;
+  let maxSpeed = 25;
+  let maxGusts = 31;
+  let siteProfile = 'general paragliding';
 
-  if (gustsTooStrong) return { flyable: false, category: 'DANGEROUS_GUSTS', reason: `Gusts of ${gustsMph.toFixed(0)} mph are too strong (limit: 31 mph)` };
-  if (tooStrong) return { flyable: false, category: 'TOO_STRONG', reason: `Wind speed ${speedMph.toFixed(0)} mph is too strong (limit: 25 mph)` };
-  if (tooCalm) return { flyable: false, category: 'TOO_CALM', reason: `Wind speed ${speedMph.toFixed(0)} mph is too light (minimum: 3 mph for ridge soaring)` };
+  if (siteTypes.thermaling && !siteTypes.ridgeSoaring) {
+    minSpeed = 0; // Can launch in nil wind for thermaling
+    maxSpeed = 16; // Strong winds + thermals = blowback
+    maxGusts = 24;
+    siteProfile = 'thermaling';
+  } else if (siteTypes.ridgeSoaring && !siteTypes.thermaling) {
+    minSpeed = 10; // Need more wind to stay up
+    maxSpeed = 25;
+    maxGusts = 30;
+    siteProfile = 'ridge soaring';
+  }
 
-  if (speedMph > 19) return { flyable: true, category: 'STRONG', reason: `Wind ${speedMph.toFixed(0)} mph — strong, experienced pilots only` };
-  if (speedMph > 12) return { flyable: true, category: 'MODERATE', reason: `Wind ${speedMph.toFixed(0)} mph — good moderate conditions` };
-  return { flyable: true, category: 'LIGHT', reason: `Wind ${speedMph.toFixed(0)} mph — light and smooth conditions` };
+  const tooCalm = speedMph < minSpeed;
+  const tooStrong = speedMph > maxSpeed;
+  const gustsTooStrong = gustsMph > maxGusts;
+
+  if (gustsTooStrong) return { flyable: false, category: 'DANGEROUS_GUSTS', reason: `Gusts of ${gustsMph.toFixed(0)} mph are too strong for ${siteProfile} (limit: ${maxGusts} mph)` };
+  if (tooStrong) return { flyable: false, category: 'TOO_STRONG', reason: `Wind speed ${speedMph.toFixed(0)} mph is too strong for ${siteProfile} (limit: ${maxSpeed} mph)` };
+  if (tooCalm) return { flyable: false, category: 'TOO_CALM', reason: `Wind speed ${speedMph.toFixed(0)} mph is too light for ${siteProfile} (minimum: ${minSpeed} mph)` };
+
+  if (speedMph > maxSpeed * 0.75) return { flyable: true, category: 'STRONG', reason: `Wind ${speedMph.toFixed(0)} mph — strong for ${siteProfile}, experienced pilots only` };
+  if (speedMph > minSpeed + 2) return { flyable: true, category: 'MODERATE', reason: `Wind ${speedMph.toFixed(0)} mph — good moderate conditions for ${siteProfile}` };
+  return { flyable: true, category: 'LIGHT', reason: `Wind ${speedMph.toFixed(0)} mph — light conditions for ${siteProfile}` };
 }
 
 /**
@@ -79,12 +98,12 @@ export function scoreFlyingConditions({ windScore, windCheck, cloudCover, visibi
   }
 
   // Visibility
-  if (visibility < 2000) {
-    issues.push(`Visibility too low (${(visibility / 1000).toFixed(1)} km)`);
-  } else if (visibility < 5000) {
-    issues.push(`Reduced visibility (${(visibility / 1000).toFixed(1)} km)`);
+  if (visibility < 3218) {
+    issues.push(`Visibility too low (${(visibility / 1609.34).toFixed(1)} mi)`);
+  } else if (visibility < 8046) {
+    issues.push(`Reduced visibility (${(visibility / 1609.34).toFixed(1)} mi)`);
   } else {
-    positives.push(`Excellent visibility (${(visibility / 1000).toFixed(1)} km)`);
+    positives.push(`Excellent visibility (${(visibility / 1609.34).toFixed(1)} mi)`);
   }
 
   // Precipitation

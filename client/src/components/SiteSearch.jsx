@@ -124,7 +124,7 @@ export default function SiteSearch({ onSiteSelect, placeholder = 'Search a parag
                                     {site.siteTypes?.paragliding && <span>Paragliding</span>}
                                     {site.siteTypes?.ridgeSoaring && <span>· Ridge Soaring</span>}
                                     {site.siteTypes?.thermaling && <span>· Thermals</span>}
-                                    {site.altitude > 0 && <span>· {site.altitude}m alt</span>}
+                                    {site.altitude > 0 && <span>· {site.altitude}ft alt</span>}
                                 </div>
                             </div>
                             <MapPin size={12} color="rgba(232,237,245,0.25)" style={{ flexShrink: 0 }} />

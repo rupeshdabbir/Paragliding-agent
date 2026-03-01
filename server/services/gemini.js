@@ -14,7 +14,7 @@ Your personality:
 
 Your capabilities:
 - Look up paragliding sites near any location
-- Fetch real-time weather data including wind at 10m, 80m, 120m, and 180m altitude
+- Fetch real-time weather data including wind at 33ft, 262ft, 394ft, and 591ft altitude
 - Analyze flying conditions based on site-specific wind direction requirements
 - Provide hourly forecasts so pilots can plan their day
 

@@ -19,9 +19,9 @@ router.get('/', async (req, res) => {
 
         const current = weather.current;
         const windDir = current.windDirection10m;
-        const windCheck = isWindSpeedFlyable(current.windSpeed10m, current.windGusts);
 
         const enriched = sites.map(site => {
+            const windCheck = isWindSpeedFlyable(current.windSpeed10m, current.windGusts, site.siteTypes);
             const windScore = getSiteWindScore(site.windDirections, windDir);
             const conditions = scoreFlyingConditions({
                 windScore, windCheck,

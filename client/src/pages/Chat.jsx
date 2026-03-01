@@ -7,7 +7,7 @@ import ChatMessage, { TypingIndicator } from '../components/ChatMessage.jsx';
 const SUGGESTED_PROMPTS = [
     'Can I fly today near me?',
     'What are the best paragliding sites within 50km?',
-    'What is the wind like at 120m altitude right now?',
+    'What is the wind like at 394ft altitude right now?',
     'Is there a better time window to fly today?',
     'Explain ridge soaring conditions at this site',
 ];

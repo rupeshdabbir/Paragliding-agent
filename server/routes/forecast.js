@@ -41,7 +41,7 @@ router.get('/', async (req, res) => {
             const precipitation = rawWeather.hourly.precipitation[i] ?? 0;
 
             const windScore = getSiteWindScore(windDirections, windDir);
-            const windCheck = isWindSpeedFlyable(windSpeed, windGusts);
+            const windCheck = isWindSpeedFlyable(windSpeed, windGusts, site?.siteTypes);
             const conditions = scoreFlyingConditions({ windScore, windCheck, cloudCover, visibility, precipitation });
 
             return {
@@ -130,7 +130,7 @@ router.get('/', async (req, res) => {
         });
 
         res.json({
-            site: site ? { name: site.name, windDirections: site.windDirections, lat: site.lat, lng: site.lng, altitude: site.altitude, siteTypes: site.siteTypes } : null,
+            site: site ? { name: site.name, description: site.description, windDirections: site.windDirections, lat: site.lat, lng: site.lng, altitude: site.altitude, siteTypes: site.siteTypes } : null,
             current: rawWeather.current,
             days,
             units: rawWeather.units,
@@ -207,7 +207,7 @@ async function getExtendedWeather(lat, lng, modelsStr = 'best_match') {
             pressure: h.surface_pressure,
             weatherCode: h.weather_code,
         },
-        units: { windSpeed: 'mph', temperature: '°C', visibility: 'm', precipitation: 'mm/h', pressure: 'hPa' },
+        units: { windSpeed: 'mph', temperature: '°C', visibility: 'mi', precipitation: 'mm/h', pressure: 'hPa' },
     };
 }
 

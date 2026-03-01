@@ -42,7 +42,7 @@ export default function WeatherCard({ weather, expanded = false }) {
 
     const windColor = w.windSpeed10m > 22 ? 'var(--color-no-go)' : w.windSpeed10m > 12 ? 'var(--color-marginal)' : 'var(--color-go)';
     const gustColor = w.windGusts > 28 ? 'var(--color-no-go)' : w.windGusts > 19 ? 'var(--color-marginal)' : '#e8edf5';
-    const visColor = w.visibility < 2000 ? 'var(--color-no-go)' : w.visibility < 5000 ? 'var(--color-marginal)' : 'var(--color-go)';
+    const visColor = w.visibility < 3218 ? 'var(--color-no-go)' : w.visibility < 8046 ? 'var(--color-marginal)' : 'var(--color-go)';
     const cloudColor = w.cloudCover > 85 ? 'var(--color-marginal)' : '#e8edf5';
     const precipColor = w.precipitation > 0.5 ? 'var(--color-no-go)' : w.precipitation > 0 ? 'var(--color-marginal)' : 'var(--color-go)';
 
@@ -66,10 +66,10 @@ export default function WeatherCard({ weather, expanded = false }) {
             <div style={{
                 display: 'flex', gap: 8, marginBottom: 12,
             }}>
-                <WindAlt label="10m" value={w.windSpeed10m} color={windColor} />
-                {w.windSpeed80m !== undefined && <WindAlt label="80m" value={w.windSpeed80m} color={windColor} />}
-                {w.windSpeed120m !== undefined && <WindAlt label="120m" value={w.windSpeed120m} color={windColor} />}
-                {w.windSpeed180m !== undefined && <WindAlt label="180m" value={w.windSpeed180m} color={windColor} />}
+                <WindAlt label="33ft" value={w.windSpeed10m} color={windColor} />
+                {w.windSpeed80m !== undefined && <WindAlt label="262ft" value={w.windSpeed80m} color={windColor} />}
+                {w.windSpeed120m !== undefined && <WindAlt label="394ft" value={w.windSpeed120m} color={windColor} />}
+                {w.windSpeed180m !== undefined && <WindAlt label="591ft" value={w.windSpeed180m} color={windColor} />}
             </div>
 
             <MetricRow icon={<Wind size={13} />} label="Wind direction"
@@ -77,7 +77,7 @@ export default function WeatherCard({ weather, expanded = false }) {
             <MetricRow icon={<Wind size={13} />} label="Gusts"
                 value={Math.round(w.windGusts)} unit="mph" color={gustColor} />
             <MetricRow icon={<Eye size={13} />} label="Visibility"
-                value={(w.visibility / 1000).toFixed(1)} unit="km" color={visColor} />
+                value={(w.visibility / 1609.34).toFixed(1)} unit="mi" color={visColor} />
             <MetricRow icon={<Cloud size={13} />} label="Cloud cover"
                 value={Math.round(w.cloudCover)} unit="%" color={cloudColor} />
             <MetricRow icon={<Droplets size={13} />} label="Precipitation"

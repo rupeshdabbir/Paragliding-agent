@@ -33,7 +33,6 @@ export async function analyzeFlyingConditions({ lat, lng, distance = 30, siteNam
     const precipitation = current.precipitation;
 
     const windCardinal = degreesToCardinal(windDir);
-    const windCheck = isWindSpeedFlyable(windSpeed, windGusts);
 
     // Filter by site name if provided
     let targetSites = sites;
@@ -45,6 +44,7 @@ export async function analyzeFlyingConditions({ lat, lng, distance = 30, siteNam
     }
 
     const analyses = targetSites.map(site => {
+        const windCheck = isWindSpeedFlyable(windSpeed, windGusts, site.siteTypes);
         const windScore = getSiteWindScore(site.windDirections, windDir);
         const conditions = scoreFlyingConditions({ windScore, windCheck, cloudCover, visibility, precipitation });
 
@@ -89,7 +89,7 @@ export async function analyzeFlyingConditions({ lat, lng, distance = 30, siteNam
             windSpeedKmh: windSpeed,
             gustsKmh: windGusts,
             cloudCover,
-            visibilityKm: visibility / 1000,
+            visibilityMi: visibility / 1609.34,
             precipitation,
             temperature: current.temperature,
             humidity: current.humidity,

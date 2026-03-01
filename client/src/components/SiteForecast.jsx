@@ -157,8 +157,13 @@ export default function SiteForecast({ site, onClose }) {
                         <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.05rem', fontWeight: 700, color: '#fff', marginBottom: 4 }}>
                             {site?.name}
                         </h3>
+                        {site?.description && (
+                            <div style={{ fontSize: '0.75rem', color: 'rgba(232,237,245,0.7)', marginTop: 4, marginBottom: 8, lineHeight: 1.4, maxWidth: '95%' }}>
+                                <strong style={{ color: 'rgba(255,255,255,0.8)' }}>Takeoff Notes:</strong> {site.description}
+                            </div>
+                        )}
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: '0.72rem', color: 'rgba(232,237,245,0.45)', alignItems: 'center', marginTop: 4 }}>
-                            {site?.altitude > 0 && <span>⛰️ {site.altitude}m altitude</span>}
+                            {site?.altitude > 0 && <span>⛰️ {site.altitude}ft altitude</span>}
                             {site?.siteTypes?.paragliding && <span>🪂 Paragliding</span>}
                             <div style={{ margin: '0 4px', width: 4, height: 4, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
                             <select
@@ -258,16 +263,27 @@ export default function SiteForecast({ site, onClose }) {
                                 <div style={{
                                     padding: '12px 14px', borderRadius: 12,
                                     background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)',
-                                    display: 'flex', alignItems: 'center', gap: 10,
+                                    display: 'flex', alignItems: 'flex-start', gap: 10,
                                 }}>
-                                    <CheckCircle size={16} color="var(--color-go)" />
+                                    <CheckCircle size={16} color="var(--color-go)" style={{ marginTop: 2 }} />
                                     <div>
                                         <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-go)' }}>
-                                            Best flying window: {formatTime(displayDay.bestWindowStart)} – {formatTime(displayDay.bestWindowEnd)}
+                                            Best window: {formatTime(displayDay.bestWindowStart)} – {formatTime(displayDay.bestWindowEnd)}
                                         </div>
-                                        <div style={{ fontSize: '0.72rem', color: 'rgba(232,237,245,0.45)' }}>
-                                            {displayDay.bestWindowHours} consecutive GO hour{displayDay.bestWindowHours !== 1 ? 's' : ''} · model-based forecast
+                                        <div style={{ fontSize: '0.72rem', color: 'rgba(232,237,245,0.45)', marginBottom: 6 }}>
+                                            {displayDay.bestWindowHours} consecutive GO hour{displayDay.bestWindowHours !== 1 ? 's' : ''}
                                         </div>
+                                        {(() => {
+                                            const bestHour = displayDay.hours.find(h => h.time === displayDay.bestWindowStart);
+                                            if (!bestHour) return null;
+                                            const allReasons = [...(bestHour.positives || []), ...(bestHour.issues || [])];
+                                            if (allReasons.length === 0) return null;
+                                            return (
+                                                <div style={{ fontSize: '0.7rem', color: 'rgba(34,197,94,0.8)', background: 'rgba(34,197,94,0.1)', padding: '6px 8px', borderRadius: 6, lineHeight: 1.4 }}>
+                                                    <strong>Why it's flyable:</strong> {allReasons.join(' • ')}
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             )}
@@ -276,12 +292,48 @@ export default function SiteForecast({ site, onClose }) {
                                 <div style={{
                                     padding: '12px 14px', borderRadius: 12,
                                     background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
-                                    display: 'flex', alignItems: 'center', gap: 10,
+                                    display: 'flex', alignItems: 'flex-start', gap: 10,
                                 }}>
-                                    <XCircle size={16} color="var(--color-no-go)" />
-                                    <div style={{ fontSize: '0.82rem', color: 'var(--color-no-go)', fontWeight: 600 }}>
-                                        No flyable windows expected
-                                        <div style={{ fontSize: '0.72rem', color: 'rgba(239,68,68,0.6)', fontWeight: 400 }}>Conditions don't meet minimum requirements</div>
+                                    <XCircle size={16} color="var(--color-no-go)" style={{ marginTop: 2 }} />
+                                    <div>
+                                        <div style={{ fontSize: '0.82rem', color: 'var(--color-no-go)', fontWeight: 600 }}>
+                                            No flyable windows expected
+                                        </div>
+                                        {(() => {
+                                            const midHour = displayDay.hours.find(h => h.hour === 12) || displayDay.hours[0];
+                                            if (!midHour || !midHour.issues || midHour.issues.length === 0) return null;
+                                            return (
+                                                <div style={{ fontSize: '0.7rem', color: 'rgba(239,68,68,0.8)', background: 'rgba(239,68,68,0.1)', padding: '6px 8px', borderRadius: 6, lineHeight: 1.4, marginTop: 6 }}>
+                                                    <strong>Main issues:</strong> {midHour.issues.join(' • ')}
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
+                                </div>
+                            )}
+
+                            {displayDay.dayRating === 'MARGINAL' && displayDay.goHours === 0 && (
+                                <div style={{
+                                    padding: '12px 14px', borderRadius: 12,
+                                    background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)',
+                                    display: 'flex', alignItems: 'flex-start', gap: 10,
+                                }}>
+                                    <MinusCircle size={16} color="var(--color-marginal)" style={{ marginTop: 2 }} />
+                                    <div>
+                                        <div style={{ fontSize: '0.82rem', color: 'var(--color-marginal)', fontWeight: 600 }}>
+                                            Marginal conditions expected
+                                        </div>
+                                        {(() => {
+                                            const midHour = displayDay.hours.find(h => h.hour === 12) || displayDay.hours[0];
+                                            if (!midHour) return null;
+                                            const allReasons = [...(midHour.issues || []), ...(midHour.positives || [])];
+                                            if (allReasons.length === 0) return null;
+                                            return (
+                                                <div style={{ fontSize: '0.7rem', color: 'rgba(245,158,11,0.8)', background: 'rgba(245,158,11,0.1)', padding: '6px 8px', borderRadius: 6, lineHeight: 1.4, marginTop: 6 }}>
+                                                    <strong>Conditions:</strong> {allReasons.join(' • ')}
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             )}
@@ -361,10 +413,10 @@ function WindAltBar({ hours }) {
     const avg = (arr) => arr.reduce((a, b) => a + (b || 0), 0) / arr.length;
 
     const alts = [
-        { label: '10m', values: daylight.map(h => h.windSpeed10m) },
-        { label: '80m', values: daylight.map(h => h.windSpeed80m) },
-        { label: '120m', values: daylight.map(h => h.windSpeed120m) },
-        { label: '180m', values: daylight.map(h => h.windSpeed180m) },
+        { label: '33ft', values: daylight.map(h => h.windSpeed10m) },
+        { label: '262ft', values: daylight.map(h => h.windSpeed80m) },
+        { label: '394ft', values: daylight.map(h => h.windSpeed120m) },
+        { label: '591ft', values: daylight.map(h => h.windSpeed180m) },
     ].filter(a => a.values.some(v => v != null));
 
     const maxSpeed = Math.max(...alts.flatMap(a => a.values.filter(Boolean)));

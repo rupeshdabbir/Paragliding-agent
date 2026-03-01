@@ -54,7 +54,7 @@ export default function SiteCard({ site, analysis, weather, defaultExpanded = fa
                             {site.siteTypes?.ridgeSoaring && <SiteTag label="Ridge Soaring" />}
                             {site.siteTypes?.thermaling && <SiteTag label="Thermaling" />}
                             {site.siteTypes?.hanggliding && <SiteTag label="Hang Gliding" />}
-                            {site.altitude > 0 && <SiteTag label={`${site.altitude}m`} icon={<Mountain size={11} />} />}
+                            {site.altitude > 0 && <SiteTag label={`${site.altitude}ft`} icon={<Mountain size={11} />} />}
                         </div>
                     </div>
 

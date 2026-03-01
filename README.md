@@ -15,7 +15,7 @@ SkyPilot is a full-stack AI-powered paragliding conditions advisor. It helps pil
 ## 🚀 Features
 
 - **Interactive Map:** View nearby paragliding sites with color-coded markers based on current flyability.
-- **Hourly & 7-Day Forecasts:** detailed breakdowns of wind by altitude (10m, 80m, 120m, 180m), wind direction, gusts, and weather conditions.
+- **Hourly & 7-Day Forecasts:** detailed breakdowns of wind by altitude (33ft, 262ft, 394ft, 591ft), wind direction, gusts, and weather conditions.
 - **Model Selection:** Choose your preferred weather model: Auto (HRRR for North America + GFS/ECMWF globally), GFS, ECMWF, or ICON.
 - **Site-Specific AI Chat:** Start a conversation with SkyPilot about a specific site. Ask questions like "Can I fly Mussel Rock today?" or "When is the best window this week?"
 - **Search:** Find any site using the Nominatim geocoding API combined with ParaglidingEarth data.

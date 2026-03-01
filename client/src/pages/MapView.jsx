@@ -319,7 +319,7 @@ export default function MapView() {
                                     <div style={{ minWidth: 180 }}>
                                         <div style={{ fontWeight: 700, marginBottom: 4, color: '#fff', fontFamily: 'Inter, sans-serif' }}>{site.name}</div>
                                         <div style={{ marginBottom: 6 }}><FlyabilityBadge rating={site.rating} size="sm" /></div>
-                                        <div style={{ fontSize: '0.78rem', color: 'rgba(232,237,245,0.6)' }}>Alt: {site.altitude}m · Click for details</div>
+                                        <div style={{ fontSize: '0.78rem', color: 'rgba(232,237,245,0.6)' }}>Alt: {site.altitude}ft · Click for details</div>
                                     </div>
                                 </Popup>
                             </Marker>
