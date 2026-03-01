@@ -130,7 +130,7 @@ export default function SiteCard({ site, analysis, weather, defaultExpanded = fa
                         </div>
 
                         {/* Full weather card */}
-                        {weather && <WeatherCard weather={weather} expanded />}
+                        {weather && <WeatherCard weather={weather} baseAlt={site.altitude || 0} expanded />}
 
                         {/* Coordinates */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, fontSize: '0.75rem', color: 'rgba(232,237,245,0.3)' }}>

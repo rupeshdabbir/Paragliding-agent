@@ -36,7 +36,7 @@ function MetricRow({ icon, label, value, unit, color }) {
     );
 }
 
-export default function WeatherCard({ weather, expanded = false }) {
+export default function WeatherCard({ weather, baseAlt = 0, expanded = false }) {
     if (!weather) return null;
     const w = weather;
 
@@ -66,10 +66,10 @@ export default function WeatherCard({ weather, expanded = false }) {
             <div style={{
                 display: 'flex', gap: 8, marginBottom: 12,
             }}>
-                <WindAlt label="33ft" value={w.windSpeed10m} color={windColor} />
-                {w.windSpeed80m !== undefined && <WindAlt label="262ft" value={w.windSpeed80m} color={windColor} />}
-                {w.windSpeed120m !== undefined && <WindAlt label="394ft" value={w.windSpeed120m} color={windColor} />}
-                {w.windSpeed180m !== undefined && <WindAlt label="591ft" value={w.windSpeed180m} color={windColor} />}
+                <WindAlt label={`${baseAlt + 33}ft`} value={w.windSpeed10m} color={windColor} />
+                {w.windSpeed80m !== undefined && <WindAlt label={`${baseAlt + 262}ft`} value={w.windSpeed80m} color={windColor} />}
+                {w.windSpeed120m !== undefined && <WindAlt label={`${baseAlt + 394}ft`} value={w.windSpeed120m} color={windColor} />}
+                {w.windSpeed180m !== undefined && <WindAlt label={`${baseAlt + 591}ft`} value={w.windSpeed180m} color={windColor} />}
             </div>
 
             <MetricRow icon={<Wind size={13} />} label="Wind direction"

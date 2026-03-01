@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, Wind, AlertTriangle, ChevronRight, CheckCircle, XCircle, MinusCircle, RefreshCw } from 'lucide-react';
+import { Calendar, Clock, Wind, AlertTriangle, ChevronRight, CheckCircle, XCircle, MinusCircle, RefreshCw, Info } from 'lucide-react';
 import WindChart from './WindChart.jsx';
 import { FlyabilityBadge } from './FlyabilityBadge.jsx';
 
@@ -110,6 +110,28 @@ function WeekSummary({ days, onDayClick }) {
                 );
             })}
         </div>
+    );
+}
+
+function AslTooltip({ altitude, leftOffset = 180 }) {
+    const [visible, setVisible] = useState(false);
+    return (
+        <>
+            <div
+                onMouseEnter={() => setVisible(true)}
+                onMouseLeave={() => setVisible(false)}
+                onClick={() => setVisible(v => !v)}
+                style={{ cursor: 'help', display: 'flex', alignItems: 'center', color: 'rgba(232,237,245,0.3)', marginTop: -2 }}
+            >
+                <Info size={12} />
+            </div>
+            {visible && (
+                <div style={{ position: 'absolute', left: leftOffset, top: -10, width: 220, background: 'rgba(6,10,20,0.95)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '10px 12px', fontSize: '0.7rem', color: '#e8edf5', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 100, lineHeight: 1.4, backdropFilter: 'blur(12px)', pointerEvents: 'none' }}>
+                    <strong style={{ color: 'var(--color-sky)' }}>Above Sea Level</strong><br />
+                    Wind altitudes are calculated by adding the site's launch altitude ({altitude}ft) to the AGL (Above Ground Level) forecast models.
+                </div>
+            )}
+        </>
     );
 }
 
@@ -340,18 +362,24 @@ export default function SiteForecast({ site, onClose }) {
 
                             {/* Wind multi-altitude stats */}
                             <div>
-                                <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(232,237,245,0.4)', marginBottom: 8 }}>
-                                    Wind by Altitude
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, position: 'relative' }}>
+                                    <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(232,237,245,0.4)' }}>
+                                        Wind by Altitude (ASL)
+                                    </div>
+                                    <AslTooltip altitude={site?.altitude || 0} leftOffset={160} />
                                 </div>
-                                <WindAltBar hours={displayDay.hours} />
+                                <WindAltBar hours={displayDay.hours} baseAlt={site?.altitude || 0} />
                             </div>
 
                             {/* Wind chart */}
                             <div>
-                                <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(232,237,245,0.4)', marginBottom: 10 }}>
-                                    Wind Forecast — Hourly
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, position: 'relative' }}>
+                                    <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(232,237,245,0.4)' }}>
+                                        Wind Forecast — Hourly (ASL)
+                                    </div>
+                                    <AslTooltip altitude={site?.altitude || 0} leftOffset={200} />
                                 </div>
-                                <WindChart hours={displayDay.hours} />
+                                <WindChart hours={displayDay.hours} baseAlt={site?.altitude || 0} />
                             </div>
                         </div>
                     )}
@@ -406,17 +434,17 @@ function DaySummaryCard({ day, label, active, onClick }) {
 }
 
 // ─── Wind altitude comparison bar ─────────────────────────────────────────────
-function WindAltBar({ hours }) {
+function WindAltBar({ hours, baseAlt = 0 }) {
     const daylight = hours.filter(h => h.hour >= 9 && h.hour <= 18);
     if (daylight.length === 0) return null;
 
     const avg = (arr) => arr.reduce((a, b) => a + (b || 0), 0) / arr.length;
 
     const alts = [
-        { label: '33ft', values: daylight.map(h => h.windSpeed10m) },
-        { label: '262ft', values: daylight.map(h => h.windSpeed80m) },
-        { label: '394ft', values: daylight.map(h => h.windSpeed120m) },
-        { label: '591ft', values: daylight.map(h => h.windSpeed180m) },
+        { label: `${baseAlt + 33}ft`, values: daylight.map(h => h.windSpeed10m) },
+        { label: `${baseAlt + 262}ft`, values: daylight.map(h => h.windSpeed80m) },
+        { label: `${baseAlt + 394}ft`, values: daylight.map(h => h.windSpeed120m) },
+        { label: `${baseAlt + 591}ft`, values: daylight.map(h => h.windSpeed180m) },
     ].filter(a => a.values.some(v => v != null));
 
     const maxSpeed = Math.max(...alts.flatMap(a => a.values.filter(Boolean)));

@@ -2,10 +2,10 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 
 // ─── Colour palette ────────────────────────────────────────────────────────────
 const ALT_COLORS = {
-    '10m': { line: '#00c8ff', area: 'rgba(0,200,255,0.12)', label: '33ft' },
-    '80m': { line: '#a78bfa', area: 'rgba(167,139,250,0.10)', label: '262ft' },
-    '120m': { line: '#34d399', area: 'rgba(52,211,153,0.10)', label: '394ft' },
-    '180m': { line: '#fb923c', area: 'rgba(251,146,60,0.08)', label: '591ft' },
+    '10m': { line: '#00c8ff', area: 'rgba(0,200,255,0.12)', addFt: 33 },
+    '80m': { line: '#a78bfa', area: 'rgba(167,139,250,0.10)', addFt: 262 },
+    '120m': { line: '#34d399', area: 'rgba(52,211,153,0.10)', addFt: 394 },
+    '180m': { line: '#fb923c', area: 'rgba(251,146,60,0.08)', addFt: 591 },
 };
 
 const GUST_COLOR = 'rgba(239,68,68,0.55)';
@@ -41,7 +41,7 @@ function wmoDesc(code) {
     return '';
 }
 
-export default function WindChart({ hours, title = 'Wind Forecast' }) {
+export default function WindChart({ hours, title = 'Wind Forecast', baseAlt = 0 }) {
     const svgRef = useRef(null);
     const [tooltip, setTooltip] = useState(null); // { x, y, hour }
     const [activeLayers, setActiveLayers] = useState({ '10m': true, '80m': true, '120m': false, '180m': false, gusts: true });
@@ -130,7 +130,7 @@ export default function WindChart({ hours, title = 'Wind Forecast' }) {
                         fontSize: '0.73rem', fontWeight: 600, transition: 'all 0.2s ease',
                     }}>
                         <span style={{ width: 16, height: 2, background: activeLayers[key] ? line : 'rgba(255,255,255,0.2)', display: 'inline-block', borderRadius: 1 }} />
-                        Wind {label}
+                        Wind {baseAlt + ALT_COLORS[key].addFt}ft
                     </button>
                 ))}
                 <button onClick={() => toggleLayer('gusts')} style={{
@@ -309,7 +309,7 @@ export default function WindChart({ hours, title = 'Wind Forecast' }) {
                                     <div key={key} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                             <span style={{ width: 10, height: 2, background: ALT_COLORS[key].line, display: 'inline-block', borderRadius: 1 }} />
-                                            <span style={{ fontSize: '0.72rem', color: 'rgba(232,237,245,0.55)' }}>Wind {ALT_COLORS[key].label}</span>
+                                            <span style={{ fontSize: '0.72rem', color: 'rgba(232,237,245,0.55)' }}>Wind {baseAlt + ALT_COLORS[key].addFt}ft</span>
                                         </div>
                                         <span style={{ fontSize: '0.82rem', fontWeight: 700, color: ALT_COLORS[key].line }}>
                                             {Math.round(v)} mph

@@ -70,7 +70,7 @@ export async function analyzeFlyingConditions({ lat, lng, distance = 30, siteNam
                 precipitationMmH: precipitation,
                 positives: conditions.positives,
                 issues: conditions.issues,
-                summary: buildSummary(site.name, conditions.rating, conditions.issues, conditions.positives, windCardinal, windSpeed),
+                summary: buildSummary(site.name, site.altitude || 0, conditions.rating, conditions.issues, conditions.positives, windCardinal, windSpeed),
             },
             weather: {
                 current: weather.current,
@@ -99,12 +99,12 @@ export async function analyzeFlyingConditions({ lat, lng, distance = 30, siteNam
     };
 }
 
-function buildSummary(siteName, rating, issues, positives, windDir, windSpeed) {
+function buildSummary(siteName, siteAltitude, rating, issues, positives, windDir, windSpeed) {
     const emoji = { GO: '✅', MARGINAL: '⚠️', NO_GO: '🚫' }[rating];
     const label = { GO: 'GO — Great flying conditions!', MARGINAL: 'MARGINAL — Fly with caution', NO_GO: 'NO-GO — Not safe to fly' }[rating];
 
     let text = `${emoji} **${siteName}**: ${label}\n`;
-    text += `Current wind: ${windDir} at ${windSpeed.toFixed(0)} mph\n`;
+    text += `Current wind at launch (~${siteAltitude + 33}ft ASL): ${windDir} at ${windSpeed.toFixed(0)} mph\n`;
 
     if (issues.length > 0) {
         text += `Issues: ${issues.join('; ')}\n`;
