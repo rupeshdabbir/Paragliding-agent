@@ -13,6 +13,7 @@ import ChatMessage, { TypingIndicator } from '../components/ChatMessage.jsx';
 import SiteSearch from '../components/SiteSearch.jsx';
 import SiteForecast from '../components/SiteForecast.jsx';
 import QuickStatsBar from '../components/QuickStatsBar.jsx';
+import DisclaimerModal from '../components/DisclaimerModal.jsx';
 import { useGeolocation } from '../hooks/useGeolocation.js';
 import { useChat } from '../hooks/useChat.js';
 
@@ -500,6 +501,7 @@ export default function MapView() {
 
     return (
         <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0d1117', paddingTop: 'var(--navbar-height)' }}>
+            <DisclaimerModal />
             <div style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
 
                 {/* ── MAP ────────────────────────────────────────────────────── */}
