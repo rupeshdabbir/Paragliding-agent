@@ -83,12 +83,58 @@ npm run dev
 
 ## 🏗️ Detailed Engineering & Architecture
 
-SkyPilot leverages a tool-calling architecture. The Node.js Express server hosts a LangChain-style function-calling loop wrapped around Google's `@google/generative-ai` SDK. 
+SkyPilot leverages a tool-calling architecture in a Node.js Express server, hosting a LangChain-style function-calling loop wrapped around Google's `@google/generative-ai` SDK. When a user interacts with the app, the backend dynamically fetches and synthesizes data from multiple REST APIs.
 
-When a user asks the AI a question, or requests a forecast, the backend dynamically fetches and synthesizes data from multiple REST APIs.
+### Key Architectural Decisions
+- **Unified Rule Engines:** Flyability is determined by a dual-engine approach combining deterministic algorithms (Rule-Based Engine) and semantic LLM synthesis (AI-Based Engine). The AI-Based Engine acts as the supreme authority when available.
+- **Optimized Gemini Calls:** The AI weekly verdict analyzes all 7 days in a single Gemini API call to reduce latency and token usage.
+- **Caching Mechanism:** `node-cache` is heavily utilized to avoid redundant API calls. ParaglidingEarth API responses are cached for 1 hour, Open-Meteo for 10 minutes, and multi-day Gemini verdicts for 6 hours.
+- **Vite Proxy:** Circumvents CORS issues during development by proxying API calls from port `5173` to `3001`.
+- **Fail-Safe Processing:** If a specific site fails to load or an API rate limit is reached, `try-catch` blocks ensure partial arrays are returned gracefully rather than crashing endpoints.
 
-### 1. Forecast & Flyability Pipeline
-The backend calculates flyable windows based on site requirements (e.g. Mussel Rock requires W or NW winds) against incoming hourly weather data.
+---
+
+## 🧠 Dual Rule Engines for Flyability
+
+SkyPilot uses two cooperating engines to determine whether a site is **GO**, **MARGINAL**, or **NO-GO**. 
+
+### 1. Rule-Based Engine (Deterministic Validation)
+Located in `utils/windUtils.js` and `tools/analyzeFlyingConditions.js`, this engine computes a safe baseline using hard math:
+- **Wind Speed & Gusts:** Checks 10m wind speeds against physical limits (e.g., > 18mph is generally a NO-GO, > 14mph is MARGINAL depending on site type).
+- **Wind Direction Matching:** Checks if the current or forecasted wind direction (in degrees) falls within the site's acceptable launch angles from ParaglidingEarth. It scores the direction on a scale (0 to 1).
+- **Environmental Factors:** Checks precipitation, visibility, and cloud cover to deduct points or outright flag a NO-GO.
+- **Output:** Returns a quantitative summary composed of `rating`, `issues`, and `positives`.
+
+### 2. AI-Based Rule Engine (Semantic & Contextual Analysis)
+Located in `services/aiVerdict.js`, this engine utilizes Gemini 3.1 Flash to add nuanced reasoning that raw math misses:
+- **Comprehensive Context:** It consumes the raw 7-day hourly weather data alongside site metadata (altitude, site types, acceptable wind directions).
+- **Daily Syntheses:** For each day, the AI generates a qualitative assessment, providing a conversational `headline`, a detailed `reasoning` paragraph, and identifying the `bestWindow` of time for a flight.
+- **Overrides:** The AI's verdict rating (GO/MARGINAL/NO-GO) supersedes the Rule-Based rating in the UI, ensuring that complex atmospheric subtleties are accounted for.
+
+---
+
+## 📜 API Documentation
+
+### Weather & Site APIs
+- **`GET /api/sites`**
+  - **Query Params:** `lat`, `lng`, `distance`
+  - **Description:** Returns all paragliding sites within the specified radius, enriched with current weather and rule-based GO/MARGINAL/NO-GO ratings.
+  
+- **`GET /api/forecast`**
+  - **Query Params:** `lat`, `lng`, `siteLat` (optional), `siteLng` (optional), `models` (e.g., `best_match`)
+  - **Description:** Returns a 7-day extended forecast with hourly wind arrays, a daily summary block, and full AI verdicts mapped by date.
+
+### Search API
+- **`GET /api/search`**
+  - **Query Params:** `q` (query string, e.g., "Mussel Rock"), `limit`
+  - **Description:** Uses Nominatim geocoding to find raw coordinates, then performs a radial search in ParaglidingEarth. Additionally, performs fuzzy name-matching in a broader radius to ensure high-accuracy search results.
+
+### Conversational API
+- **`POST /api/chat`**
+  - **Request Body:** `{ message: "...", history: [{role: "user"|"model", content: "..."}], location: {lat, lng} }`
+  - **Description:** Agentic loop endpoint. Gemini can dynamically invoke local tools such as `analyze_flying_conditions` (which fetches weather and evaluates flyability) or `get_paragliding_sites` before returning a synthesized Markdown response to the user.
+
+---
 
 ```mermaid
 sequenceDiagram
@@ -96,65 +142,22 @@ sequenceDiagram
     participant API as Express /api/forecast
     participant PGE as ParaglidingEarth API
     participant OM as Open-Meteo API
-    participant Engine as Wind Scoring Engine
+    participant Engine as Dual Engines (Math + AI)
 
     UI->>API: GET /api/forecast?lat=...&lng=...&models=best_match
     
     par Data Fetching
-        API->>PGE: Fetch 3 closest sites & required wind directions
-        API->>OM: Fetch 7-day hourly wind (10m,80m,120m,180m), gusts, weather
+        API->>PGE: Fetch closest sites & wind directions
+        API->>OM: Fetch 7-day hourly wind, gusts, weather
     end
     
-    PGE-->>API: Site Object (incl. ideal angles: e.g. 240°-300°)
-    OM-->>API: Weather Data Array
+    API->>Engine: Pass Site & 7-Day Weather Data
     
-    API->>Engine: Pass Site Angles + Hourly Weather
-    loop Every Hour (168 iterations)
-        Engine->>Engine: scoreFlyingConditions()
-        Engine-->>Engine: Returns GO / MARGINAL / NO-GO
+    par Analysis
+        Engine->>Engine: Run Mathematical Rule-Based Engine
+        Engine->>Engine: Fetch Cached AI Verdicts (or call Gemini)
     end
     
-    API-->>UI: Formatted JSON with Daily Summaries & Hourly Arrays
-    UI->>UI: Renders Charts & Badges
+    API-->>UI: Formatted JSON with Daily Summaries, Hourly Arrays, and AI Verdicts
+    UI->>UI: Renders Charts, Badges, & AI Advice
 ```
-
-### 2. SkyPilot Conversational Agent Flow
-The Chat route uses an agentic loop. Gemini can call `get_paragliding_sites`, `get_weather_forecast`, or `analyze_flying_conditions`.
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Chat as Express /api/chat
-    participant Gemini as Gemini 3.1 Flash
-    participant Tools as Local Tool Handlers
-    
-    User->>Chat: "Can I fly Mussel Rock today?"
-    Chat->>Gemini: Send prompt & system instructions
-    Note over Gemini: Determines it needs site location & weather
-    Gemini-->>Chat: function_call: analyze_flying_conditions(location="Mussel Rock")
-    
-    Chat->>Tools: execute analyze_flying_conditions()
-    Note over Tools: Fetches coords via Geocoder
-    Note over Tools: Fetches weather via Open-Meteo
-    Note over Tools: Generates JSON Flyability Report
-    Tools-->>Chat: Returns JSON Report
-    
-    Chat->>Gemini: Provide tool_response
-    Note over Gemini: Synthesizes final conversational response
-    Gemini-->>Chat: Markdown Response
-    
-    Chat-->>User: "Mussel Rock is a GO today! Wind is W at 10mph..."
-```
-
-### Key Technical Decisions
-- **`node-cache`**: API responses from Paragliding Earth are cached for 1 hour, and Open-Meteo for 10 minutes, significantly reducing external API round-trips and speeding up Map rendering.
-- **Vite Proxy**: Circumvents CORS issues during development by proxying `/api` from `5173` to `3001`.
-- **CSS Modules vs Tailwind**: Vanilla CSS / Inline styles were chosen for this specific project to keep the dependency footprint small while maintaining maximum control over modern glassmorphism aesthetics.
-- **Fail-Safe Processing**: A single site's failure to load from ParaglidingEarth will not crash the entire `/api/sites` endpoint; `try-catch` blocks ensure partial arrays are returned gracefully. Rate limits on the Gemini API are caught and returned as clean 500 error JSONs to the client.
-
-## 📜 API Documentation 
-
-- `GET /api/sites?lat=X&lng=Y&distance=50` - Get all sites within a radius, enriched with current weather and a GO/MARGINAL/NO-GO rating.
-- `GET /api/forecast?lat=X&lng=Y&models=best_match` - Returns a 7-day extended forecast with hourly wind arrays and a daily summary block.
-- `GET /api/search?q=Mussel+Rock` - Geocodes a text string and returns the closest matched paragliding sites.
-- `POST /api/chat` - Conversational endpoint accepting `{ message: "...", history: [...] }`.
