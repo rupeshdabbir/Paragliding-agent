@@ -14,11 +14,11 @@ SkyPilot is a full-stack AI-powered paragliding conditions advisor. It helps pil
 
 ## 🚀 Features
 
-- **Interactive Map:** View nearby paragliding sites with color-coded markers based on current flyability.
-- **Hourly & 7-Day Forecasts:** detailed breakdowns of wind by altitude (33ft, 262ft, 394ft, 591ft), wind direction, gusts, and weather conditions.
+- **Interactive Map:** View nearby paragliding sites with color-coded markers based on current flyability, sporting a custom dark-mode Stadia Maps theme.
+- **Hourly & 7-Day Forecasts:** detailed breakdowns of wind by altitude (33ft, 262ft, 394ft, 591ft), wind direction, gusts, and weather conditions mapped to colorful gradients.
 - **Model Selection:** Choose your preferred weather model: Auto (HRRR for North America + GFS/ECMWF globally), GFS, ECMWF, or ICON.
-- **Site-Specific AI Chat:** Start a conversation with SkyPilot about a specific site. Ask questions like "Can I fly Mussel Rock today?" or "When is the best window this week?"
-- **Search:** Find any site using the Nominatim geocoding API combined with ParaglidingEarth data.
+- **Site-Specific AI Chat:** A slide-out "Ask SkyPilot" drawer to chat about a specific site. Ask questions like "Can I fly Mussel Rock today?" or "When is the best window this week?"
+- **Search:** Find any site using the Nominatim geocoding API combined with ParaglidingEarth data, prioritizing localized results.
 
 ---
 
@@ -111,6 +111,7 @@ Located in `services/aiVerdict.js`, this engine utilizes Gemini 3.1 Flash to add
 - **Comprehensive Context:** It consumes the raw 7-day hourly weather data alongside site metadata (altitude, site types, acceptable wind directions).
 - **Daily Syntheses:** For each day, the AI generates a qualitative assessment, providing a conversational `headline`, a detailed `reasoning` paragraph, and identifying the `bestWindow` of time for a flight.
 - **Overrides:** The AI's verdict rating (GO/MARGINAL/NO-GO) supersedes the Rule-Based rating in the UI, ensuring that complex atmospheric subtleties are accounted for.
+- **Graceful Fallback System:** By default, SkyPilot targets Google's `gemini-3-flash-preview` for supreme performance. However, to combat Free Tier quota limitations (`429 Too Many Requests`), the agentic hook wraps completions in a hardened try/catch block. If `gemini-3` limits are hit, it transparently fails over to `gemini-2.5-flash` to complete the request without crashing the user interface, noting this fallback explicitly in a UI badge within the Chat Drawer.
 
 #### AI Thought Process & Application Flow
 
