@@ -93,8 +93,23 @@ function FlyTo({ center, zoom }) {
     return null;
 }
 
+// ─── Map Click Events ─────────────────────────────────────────────────────────
+function MapClickHandler({ onClick }) {
+    const map = useMap();
+    useEffect(() => {
+        const handler = (e) => {
+            // Only fire if the click target is the map container itself (not markers)
+            if (e.originalEvent.target.closest('.leaflet-marker-icon')) return;
+            onClick(e);
+        };
+        map.on('click', handler);
+        return () => map.off('click', handler);
+    }, [map, onClick]);
+    return null;
+}
+
 // ─── Chat Drawer (slides from right on desktop, full-screen on mobile) ────────
-function ChatDrawer({ open, onClose, location, contextSite, isMobile, width, onDragStart }) {
+function ChatDrawer({ open, onClose, location, contextSite, isMobile, chatWidthPx, setChatWidthPx, onDragStart }) {
     const { messages, loading, sendMessage, clearMessages } = useChat();
     const [input, setInput] = useState('');
     const [shareLocation, setShareLocation] = useState(true);
@@ -136,7 +151,7 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, width, onD
     } : {
         // Desktop: fixed right panel, always mounted, slides in/out via transform
         position: 'absolute', right: 0, top: 0, bottom: 0, zIndex: 2500,
-        width,
+        width: chatWidthPx,
         display: 'flex', flexDirection: 'column',
         background: 'var(--color-sheet-bg)',
         backdropFilter: 'blur(24px)',
@@ -154,14 +169,23 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, width, onD
                 <div
                     onMouseDown={onDragStart}
                     style={{
-                        position: 'absolute', left: -4, top: 0, bottom: 0, width: 8,
-                        cursor: 'col-resize', zIndex: 10,
+                        position: 'absolute', left: -12, top: '50%', transform: 'translateY(-50%)',
+                        width: 24, height: 80, cursor: 'col-resize', zIndex: 10,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                 >
                     <div style={{
-                        position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-                        width: 4, height: 40, borderRadius: 4, background: 'var(--color-border-strong)',
-                    }} />
+                        width: 14, height: 56, borderRadius: 8,
+                        background: 'rgba(0,136,204,0.35)', // Changed to match the Forecast Modal better but using sky base
+                        border: '1px solid var(--color-border-strong)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.2s ease',
+                    }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,136,204,0.75)'; e.currentTarget.style.width = '18px'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,136,204,0.35)'; e.currentTarget.style.width = '14px'; }}
+                    >
+                        <GripVertical size={11} color="#fff" />
+                    </div>
                 </div>
             )}
             {/* Header */}
@@ -212,6 +236,16 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, width, onD
                             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{contextSite.name}</span>
                         </div>
                     )}
+                    {!isMobile && [[440, <Minimize2 size={12} />, 'Compact'], [680, <Columns size={12} />, 'Wide'], [940, <Maximize2 size={12} />, 'Expand']].map(([w, icon, label]) => (
+                        <button key={w} onClick={() => setChatWidthPx(w)} title={label} style={{
+                            background: chatWidthPx === w ? 'var(--color-sky-dim)' : 'var(--color-surface-3)',
+                            border: `1px solid ${chatWidthPx === w ? 'rgba(0,200,255,0.35)' : 'var(--color-border-subtle)'}`,
+                            borderRadius: 7, width: 26, height: 26, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: chatWidthPx === w ? 'var(--color-sky)' : 'var(--color-text-dim)',
+                            transition: 'all 0.18s ease',
+                        }}>{icon}</button>
+                    ))}
                     {messages.length > 0 && (
                         <button onClick={clearMessages} title="Clear chat" style={{
                             background: 'transparent', border: '1px solid var(--color-border-base)',
@@ -416,12 +450,20 @@ export default function MapView() {
     const [showFilters, setShowFilters] = useState(false);
     const filterRef = useRef(null);
     const [portalTarget, setPortalTarget] = useState(null);
-    const [panelWidthPx, setPanelWidthPx] = useState(440);
+    const [forecastWidthPx, setForecastWidthPx] = useState(440);
+    const [chatWidthPx, setChatWidthPx] = useState(440);
     const [chatContextSite, setChatContextSite] = useState(null);
     const [siteAiVerdict, setSiteAiVerdict] = useState(null);
-    const isDragging = useRef(false);
-    const dragStartX = useRef(0);
-    const dragStartW = useRef(440);
+
+    // For forecast drag
+    const isDraggingForecast = useRef(false);
+    const dragStartXForecast = useRef(0);
+    const dragStartWForecast = useRef(440);
+
+    // For chat drag
+    const isDraggingChat = useRef(false);
+    const dragStartXChat = useRef(0);
+    const dragStartWChat = useRef(440);
 
     useEffect(() => {
         requestLocation();
@@ -480,18 +522,40 @@ export default function MapView() {
 
     // Drag resize handlers (desktop only)
     const handleDragStart = (e) => {
-        isDragging.current = true;
-        dragStartX.current = e.clientX;
-        dragStartW.current = panelWidthPx;
+        isDraggingForecast.current = true;
+        dragStartXForecast.current = e.clientX;
+        dragStartWForecast.current = forecastWidthPx;
         document.body.style.cursor = 'col-resize';
         document.body.style.userSelect = 'none';
         const onMove = (me) => {
-            if (!isDragging.current) return;
-            const delta = me.clientX - dragStartX.current;
-            setPanelWidthPx(Math.min(1100, Math.max(340, dragStartW.current + delta)));
+            if (!isDraggingForecast.current) return;
+            const delta = me.clientX - dragStartXForecast.current;
+            setForecastWidthPx(Math.min(1100, Math.max(340, dragStartWForecast.current + delta)));
         };
         const onUp = () => {
-            isDragging.current = false;
+            isDraggingForecast.current = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+        };
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+    };
+
+    const handleChatDragStart = (e) => {
+        isDraggingChat.current = true;
+        dragStartXChat.current = e.clientX;
+        dragStartWChat.current = chatWidthPx;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        const onMove = (me) => {
+            if (!isDraggingChat.current) return;
+            const delta = dragStartXChat.current - me.clientX; // Inverted for right-anchored panel
+            setChatWidthPx(Math.min(1100, Math.max(340, dragStartWChat.current + delta)));
+        };
+        const onUp = () => {
+            isDraggingChat.current = false;
             document.body.style.cursor = '';
             document.body.style.userSelect = '';
             window.removeEventListener('mousemove', onMove);
@@ -514,6 +578,11 @@ export default function MapView() {
                         style={{ width: '100%', height: '100%' }}
                         zoomControl={!isMobile}
                     >
+                        <FlyTo center={mapCenter} zoom={mapZoom} />
+                        <MapClickHandler onClick={() => {
+                            setSelectedSite(null);
+                            setChatOpen(false);
+                        }} />
                         {/* Tile layer: CartoDB Voyager for light (vivid blue water), Stadia dark for dark mode */}
                         <TileLayer
                             key={theme}
@@ -770,15 +839,15 @@ export default function MapView() {
                     {!isMobile && selectedSite && (
                         <div style={{
                             position: 'absolute', left: 12, top: 12, bottom: 12,
-                            width: panelWidthPx,
+                            width: forecastWidthPx,
                             background: 'var(--color-sheet-bg)',
                             backdropFilter: 'blur(24px)',
                             borderRadius: 18, border: '1px solid var(--color-border-base)',
                             overflowY: 'auto', padding: '14px 16px',
-                            zIndex: 1000, animation: 'slide-in-right 0.3s ease',
+                            zIndex: 2000, animation: 'slide-in-right 0.3s ease',
                             display: 'flex', flexDirection: 'column',
                             boxShadow: 'var(--color-elevation-lg)',
-                            transition: isDragging.current ? 'none' : 'width 0.25s ease',
+                            transition: isDraggingForecast.current ? 'none' : 'width 0.25s ease',
                         }}>
                             {/* Panel header */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, flexShrink: 0 }}>
@@ -802,12 +871,12 @@ export default function MapView() {
                                         <Sparkles size={11} fill="currentColor" /> Ask SkyPilot
                                     </button>
                                     {[[440, <Minimize2 size={12} />, 'Compact'], [680, <Columns size={12} />, 'Wide'], [940, <Maximize2 size={12} />, 'Expand']].map(([w, icon, label]) => (
-                                        <button key={w} onClick={() => setPanelWidthPx(w)} title={label} style={{
-                                            background: panelWidthPx === w ? 'var(--color-sky-dim)' : 'var(--color-surface-3)',
-                                            border: `1px solid ${panelWidthPx === w ? 'rgba(0,200,255,0.35)' : 'var(--color-border-subtle)'}`,
+                                        <button key={w} onClick={() => setForecastWidthPx(w)} title={label} style={{
+                                            background: forecastWidthPx === w ? 'var(--color-sky-dim)' : 'var(--color-surface-3)',
+                                            border: `1px solid ${forecastWidthPx === w ? 'rgba(0,200,255,0.35)' : 'var(--color-border-subtle)'}`,
                                             borderRadius: 7, width: 26, height: 26, cursor: 'pointer',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            color: panelWidthPx === w ? 'var(--color-sky)' : 'var(--color-text-dim)',
+                                            color: forecastWidthPx === w ? 'var(--color-sky)' : 'var(--color-text-dim)',
                                             transition: 'all 0.18s ease',
                                         }}>{icon}</button>
                                     ))}
@@ -833,13 +902,13 @@ export default function MapView() {
                             >
                                 <div style={{
                                     width: 14, height: 56, borderRadius: 8,
-                                    background: 'rgba(0,200,255,0.35)',
+                                    background: 'rgba(0,136,204,0.35)',
                                     border: '1px solid var(--color-border-strong)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     transition: 'all 0.2s ease',
                                 }}
-                                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,200,255,0.75)'; e.currentTarget.style.width = '18px'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,200,255,0.35)'; e.currentTarget.style.width = '14px'; }}
+                                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,136,204,0.75)'; e.currentTarget.style.width = '18px'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,136,204,0.35)'; e.currentTarget.style.width = '14px'; }}
                                 >
                                     <GripVertical size={11} color="#fff" />
                                 </div>
@@ -868,8 +937,9 @@ export default function MapView() {
                     location={location}
                     contextSite={chatContextSite}
                     isMobile={isMobile}
-                    width={panelWidthPx}
-                    onDragStart={handleDragStart}
+                    chatWidthPx={chatWidthPx}
+                    setChatWidthPx={setChatWidthPx}
+                    onDragStart={handleChatDragStart}
                 />
 
 

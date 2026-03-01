@@ -52,8 +52,12 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: err.message || 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-    console.log(`\n🪂 SkyPilot API running at http://localhost:${PORT}`);
-    console.log(`   Gemini: ${process.env.GEMINI_API_KEY ? '✅ configured' : '❌ GEMINI_API_KEY missing'}`);
-    console.log(`   Pinecone: ${process.env.PINECONE_API_KEY ? '✅ configured' : '⚠️  not configured (optional)'}\n`);
-});
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`\n🪂 SkyPilot API running at http://localhost:${PORT}`);
+        console.log(`   Gemini: ${process.env.GEMINI_API_KEY ? '✅ configured' : '❌ GEMINI_API_KEY missing'}`);
+        console.log(`   Pinecone: ${process.env.PINECONE_API_KEY ? '✅ configured' : '⚠️  not configured (optional)'}\n`);
+    });
+}
+
+export default app;
