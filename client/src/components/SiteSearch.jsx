@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Search, MapPin, X, Wind, Loader } from 'lucide-react';
 
-export default function SiteSearch({ onSiteSelect, placeholder = 'Search a paragliding site...' }) {
+export default function SiteSearch({ onSiteSelect, center, placeholder = 'Search a paragliding site...' }) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -13,7 +13,11 @@ export default function SiteSearch({ onSiteSelect, placeholder = 'Search a parag
         if (q.length < 2) { setResults([]); setOpen(false); return; }
         setLoading(true);
         try {
-            const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=8`);
+            let url = `/api/search?q=${encodeURIComponent(q)}&limit=8`;
+            if (center && center.length === 2) {
+                url += `&lat=${center[0]}&lng=${center[1]}`;
+            }
+            const res = await fetch(url);
             const data = await res.json();
             setResults(data.results || []);
             setOpen(true);

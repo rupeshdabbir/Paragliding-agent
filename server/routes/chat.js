@@ -19,17 +19,27 @@ router.post('/', async (req, res) => {
             parts: [{ text: turn.content }],
         }));
 
-        const { reply, toolResults, usage } = await runAgent({
+        const { reply, toolResults, usage, usedModel } = await runAgent({
             userMessage: message,
             history: geminiHistory,
             userLocation: location,
         });
 
-        res.json({ reply, toolResults, usage });
+        res.json({ reply, toolResults, usage, usedModel });
     } catch (err) {
         console.error('[chat] Error from Gemini API:', err.message);
+
+        // Attempt to extract the model from the error message to show fallback status
+        let attemptedModel = 'gemini-3-flash-preview';
+        if (err.message && err.message.includes('gemini-2.5-flash')) {
+            attemptedModel = 'gemini-2.5-flash';
+        }
+
         // Do not crash the server on API errors (like rate limits or bad keys)
-        res.status(500).json({ error: err.message || 'Internal server error from AI service' });
+        res.status(500).json({
+            error: err.message || 'Internal server error from AI service',
+            usedModel: attemptedModel
+        });
     }
 });
 

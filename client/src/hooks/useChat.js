@@ -33,7 +33,9 @@ export function useChat() {
 
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
-                throw new Error(err.error || `Server error ${res.status}`);
+                const e = new Error(err.error || `Server error ${res.status}`);
+                e.usedModel = err.usedModel;
+                throw e;
             }
 
             const data = await res.json();
@@ -43,6 +45,7 @@ export function useChat() {
                 content: data.reply,
                 toolResults: data.toolResults || [],
                 timestamp: new Date().toISOString(),
+                usedModel: data.usedModel || 'gemini-3-flash-preview',
             };
 
             setMessages(prev => [...prev, aiMessage]);
@@ -50,8 +53,9 @@ export function useChat() {
             setError(err.message);
             setMessages(prev => [...prev, {
                 role: 'model',
-                content: `Sorry, I encountered an error: ${err.message}. Please check that your GEMINI_API_KEY is configured.`,
+                content: `Sorry, I encountered an error: ${err.message}`, // Avoid dumping the API key text to users
                 timestamp: new Date().toISOString(),
+                usedModel: err.usedModel || 'gemini-3-flash-preview'
             }]);
         } finally {
             setLoading(false);

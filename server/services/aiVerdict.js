@@ -123,14 +123,32 @@ Respond with ONLY a valid JSON object (no markdown, no backticks) with this exac
 
     try {
         const ai = getGenAI();
-        const model = ai.getGenerativeModel({
-            model: 'gemini-3-flash-preview',
-            generationConfig: { temperature: 0.2, maxOutputTokens: 3000 },
-        });
 
-        console.log(`[aiVerdict] Calling Gemini (7-day) for ${site.name}…`);
-        const result = await model.generateContent(prompt);
-        const raw = result.response.text().trim();
+        const attemptGenerate = async (modelName) => {
+            const generativeModel = ai.getGenerativeModel({
+                model: modelName,
+                generationConfig: { temperature: 0.2, maxOutputTokens: 3000 },
+            });
+            console.log(`[aiVerdict] Calling Gemini (7-day) for ${site.name} using ${modelName}…`);
+            return await generativeModel.generateContent(prompt);
+        };
+
+        let result;
+        try {
+            result = await attemptGenerate('gemini-3-flash-preview');
+        } catch (err) {
+            const msg = err.message || '';
+            if (msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('too many requests')) {
+                console.warn(`[aiVerdict] 429 Quota Exceeded on gemini-3-flash-preview. Falling back to gemini-2.5-flash`);
+                result = await attemptGenerate('gemini-2.5-flash');
+            } else {
+                throw err;
+            }
+        }
+
+        const raw = (result?.response?.text && typeof result.response.text === 'function')
+            ? result.response.text().trim()
+            : '';
         console.log(`[aiVerdict] Raw 7-day response (first 500):`, raw.slice(0, 500));
 
         // Strip markdown fences if present
@@ -139,6 +157,10 @@ Respond with ONLY a valid JSON object (no markdown, no backticks) with this exac
             .replace(/^```\s*/i, '')
             .replace(/\s*```$/i, '')
             .trim();
+
+        if (!cleaned) {
+            return buildFallbackWeekVerdicts(dates, 'Empty response from AI model');
+        }
 
         let parsed;
         try {

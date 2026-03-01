@@ -115,8 +115,7 @@ export async function runAgent({ userMessage, history = [], userLocation = null 
 
     const contextStr = buildContextStr(userLocation);
 
-    const model = ai.getGenerativeModel({
-        model: 'gemini-3-flash-preview',
+    const config = {
         systemInstruction: SYSTEM_PROMPT + contextStr,
         tools: [{
             functionDeclarations: [
@@ -129,58 +128,76 @@ export async function runAgent({ userMessage, history = [], userLocation = null 
             temperature: 0.7,
             maxOutputTokens: 2048,
         },
-    });
+    };
 
-    const chat = model.startChat({ history });
-    const toolResults = [];
+    const attemptAgentRun = async (modelName) => {
+        const model = ai.getGenerativeModel({
+            model: modelName,
+            ...config
+        });
 
-    // Send user message and run the agentic function-calling loop
-    let response = await chat.sendMessage(userMessage);
-    let candidate = response.response;
+        const chat = model.startChat({ history });
+        const toolResults = [];
 
-    // Agentic loop — keep calling tools until model produces a text response
-    let maxIterations = 10;
-    while (maxIterations-- > 0) {
-        const functionCalls = candidate.functionCalls();
-        if (!functionCalls || functionCalls.length === 0) break;
+        // Send user message and run the agentic function-calling loop
+        let response = await chat.sendMessage(userMessage);
+        let candidate = response.response;
 
-        // Execute all function calls in parallel
-        const toolResponses = await Promise.all(
-            functionCalls.map(async (call) => {
-                const handler = toolHandlers[call.name];
-                if (!handler) {
-                    console.warn(`[Gemini] Unknown tool: ${call.name}`);
-                    return { name: call.name, response: { error: `Unknown tool: ${call.name}` } };
-                }
+        // Agentic loop — keep calling tools until model produces a text response
+        let maxIterations = 10;
+        while (maxIterations-- > 0) {
+            const functionCalls = candidate.functionCalls();
+            if (!functionCalls || functionCalls.length === 0) break;
 
-                console.log(`[Gemini] Calling tool: ${call.name}`, call.args);
-                try {
-                    let result = await handler(call.args);
-                    // Gemini function responses must be Objects, not Arrays
-                    if (Array.isArray(result)) {
-                        result = { items: result };
+            // Execute all function calls in parallel
+            const toolResponses = await Promise.all(
+                functionCalls.map(async (call) => {
+                    const handler = toolHandlers[call.name];
+                    if (!handler) {
+                        console.warn(`[Gemini] Unknown tool: ${call.name}`);
+                        return { name: call.name, response: { error: `Unknown tool: ${call.name}` } };
                     }
-                    toolResults.push({ tool: call.name, args: call.args, result });
-                    return { name: call.name, response: result };
-                } catch (err) {
-                    console.error(`[Gemini] Tool error (${call.name}):`, err.message);
-                    toolResults.push({ tool: call.name, args: call.args, error: err.message });
-                    return { name: call.name, response: { error: err.message } };
-                }
-            })
-        );
 
-        // Send tool results back to the model
-        response = await chat.sendMessage(
-            toolResponses.map(tr => ({
-                functionResponse: { name: tr.name, response: tr.response },
-            }))
-        );
-        candidate = response.response;
+                    console.log(`[Gemini] Calling tool: ${call.name}`, call.args);
+                    try {
+                        let result = await handler(call.args);
+                        // Gemini function responses must be Objects, not Arrays
+                        if (Array.isArray(result)) {
+                            result = { items: result };
+                        }
+                        toolResults.push({ tool: call.name, args: call.args, result });
+                        return { name: call.name, response: result };
+                    } catch (err) {
+                        console.error(`[Gemini] Tool error (${call.name}):`, err.message);
+                        toolResults.push({ tool: call.name, args: call.args, error: err.message });
+                        return { name: call.name, response: { error: err.message } };
+                    }
+                })
+            );
+
+            // Send tool results back to the model
+            response = await chat.sendMessage(
+                toolResponses.map(tr => ({
+                    functionResponse: { name: tr.name, response: tr.response },
+                }))
+            );
+            candidate = response.response;
+        }
+
+        const reply = candidate.text();
+        const usage = candidate.usageMetadata;
+
+        return { reply, toolResults, usage, usedModel: modelName };
+    };
+
+    try {
+        return await attemptAgentRun('gemini-3-flash-preview');
+    } catch (err) {
+        const msg = err.message || '';
+        if (msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('too many requests')) {
+            console.warn(`[Gemini] 429 Quota Exceeded on gemini-3-flash-preview. Falling back to gemini-2.5-flash`);
+            return await attemptAgentRun('gemini-2.5-flash');
+        }
+        throw err;
     }
-
-    const reply = candidate.text();
-    const usage = candidate.usageMetadata;
-
-    return { reply, toolResults, usage };
 }

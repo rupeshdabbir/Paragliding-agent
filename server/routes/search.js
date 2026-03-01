@@ -16,32 +16,39 @@ router.get('/', async (req, res) => {
     }
 
     const query = q.trim();
-    const cacheKey = `search:${query.toLowerCase()}`;
+    const cacheKey = `search:${query.toLowerCase()}:${req.query.lat || 'gl'}:${req.query.lng || 'gl'}`;
 
     // Check cache
     const cached = cache.getSearch(cacheKey);
     if (cached) return res.json(cached);
 
     try {
+        let searchPoints = [];
+
+        // Step 0: If client provided lat/lng (their map center), prioritize searching locally FIRST
+        if (req.query.lat && req.query.lng) {
+            searchPoints.push({ lat: parseFloat(req.query.lat), lng: parseFloat(req.query.lng), source: 'local_map' });
+        }
+
         // Step 1: Try to geocode the query with Nominatim
         const nominatimRes = await axios.get('https://nominatim.openstreetmap.org/search', {
-            params: { q: query, format: 'json', limit: 1, addressdetails: 0 },
+            params: { q: query, format: 'json', limit: 3, addressdetails: 0 },
             headers: { 'User-Agent': 'SkyPilot-ParaglidingApp/1.0' },
             timeout: 5000,
         });
 
-        let searchPoints = [];
-
         if (nominatimRes.data?.length > 0) {
-            const place = nominatimRes.data[0];
-            searchPoints.push({ lat: parseFloat(place.lat), lng: parseFloat(place.lon), source: 'geocode' });
+            // Add top Nominatim results to our search points
+            nominatimRes.data.forEach(place => {
+                searchPoints.push({ lat: parseFloat(place.lat), lng: parseFloat(place.lon), source: 'geocode' });
+            });
         }
 
         // Step 2: Search ParaglidingEarth around each geocoded point (small radius for name searches)
         const siteResults = new Map();
 
         for (const point of searchPoints) {
-            const sites = await getSites({ lat: point.lat, lng: point.lng, distance: 20, limit: 15 });
+            const sites = await getSites({ lat: point.lat, lng: point.lng, distance: 30, limit: 50 });
             sites.forEach(site => {
                 if (!siteResults.has(site.name)) {
                     siteResults.set(site.name, site);
@@ -54,7 +61,7 @@ router.get('/', async (req, res) => {
         if (searchPoints.length > 0) {
             const broadSites = await getSites({
                 lat: searchPoints[0].lat, lng: searchPoints[0].lng,
-                distance: 100, limit: 20,
+                distance: 120, limit: 250,
             });
             broadSites.forEach(site => {
                 if (site.name.toLowerCase().includes(query.toLowerCase()) && !siteResults.has(site.name)) {
