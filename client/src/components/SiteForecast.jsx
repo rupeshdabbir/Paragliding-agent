@@ -194,10 +194,21 @@ function AiVerdictCard({ verdict }) {
                         <Sparkles size={15} color="#fff" fill="#fff" />
                     </div>
                     <div>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'rgba(232,237,245,0.45)', letterSpacing: '0.07em', textTransform: 'uppercase', lineHeight: 1 }}>
-                            SkyPilot AI
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1 }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'rgba(232,237,245,0.45)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+                                SkyPilot AI
+                            </span>
+                            {verdict.usedModel && (
+                                <span style={{
+                                    fontSize: '0.5rem', padding: '1px 5px', borderRadius: 4,
+                                    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                                    color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace'
+                                }}>
+                                    {verdict.usedModel}
+                                </span>
+                            )}
                         </div>
-                        <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff', marginTop: 2 }}>
+                        <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#fff', marginTop: 3 }}>
                             {verdict.headline}
                         </div>
                     </div>

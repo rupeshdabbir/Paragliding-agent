@@ -134,12 +134,14 @@ Respond with ONLY a valid JSON object (no markdown, no backticks) with this exac
         };
 
         let result;
+        let usedModel = 'gemini-3-flash-preview';
         try {
             result = await attemptGenerate('gemini-3-flash-preview');
         } catch (err) {
             const msg = err.message || '';
             if (msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('too many requests')) {
                 console.warn(`[aiVerdict] 429 Quota Exceeded on gemini-3-flash-preview. Falling back to gemini-2.5-flash`);
+                usedModel = 'gemini-2.5-flash';
                 result = await attemptGenerate('gemini-2.5-flash');
             } else {
                 throw err;
@@ -159,7 +161,7 @@ Respond with ONLY a valid JSON object (no markdown, no backticks) with this exac
             .trim();
 
         if (!cleaned) {
-            return buildFallbackWeekVerdicts(dates, 'Empty response from AI model');
+            return buildFallbackWeekVerdicts(dates, 'Empty response from AI model', usedModel);
         }
 
         let parsed;
@@ -167,24 +169,27 @@ Respond with ONLY a valid JSON object (no markdown, no backticks) with this exac
             parsed = JSON.parse(cleaned);
         } catch (parseErr) {
             console.error('[aiVerdict] JSON parse failed:', parseErr.message, '| raw:', raw.slice(0, 300));
-            return buildFallbackWeekVerdicts(dates, `JSON parse failed: ${parseErr.message}`);
+            return buildFallbackWeekVerdicts(dates, `JSON parse failed: ${parseErr.message}`, usedModel);
         }
 
         if (!parsed.days || !Array.isArray(parsed.days)) {
             console.error('[aiVerdict] Unexpected response shape:', JSON.stringify(parsed).slice(0, 200));
-            return buildFallbackWeekVerdicts(dates, 'Unexpected response shape');
+            return buildFallbackWeekVerdicts(dates, 'Unexpected response shape', usedModel);
         }
 
         // Index by date
         const verdicts = {};
         parsed.days.forEach(d => {
-            if (d.date) verdicts[d.date] = d;
+            if (d.date) {
+                d.usedModel = usedModel;
+                verdicts[d.date] = d;
+            }
         });
 
         // Fill any missing dates with fallback
         dates.forEach(date => {
             if (!verdicts[date]) {
-                verdicts[date] = buildFallbackDayVerdict(date, 'No AI verdict returned for this date');
+                verdicts[date] = buildFallbackDayVerdict(date, 'No AI verdict returned for this date', usedModel);
             }
         });
 
@@ -199,12 +204,15 @@ Respond with ONLY a valid JSON object (no markdown, no backticks) with this exac
         if (!errorDetail) errorDetail = JSON.stringify(err, Object.getOwnPropertyNames(err));
         if (!errorDetail || errorDetail === '{}') errorDetail = String(err);
 
+        // Can't reliably know usedModel here if it failed on the first call, but usually it means it failed completely.
+        const modelStr = errorDetail.includes('gemini-2.5-flash') ? 'gemini-2.5-flash' : 'gemini-3-flash-preview';
+
         console.error('[aiVerdict] Gemini 7-day call FAILED for', site?.name, ':', errorDetail);
-        return buildFallbackWeekVerdicts(dates, errorDetail);
+        return buildFallbackWeekVerdicts(dates, errorDetail, modelStr);
     }
 }
 
-function buildFallbackDayVerdict(date, errorMessage = null) {
+function buildFallbackDayVerdict(date, errorMessage = null, usedModel = 'unknown') {
     return {
         date,
         siteMode: 'unknown',
@@ -217,13 +225,14 @@ function buildFallbackDayVerdict(date, errorMessage = null) {
         safetyNotes: ['Verify conditions with local pilots before flying.'],
         _fallback: true,
         _error: errorMessage || 'Unknown error',
+        usedModel
     };
 }
 
-function buildFallbackWeekVerdicts(dates, errorMessage) {
+function buildFallbackWeekVerdicts(dates, errorMessage, usedModel = 'unknown') {
     console.error(`[aiVerdict] FALLBACK for entire week. Reason: ${errorMessage}`);
     const result = {};
-    dates.forEach(date => { result[date] = buildFallbackDayVerdict(date, errorMessage); });
+    dates.forEach(date => { result[date] = buildFallbackDayVerdict(date, errorMessage, usedModel); });
     return result;
 }
 
@@ -231,5 +240,5 @@ function buildFallbackWeekVerdicts(dates, errorMessage) {
 export async function getAiVerdict(site, weather) {
     const verdicts = await getAiWeeklyVerdicts(site, weather);
     const today = new Date().toISOString().slice(0, 10);
-    return verdicts[today] || buildFallbackDayVerdict(today, 'Today not in weekly verdicts');
+    return verdicts[today] || buildFallbackDayVerdict(today, 'Today not in weekly verdicts', 'unknown');
 }
