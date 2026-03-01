@@ -106,10 +106,69 @@ Located in `utils/windUtils.js` and `tools/analyzeFlyingConditions.js`, this eng
 - **Output:** Returns a quantitative summary composed of `rating`, `issues`, and `positives`.
 
 ### 2. AI-Based Rule Engine (Semantic & Contextual Analysis)
-Located in `services/aiVerdict.js`, this engine utilizes Gemini 3.1 Flash to add nuanced reasoning that raw math misses:
+Located in `services/aiVerdict.js`, this engine utilizes Gemini 3.1 Flash to add nuanced reasoning that raw math misses. It evaluates the holistic picture of the atmosphere and site topology rather than just threshold limits.
+
 - **Comprehensive Context:** It consumes the raw 7-day hourly weather data alongside site metadata (altitude, site types, acceptable wind directions).
 - **Daily Syntheses:** For each day, the AI generates a qualitative assessment, providing a conversational `headline`, a detailed `reasoning` paragraph, and identifying the `bestWindow` of time for a flight.
 - **Overrides:** The AI's verdict rating (GO/MARGINAL/NO-GO) supersedes the Rule-Based rating in the UI, ensuring that complex atmospheric subtleties are accounted for.
+
+#### AI Thought Process & Application Flow
+
+To understand the AI Rule Engine, it is helpful to trace the data flow from the moment the user opens the application to the moment the AI returns a verdict.
+
+**1. Application Load & Initial Data Fetch**
+
+When the user lands on the application, the system quickly fetches the required data using the lightweight Rule-Based engine to populate the map before triggering the heavier AI engine dynamically on-demand.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant MapUI as React MapView
+    participant SiteAPI as Express /api/sites
+    participant ForecastAPI as Express /api/forecast
+    participant AI as aiVerdict (Gemini)
+    
+    User->>MapUI: Opens Application
+    MapUI->>MapUI: Get User Location (Browser Geolocation)
+    MapUI->>SiteAPI: GET /api/sites?lat=X&lng=Y
+    Note over SiteAPI: Fetches sites & runs Rule-Based<br/>Engine for quick map markers
+    SiteAPI-->>MapUI: Returns Sites (Color-coded pins)
+    
+    User->>MapUI: Clicks on a Paragliding Site Pin
+    MapUI->>ForecastAPI: GET /api/forecast?siteLat=...
+    Note over ForecastAPI: Fetches 7-Day Weather & <br/>Triggers AI Engine
+    ForecastAPI->>AI: getAiWeeklyVerdicts(site, 7day_weather)
+    AI-->>ForecastAPI: Returns 7 structured daily verdicts
+    ForecastAPI-->>MapUI: Renders Forecast Panel & AI Advice
+```
+
+**2. Inside the AI Rule Engine's "Brain"**
+
+Once `aiVerdict.js` is invoked, it aggregates thousands of raw data points into a condensed format, structures a strict system prompt, and asks Gemini to perform expert-level semantic evaluation.
+
+```mermaid
+flowchart TD
+    A[Raw 7-Day Hourly Weather] -->|Filter| B(Extract Daylight Hours Only)
+    B --> C(Construct Daily Weather Summaries)
+    
+    S[Paragliding Site Data] --> D(Extract Altitude, Launch Angles, Type)
+    
+    C --> E{System Prompt Construction}
+    D --> E
+    
+    E -->|1 Call for 7 Days| F((Gemini 3.1 Flash))
+    
+    F -->|Analyze Mode| G{Determine Site Mode Flight Viability}
+    G -->|Thermaling?| H[Check for heat + instability + light winds]
+    G -->|Ridge Soaring?| I[Check for steady 10-25mph wind at ideal launch angle]
+    G -->|Sled Ride?| J[Check for light winds, any direction]
+    
+    H & I & J --> K(Assign GO / MARGINAL / NO-GO)
+    K --> L(Identify Best Flight Window 'e.g., 1pm-3pm')
+    
+    L -->|Format strict JSON| M[Return Structured 7-Day Verdict Array]
+    M -->|Cache for 6 hours| N[Deliver to UI]
+```
 
 ---
 
