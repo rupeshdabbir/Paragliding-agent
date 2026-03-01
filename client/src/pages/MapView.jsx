@@ -579,7 +579,12 @@ export default function MapView() {
                 {/* ── Ask SkyPilot floating tab button ─────────────────────────── */}
                 {!chatOpen && (
                     <button
-                        onClick={() => { setChatOpen(true); }}
+                        onClick={() => {
+                            if (selectedSite) {
+                                setChatContextSite({ ...selectedSite, aiVerdict: siteAiVerdict });
+                            }
+                            setChatOpen(true);
+                        }}
                         style={{
                             position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)',
                             zIndex: 3000,
