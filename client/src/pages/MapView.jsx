@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import {
@@ -247,18 +248,39 @@ export default function MapView() {
     const [sites, setSites] = useState([]);
     const [loadingSites, setLoadingSites] = useState(false);
     const [selectedSite, setSelectedSite] = useState(null);
-    const [distance, setDistance] = useState(50);
+    const [distance, setDistance] = useState(30); // in miles
     const [mapCenter, setMapCenter] = useState([37.7749, -122.4194]);
     const [mapZoom, setMapZoom] = useState(10);
     const [filter, setFilter] = useState('all');
     const [chatOpen, setChatOpen] = useState(false);
+    const [showFilters, setShowFilters] = useState(false);
+    const filterRef = useRef(null);
+    const [portalTarget, setPortalTarget] = useState(null);
     const [panelWidthPx, setPanelWidthPx] = useState(440); // draggable pixel width
     const [chatContextSite, setChatContextSite] = useState(null); // site to pre-load in chat
     const isDragging = useRef(false);
     const dragStartX = useRef(0);
     const dragStartW = useRef(440);
 
-    useEffect(() => { requestLocation(); }, []);
+    useEffect(() => {
+        requestLocation();
+        setPortalTarget(document.getElementById('navbar-portal-target'));
+    }, []);
+
+    // Close filter popover on outside click
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (filterRef.current && !filterRef.current.contains(event.target)) {
+                setShowFilters(false);
+            }
+        };
+        if (showFilters) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showFilters]);
 
     // When a site is selected from search: fly to it and mark as selected
     const handleSiteSearchSelect = useCallback((site) => {
@@ -282,7 +304,9 @@ export default function MapView() {
         if (!loc) return;
         setLoadingSites(true); setSites([]); setSelectedSite(null);
         try {
-            const res = await fetch(`/api/sites?lat=${loc.lat}&lng=${loc.lng}&distance=${dist}&limit=20`);
+            // The API expects distance in kilometers, so convert miles -> km
+            const distKm = (dist * 1.60934).toFixed(1);
+            const res = await fetch(`/api/sites?lat=${loc.lat}&lng=${loc.lng}&distance=${distKm}&limit=20`);
             if (!res.ok) throw new Error('Failed');
             const data = await res.json();
             setSites(data.sites || []);
@@ -346,7 +370,7 @@ export default function MapView() {
 
                     {/* Loading banner */}
                     {loadingSites && (
-                        <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', background: 'rgba(8,13,26,0.88)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 10, color: '#e8edf5', fontSize: '0.85rem', zIndex: 1000 }}>
+                        <div style={{ position: 'absolute', top: 70, left: '50%', transform: 'translateX(-50%)', background: 'rgba(8,13,26,0.88)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 10, color: '#e8edf5', fontSize: '0.85rem', zIndex: 1000 }}>
                             <div style={{ width: 14, height: 14, border: '2px solid var(--color-sky)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
                             Fetching paragliding sites...
                         </div>
@@ -354,7 +378,7 @@ export default function MapView() {
 
                     {/* No location */}
                     {!location && !locLoading && (
-                        <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', background: 'rgba(8,13,26,0.9)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,179,71,0.3)', borderRadius: 12, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10, color: '#e8edf5', fontSize: '0.85rem', zIndex: 1000, whiteSpace: 'nowrap' }}>
+                        <div style={{ position: 'absolute', top: 70, left: '50%', transform: 'translateX(-50%)', background: 'rgba(8,13,26,0.9)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,179,71,0.3)', borderRadius: 12, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10, color: '#e8edf5', fontSize: '0.85rem', zIndex: 1000, whiteSpace: 'nowrap' }}>
                             <AlertCircle size={16} color="var(--color-amber)" />
                             Enable location to see sites near you
                             <button onClick={requestLocation} className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '0.8rem' }}>Allow</button>
@@ -384,50 +408,73 @@ export default function MapView() {
                         </div>
                     )}
 
-                    {/* ── Controls panel (top-right of map) ──── */}
-                    <div style={{ position: 'absolute', top: 12, right: chatOpen ? 412 : 12, transition: 'right 0.35s ease', zIndex: 1000, width: 264 }}>
-                        <div style={{ background: 'rgba(8,13,26,0.88)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, overflow: 'hidden' }}>
-                            <div style={{ padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: '0.85rem', color: '#fff' }}>
-                                <SlidersHorizontal size={14} color="var(--color-sky)" /> Controls
-                            </div>
-                            <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                {/* Search bar */}
+                    {/* ── Top Floating Bar (Search + Tools) Rendered to Navbar Portal ──── */}
+                    {portalTarget && createPortal(
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                            {/* Search Bar */}
+                            <div style={{ width: 340 }}>
                                 <SiteSearch onSiteSelect={handleSiteSearchSelect} />
+                            </div>
 
-                                {/* Location btn */}
-                                <button onClick={() => { requestLocation(); if (location) { setMapCenter([location.lat, location.lng]); setMapZoom(11); fetchSites(location, distance); } }}
-                                    style={{ display: 'flex', alignItems: 'center', gap: 8, background: location ? 'var(--color-sky-dim)' : 'rgba(255,255,255,0.04)', border: `1px solid ${location ? 'rgba(0,200,255,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: 10, padding: '9px 12px', color: location ? 'var(--color-sky)' : 'rgba(232,237,245,0.6)', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 500, transition: 'all 0.2s ease' }}>
-                                    {locLoading ? <div style={{ width: 12, height: 12, border: '2px solid var(--color-sky)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> : <LocateFixed size={12} />}
-                                    {location ? `${location.lat.toFixed(3)}, ${location.lng.toFixed(3)}` : 'Detect my location'}
+                            {/* Detect Location Button */}
+                            <button onClick={() => { requestLocation(); if (location) { setMapCenter([location.lat, location.lng]); setMapZoom(11); fetchSites(location, distance); } }}
+                                title="Detect my location"
+                                style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: location ? 'var(--color-sky-dim)' : 'transparent', border: `1px solid ${location ? 'rgba(0,200,255,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: 10, color: location ? 'var(--color-sky)' : 'rgba(232,237,245,0.7)', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                onMouseEnter={e => e.currentTarget.style.background = location ? 'var(--color-sky-dim)' : 'rgba(255,255,255,0.05)'}
+                                onMouseLeave={e => e.currentTarget.style.background = location ? 'var(--color-sky-dim)' : 'transparent'}
+                            >
+                                {locLoading ? <div style={{ width: 15, height: 15, border: '2px solid var(--color-sky)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> : <LocateFixed size={16} />}
+                            </button>
+
+                            {/* Filter Button (for Radius) */}
+                            <div style={{ position: 'relative' }}>
+                                <button onClick={() => setShowFilters(!showFilters)}
+                                    title="Adjust search radius"
+                                    style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', background: showFilters ? 'var(--color-sky-dim)' : 'transparent', border: `1px solid ${showFilters ? 'rgba(0,200,255,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: 10, color: showFilters ? 'var(--color-sky)' : 'rgba(232,237,245,0.7)', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                                    onMouseEnter={e => e.currentTarget.style.background = showFilters ? 'var(--color-sky-dim)' : 'rgba(255,255,255,0.05)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = showFilters ? 'var(--color-sky-dim)' : 'transparent'}
+                                >
+                                    <SlidersHorizontal size={16} />
                                 </button>
 
-                                {/* Radius */}
-                                <div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                                        <span style={{ fontSize: '0.78rem', color: 'rgba(232,237,245,0.55)' }}>Search radius</span>
-                                        <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-sky)' }}>{distance} km</span>
-                                    </div>
-                                    <input type="range" min={10} max={100} step={10} value={distance} onChange={e => handleDistanceChange(parseInt(e.target.value))}
-                                        style={{ width: '100%', appearance: 'none', height: 4, background: `linear-gradient(to right, var(--color-sky) ${distance}%, rgba(255,255,255,0.1) ${distance}%)`, borderRadius: 100, outline: 'none', cursor: 'pointer' }} />
-                                </div>
-
-                                {/* Counts */}
-                                {sites.length > 0 && (
-                                    <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '9px 10px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                        <div style={{ fontSize: '0.72rem', color: 'rgba(232,237,245,0.4)', marginBottom: 8 }}>{sites.length} sites within {distance}km</div>
-                                        <div style={{ display: 'flex', gap: 10 }}>
-                                            {[['GO', counts.GO, 'var(--color-go)'], ['MARG.', counts.MARGINAL, 'var(--color-marginal)'], ['NO-GO', counts.NO_GO, 'var(--color-no-go)']].map(([label, count, color]) => (
-                                                <div key={label} style={{ textAlign: 'center', flex: 1 }}>
-                                                    <div style={{ fontSize: '1.1rem', fontWeight: 700, color, fontFamily: 'var(--font-heading)' }}>{count}</div>
-                                                    <div style={{ fontSize: '0.62rem', color: 'rgba(232,237,245,0.35)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-                                                </div>
-                                            ))}
+                                {/* Filter Popover */}
+                                {showFilters && (
+                                    <div ref={filterRef} style={{ position: 'absolute', top: 50, right: 0, width: 260, background: 'rgba(8,13,26,0.98)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', zIndex: 10000 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600 }}>Search Radius</span>
+                                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-sky)', background: 'rgba(0,200,255,0.1)', padding: '2px 8px', borderRadius: 8 }}>{distance} miles</span>
+                                            </div>
+                                            <button onClick={() => setShowFilters(false)} style={{ background: 'transparent', border: 'none', color: 'rgba(232,237,245,0.5)', cursor: 'pointer', display: 'flex', padding: 4, borderRadius: 6, transition: 'all 0.2s' }}
+                                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(232,237,245,0.5)'; }}
+                                            >
+                                                <X size={14} />
+                                            </button>
                                         </div>
+                                        <input type="range" min={5} max={60} step={5} value={distance} onChange={e => handleDistanceChange(parseInt(e.target.value))}
+                                            style={{ width: '100%', appearance: 'none', height: 4, background: `linear-gradient(to right, var(--color-sky) ${(distance - 5) / (60 - 5) * 100}%, rgba(255,255,255,0.1) ${(distance - 5) / (60 - 5) * 100}%)`, borderRadius: 100, outline: 'none', cursor: 'pointer', margin: '0 0 20px 0' }} />
+
+                                        {/* Counts */}
+                                        {sites.length > 0 && (
+                                            <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                                <div style={{ fontSize: '0.75rem', color: 'rgba(232,237,245,0.5)', marginBottom: 12, textAlign: 'center', fontWeight: 500 }}>{sites.length} sites found</div>
+                                                <div style={{ display: 'flex', gap: 6 }}>
+                                                    {[['GO', counts.GO, 'var(--color-go)'], ['MARG.', counts.MARGINAL, 'var(--color-marginal)'], ['NO-GO', counts.NO_GO, 'var(--color-no-go)']].map(([label, count, color]) => (
+                                                        <div key={label} style={{ textAlign: 'center', flex: 1, background: 'rgba(0,0,0,0.2)', padding: '8px 4px', borderRadius: 8 }}>
+                                                            <div style={{ fontSize: '1.05rem', fontWeight: 700, color, fontFamily: 'var(--font-heading)' }}>{count}</div>
+                                                            <div style={{ fontSize: '0.62rem', color: 'rgba(232,237,245,0.4)', textTransform: 'uppercase', letterSpacing: '0.02em', marginTop: 2 }}>{label}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
-                        </div>
-                    </div>
+                        </div>,
+                        document.getElementById('navbar-portal-target')
+                    )}
 
                     {/* ── Site detail/forecast panel (draggable + expandable, slide in from left) ── */}
                     {selectedSite && (() => {

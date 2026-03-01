@@ -21,6 +21,9 @@ export default function Navbar() {
                 </span>
             </NavLink>
 
+            {/* Portal target for page-specific header controls */}
+            <div id="navbar-portal-target" style={{ flex: 1, display: 'flex', justifyContent: 'center' }}></div>
+
             <div style={{ display: 'flex', gap: 8 }}>
                 <NavLink to="/chat" className={({ isActive }) => `btn btn-ghost ${isActive ? 'active-nav' : ''}`}
                     style={({ isActive }) => isActive ? { background: 'var(--color-sky-dim)', borderColor: 'var(--color-sky)', color: 'var(--color-sky)' } : {}}>
