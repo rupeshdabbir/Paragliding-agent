@@ -45,17 +45,7 @@ const toolHandlers = {
     analyze_flying_conditions: analyzeFlyingConditions,
 };
 
-let genAI = null;
-
-function getGenAI() {
-    if (!genAI) {
-        if (!process.env.GEMINI_API_KEY) {
-            throw new Error('GEMINI_API_KEY is not set in environment variables');
-        }
-        genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    }
-    return genAI;
-}
+import { getGenAI } from '../utils/geminiClient.js';
 
 /**
  * Build site context string for the system prompt.
@@ -108,10 +98,11 @@ When the user asks about flying conditions, today's verdict, or whether it is sa
  * @param {string} userMessage - The user's current message
  * @param {Array} history - Previous conversation turns [{role, parts: [{text}]}]
  * @param {object|null} userLocation - Optional {lat, lng, name, altitude, aiVerdict, ...} for context
+ * @param {string|null} apiKey - The provided API Key (if any)
  * @returns {Promise<{reply: string, toolResults: Array, usage: object}>}
  */
-export async function runAgent({ userMessage, history = [], userLocation = null }) {
-    const ai = getGenAI();
+export async function runAgent({ userMessage, history = [], userLocation = null, apiKey = null }) {
+    const ai = getGenAI(apiKey);
 
     const contextStr = buildContextStr(userLocation);
 

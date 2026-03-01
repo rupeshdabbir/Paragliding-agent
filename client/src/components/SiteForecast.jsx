@@ -383,7 +383,12 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
         if (!site?.lat || !site?.lng) return;
         setLoading(true); setError(null);
         try {
-            const res = await fetch(`/api/forecast?lat=${site.lat}&lng=${site.lng}&models=${weatherModel}`);
+            const apiKey = localStorage.getItem('geminiApiKey') || '';
+            const res = await fetch(`/api/forecast?lat=${site.lat}&lng=${site.lng}&models=${weatherModel}`, {
+                headers: {
+                    'x-gemini-api-key': apiKey
+                }
+            });
             if (!res.ok) throw new Error('Failed to load forecast');
             const data = await res.json();
             setForecast(data);

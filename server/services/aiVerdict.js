@@ -7,21 +7,7 @@
  *
  * Cache: per site + week-start date, refreshed every 6 hours.
  */
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { degreesToCardinal } from '../utils/windUtils.js';
-
-// Key: `${lat},${lng},${weekStartDate}` → { verdicts: {date: verdict}, expiresAt }
-const verdictCache = new Map();
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
-
-let genAI = null;
-function getGenAI() {
-    if (!genAI) {
-        if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
-        genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    }
-    return genAI;
-}
+import { getGenAI } from '../utils/geminiClient.js';
 
 /**
  * Build a compact per-day weather summary (daylight hours only).
@@ -50,9 +36,10 @@ function buildDaySummary(hours = [], date) {
  * @param {object} weather - Weather object from getExtendedWeather (7 days hourly)
  * @returns {Promise<{[date: string]: DayVerdict}>}
  */
-export async function getAiWeeklyVerdicts(site, weather) {
+export async function getAiWeeklyVerdicts(site, weather, apiKey = null) {
     const today = new Date().toISOString().slice(0, 10);
-    const cacheKey = `${site.lat?.toFixed(4)},${site.lng?.toFixed(4)},${today}`;
+    const keyPrefix = apiKey ? apiKey.slice(-6) : 'env';
+    const cacheKey = `${keyPrefix}_${site.lat?.toFixed(4)},${site.lng?.toFixed(4)},${today}`;
 
     const cached = verdictCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
@@ -122,7 +109,7 @@ Respond with ONLY a valid JSON object (no markdown, no backticks) with this exac
 }`;
 
     try {
-        const ai = getGenAI();
+        const ai = getGenAI(apiKey);
 
         const attemptGenerate = async (modelName) => {
             const generativeModel = ai.getGenerativeModel({
@@ -237,8 +224,8 @@ function buildFallbackWeekVerdicts(dates, errorMessage, usedModel = 'unknown') {
 }
 
 // Legacy single-day export (kept for backward compat — now delegates to weekly)
-export async function getAiVerdict(site, weather) {
-    const verdicts = await getAiWeeklyVerdicts(site, weather);
+export async function getAiVerdict(site, weather, apiKey = null) {
+    const verdicts = await getAiWeeklyVerdicts(site, weather, apiKey);
     const today = new Date().toISOString().slice(0, 10);
     return verdicts[today] || buildFallbackDayVerdict(today, 'Today not in weekly verdicts', 'unknown');
 }

@@ -25,9 +25,13 @@ export function useChat() {
         }));
 
         try {
+            const apiKey = localStorage.getItem('geminiApiKey') || '';
             const res = await fetch('/api/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-gemini-api-key': apiKey
+                },
                 body: JSON.stringify({ message: text, history, location }),
             });
 

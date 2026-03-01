@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { MessageSquare, Map, Wind, Search, X, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext.jsx';
+import SettingsDropdown from './SettingsDropdown.jsx';
+import SettingsModal from './SettingsModal.jsx';
 
 export default function Navbar({ onSearchSelect }) {
     const location = useLocation();
@@ -10,6 +12,7 @@ export default function Navbar({ onSearchSelect }) {
     const [themeHover, setThemeHover] = useState(false);
     const searchInputRef = useRef(null);
     const { theme, toggleTheme } = useTheme();
+    const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth < 768);
@@ -65,24 +68,9 @@ export default function Navbar({ onSearchSelect }) {
                     </NavLink>
                 )}
 
-                {/* Theme toggle */}
-                <button
-                    onClick={toggleTheme}
-                    onMouseEnter={() => setThemeHover(true)}
-                    onMouseLeave={() => setThemeHover(false)}
-                    title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                    style={{
-                        width: 36, height: 36, borderRadius: '50%',
-                        background: themeHover ? 'var(--color-sky-dim)' : 'var(--color-surface-3)',
-                        border: `1px solid ${themeHover ? 'var(--color-border-glow)' : 'var(--color-border-base)'}`,
-                        color: themeHover ? 'var(--color-sky)' : 'var(--color-text-muted)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: 'pointer', flexShrink: 0,
-                        transition: 'all 0.2s ease',
-                    }}
-                >
-                    {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-                </button>
+                {/* Settings Dropdown */}
+                <SettingsDropdown onOpenSettings={() => setSettingsModalOpen(true)} />
+                <SettingsModal open={settingsModalOpen} onClose={() => setSettingsModalOpen(false)} />
             </div>
         </nav>
     );

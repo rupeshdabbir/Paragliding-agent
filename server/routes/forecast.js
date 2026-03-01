@@ -131,8 +131,9 @@ router.get('/', async (req, res) => {
         });
 
         // Get AI verdicts for all 7 days in a single Gemini call (non-blocking, cached)
+        const apiKey = req.headers['x-gemini-api-key'] || null;
         const aiVerdicts = site
-            ? await getAiWeeklyVerdicts(site, rawWeather)
+            ? await getAiWeeklyVerdicts(site, rawWeather, apiKey)
             : null;
 
         // For convenience also include the today verdict at the top level

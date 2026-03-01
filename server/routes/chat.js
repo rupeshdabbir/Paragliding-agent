@@ -19,10 +19,13 @@ router.post('/', async (req, res) => {
             parts: [{ text: turn.content }],
         }));
 
+        const apiKey = req.headers['x-gemini-api-key'] || null;
+
         const { reply, toolResults, usage, usedModel } = await runAgent({
             userMessage: message,
             history: geminiHistory,
             userLocation: location,
+            apiKey
         });
 
         res.json({ reply, toolResults, usage, usedModel });
