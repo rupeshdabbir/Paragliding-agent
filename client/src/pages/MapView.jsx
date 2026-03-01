@@ -430,7 +430,7 @@ export default function MapView() {
                     </div>
 
                     {/* ── Site detail/forecast panel (draggable + expandable, slide in from left) ── */}
-                    {selectedSite && !chatOpen && (() => {
+                    {selectedSite && (() => {
                         const handleDragStart = (e) => {
                             isDragging.current = true;
                             dragStartX.current = e.clientX;
@@ -463,7 +463,7 @@ export default function MapView() {
                                             onClick={() => {
                                                 setChatContextSite(selectedSite);
                                                 setChatOpen(true);
-                                                setSelectedSite(null);
+                                                // Removed setSelectedSite(null) to keep the Forecast Panel open
                                             }}
                                             style={{
                                                 display: 'flex', alignItems: 'center', gap: 5,
@@ -477,7 +477,7 @@ export default function MapView() {
                                             onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,200,255,0.5)'}
                                             onMouseLeave={e => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,200,255,0.3)'}
                                         >
-                                            <MessageSquare size={11} />
+                                            <Sparkles size={11} fill="currentColor" />
                                             Ask SkyPilot
                                         </button>
                                         {/* Preset size buttons */}
@@ -526,7 +526,7 @@ export default function MapView() {
                 {/* ── Ask SkyPilot floating tab button ─────────────────────────── */}
                 {!chatOpen && (
                     <button
-                        onClick={() => { setChatOpen(true); setSelectedSite(null); setChatContextSite(null); }}
+                        onClick={() => { setChatOpen(true); }}
                         style={{
                             position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)',
                             zIndex: 3000,
@@ -544,7 +544,7 @@ export default function MapView() {
                         onMouseEnter={e => { e.currentTarget.style.boxShadow = '-6px 0 28px rgba(0,200,255,0.5)'; e.currentTarget.style.paddingLeft = '13px'; }}
                         onMouseLeave={e => { e.currentTarget.style.boxShadow = '-4px 0 20px rgba(0,200,255,0.3)'; e.currentTarget.style.paddingLeft = '10px'; }}
                     >
-                        <MessageSquare size={16} style={{ transform: 'rotate(90deg)' }} />
+                        <Sparkles size={16} fill="currentColor" />
                         <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                             Ask SkyPilot
                         </span>
