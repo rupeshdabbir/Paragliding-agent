@@ -5,7 +5,7 @@ import L from 'leaflet';
 import {
     LocateFixed, SlidersHorizontal, X, AlertCircle,
     MessageSquare, Send, Trash2, ChevronRight, Wind, LocateFixed as LocIcon,
-    Minimize2, Maximize2, Columns, Sparkles
+    Minimize2, Maximize2, Columns, Sparkles, GripVertical
 } from 'lucide-react';
 import SiteCard from '../components/SiteCard.jsx';
 import { FlyabilityBadge } from '../components/FlyabilityBadge.jsx';
@@ -548,19 +548,24 @@ export default function MapView() {
                                 <div
                                     onMouseDown={handleDragStart}
                                     style={{
-                                        position: 'absolute', right: -4, top: 0, bottom: 0, width: 8,
+                                        position: 'absolute', right: -12, top: '50%', transform: 'translateY(-50%)', width: 24, height: 80,
                                         cursor: 'col-resize', zIndex: 10,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     }}
                                 >
                                     <div style={{
-                                        width: 4, height: 40, borderRadius: 2,
-                                        background: 'rgba(0,200,255,0.25)',
-                                        transition: 'background 0.2s ease, height 0.2s ease',
+                                        width: 14, height: 60, borderRadius: 8,
+                                        background: 'rgba(0,200,255,0.4)',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        transition: 'all 0.2s ease',
                                     }}
-                                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,200,255,0.7)'; e.currentTarget.style.height = '60px'; }}
-                                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,200,255,0.25)'; e.currentTarget.style.height = '40px'; }}
-                                    />
+                                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,200,255,0.8)'; e.currentTarget.style.height = '70px'; e.currentTarget.style.width = '18px'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,200,255,0.4)'; e.currentTarget.style.height = '60px'; e.currentTarget.style.width = '14px'; }}
+                                    >
+                                        <GripVertical size={12} color="#fff" style={{ opacity: 0.9 }} />
+                                    </div>
                                 </div>
                             </div>
                         );

@@ -8,48 +8,50 @@
 /* ---------- CSS Variables ---------- */
 :root {
   /* Core palette */
-  --color-bg:          #080d1a;
+  --color-bg: #080d1a;
   --color-bg-secondary: #0d1528;
-  --color-bg-card:     #111c35;
-  --color-bg-glass:    rgba(13, 21, 40, 0.7);
-  --color-border:      rgba(255, 255, 255, 0.08);
+  --color-bg-card: #111c35;
+  --color-bg-glass: rgba(13, 21, 40, 0.7);
+  --color-border: rgba(255, 255, 255, 0.08);
   --color-border-glow: rgba(0, 200, 255, 0.25);
 
   /* Accent palette */
-  --color-sky:         #00c8ff;
-  --color-sky-dim:     rgba(0, 200, 255, 0.15);
-  --color-sky-glow:    rgba(0, 200, 255, 0.4);
-  --color-amber:       #ffb347;
-  --color-amber-dim:   rgba(255, 179, 71, 0.15);
+  --color-sky: #00c8ff;
+  --color-sky-dim: rgba(0, 200, 255, 0.15);
+  --color-sky-glow: rgba(0, 200, 255, 0.4);
+  --color-amber: #ffb347;
+  --color-amber-dim: rgba(255, 179, 71, 0.15);
 
   /* Status colors */
-  --color-go:          #22c55e;
-  --color-go-dim:      rgba(34, 197, 94, 0.15);
-  --color-go-glow:     rgba(34, 197, 94, 0.4);
-  --color-marginal:    #f59e0b;
+  --color-go: #22c55e;
+  --color-go-dim: rgba(34, 197, 94, 0.15);
+  --color-go-glow: rgba(34, 197, 94, 0.4);
+  --color-marginal: #f59e0b;
   --color-marginal-dim: rgba(245, 158, 11, 0.15);
-  --color-no-go:       #ef4444;
-  --color-no-go-dim:   rgba(239, 68, 68, 0.15);
-  --color-no-go-glow:  rgba(239, 68, 68, 0.4);
+  --color-no-go: #ef4444;
+  --color-no-go-dim: rgba(239, 68, 68, 0.15);
+  --color-no-go-glow: rgba(239, 68, 68, 0.4);
 
   /* Typography */
-  --font-body:    'Inter', -apple-system, sans-serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
   --font-heading: 'Space Grotesk', 'Inter', sans-serif;
 
   /* Spacing */
-  --radius-sm:   6px;
-  --radius-md:   12px;
-  --radius-lg:   20px;
-  --radius-xl:   32px;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 32px;
 
   /* Transitions */
-  --transition-fast:   150ms ease;
-  --transition-base:   250ms ease;
-  --transition-slow:   400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ---------- Reset ---------- */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -71,17 +73,35 @@ body {
 }
 
 /* ---------- Typography ---------- */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-heading);
   line-height: 1.2;
   letter-spacing: -0.02em;
 }
 
 /* ---------- Scrollbar ---------- */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
 
 /* ---------- Glass card ---------- */
 .glass {
@@ -122,6 +142,7 @@ h1, h2, h3, h4, h5, h6 {
   color: #fff;
   box-shadow: 0 4px 24px rgba(0, 200, 255, 0.25);
 }
+
 .btn-primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 32px rgba(0, 200, 255, 0.4);
@@ -132,6 +153,7 @@ h1, h2, h3, h4, h5, h6 {
   color: #e8edf5;
   border: 1px solid var(--color-border);
 }
+
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
@@ -145,6 +167,7 @@ h1, h2, h3, h4, h5, h6 {
   padding: 8px 16px;
   font-size: 0.85rem;
 }
+
 .btn-ghost:hover {
   background: var(--color-sky-dim);
   border-color: var(--color-sky);
@@ -185,65 +208,152 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ---------- Keyframe Animations ---------- */
 @keyframes pulse-go {
-  0%, 100% { box-shadow: 0 0 8px var(--color-go-glow); }
-  50%       { box-shadow: 0 0 20px var(--color-go-glow), 0 0 40px rgba(34, 197, 94, 0.2); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 8px var(--color-go-glow);
+  }
+
+  50% {
+    box-shadow: 0 0 20px var(--color-go-glow), 0 0 40px rgba(34, 197, 94, 0.2);
+  }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-12px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
 }
 
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(24px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slide-in-right {
-  from { opacity: 0; transform: translateX(20px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes typing-dot {
-  0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
-  40%            { transform: scale(1); opacity: 1; }
+
+  0%,
+  80%,
+  100% {
+    transform: scale(0.7);
+    opacity: 0.4;
+  }
+
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes wind-particle {
-  0%   { transform: translateX(-10vw) translateY(0); opacity: 0; }
-  10%  { opacity: 0.6; }
-  90%  { opacity: 0.3; }
-  100% { transform: translateX(110vw) translateY(-20px); opacity: 0; }
+  0% {
+    transform: translateX(-10vw) translateY(0);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.6;
+  }
+
+  90% {
+    opacity: 0.3;
+  }
+
+  100% {
+    transform: translateX(110vw) translateY(-20px);
+    opacity: 0;
+  }
 }
 
 @keyframes mountain-parallax {
-  0%   { transform: translateY(0px); }
-  100% { transform: translateY(6px); }
+  0% {
+    transform: translateY(0px);
+  }
+
+  100% {
+    transform: translateY(6px);
+  }
 }
 
 /* ---------- Utility classes ---------- */
-.fade-up   { animation: fade-up 0.6s ease forwards; }
-.fade-in   { animation: fade-in 0.4s ease forwards; }
-.float     { animation: float 4s ease-in-out infinite; }
+.fade-up {
+  animation: fade-up 0.6s ease forwards;
+}
 
-.text-sky    { color: var(--color-sky); }
-.text-amber  { color: var(--color-amber); }
-.text-muted  { color: rgba(232, 237, 245, 0.5); }
-.text-dim    { color: rgba(232, 237, 245, 0.35); }
+.fade-in {
+  animation: fade-in 0.4s ease forwards;
+}
+
+.float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.text-sky {
+  color: var(--color-sky);
+}
+
+.text-amber {
+  color: var(--color-amber);
+}
+
+.text-muted {
+  color: rgba(232, 237, 245, 0.5);
+}
+
+.text-dim {
+  color: rgba(232, 237, 245, 0.35);
+}
 
 .shimmer {
   background: linear-gradient(90deg, #1a2540 25%, #243050 50%, #1a2540 75%);
@@ -290,9 +400,17 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ---------- Custom site markers ---------- */
-.site-marker-go      { filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.8)); }
-.site-marker-marginal { filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8)); }
-.site-marker-no-go   { filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.8)); }
+.site-marker-go {
+  filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.8));
+}
+
+.site-marker-marginal {
+  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8));
+}
+
+.site-marker-no-go {
+  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.8));
+}
 
 /* ---------- Navbar ---------- */
 .navbar {
@@ -332,4 +450,6 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 0 0 3px var(--color-sky-dim);
 }
 
-.input::placeholder { color: rgba(232, 237, 245, 0.35); }
+.input::placeholder {
+  color: rgba(232, 237, 245, 0.35);
+}

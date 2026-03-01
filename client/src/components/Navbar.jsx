@@ -25,11 +25,6 @@ export default function Navbar() {
             <div id="navbar-portal-target" style={{ flex: 1, display: 'flex', justifyContent: 'center' }}></div>
 
             <div style={{ display: 'flex', gap: 8 }}>
-                <NavLink to="/chat" className={({ isActive }) => `btn btn-ghost ${isActive ? 'active-nav' : ''}`}
-                    style={({ isActive }) => isActive ? { background: 'var(--color-sky-dim)', borderColor: 'var(--color-sky)', color: 'var(--color-sky)' } : {}}>
-                    <MessageSquare size={15} />
-                    Ask SkyPilot
-                </NavLink>
                 {location.pathname === '/chat' && (
                     <NavLink to="/" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', padding: '6px 14px' }}>
                         <Map size={15} />
