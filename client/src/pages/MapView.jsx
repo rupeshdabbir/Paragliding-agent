@@ -319,7 +319,7 @@ export default function MapView() {
                                     <div style={{ minWidth: 200 }}>
                                         <div style={{ fontWeight: 700, marginBottom: 4, color: '#fff', fontFamily: 'Inter, sans-serif' }}>{site.name}</div>
                                         <div style={{ marginBottom: 6 }}><FlyabilityBadge rating={site.rating} size="sm" /></div>
-                                        <div style={{ fontSize: '0.78rem', color: 'rgba(232,237,245,0.6)', marginBottom: 8 }}>Alt: {site.altitude}ft</div>
+                                        <div style={{ fontSize: '0.78rem', color: 'rgba(232,237,245,0.6)', marginBottom: 8 }}>{site.altitude}ft</div>
                                         <div style={{ display: 'flex', gap: 6 }}>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setSelectedSite(site); setChatOpen(false); }}

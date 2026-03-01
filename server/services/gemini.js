@@ -105,7 +105,11 @@ export async function runAgent({ userMessage, history = [], userLocation = null 
 
                 console.log(`[Gemini] Calling tool: ${call.name}`, call.args);
                 try {
-                    const result = await handler(call.args);
+                    let result = await handler(call.args);
+                    // Gemini function responses must be Objects, not Arrays
+                    if (Array.isArray(result)) {
+                        result = { items: result };
+                    }
                     toolResults.push({ tool: call.name, args: call.args, result });
                     return { name: call.name, response: result };
                 } catch (err) {
