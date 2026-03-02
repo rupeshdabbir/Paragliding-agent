@@ -1,6 +1,6 @@
 # 🪂 SkyPilot — AI Paragliding Assistant
 
-SkyPilot is a full-stack AI-powered paragliding conditions advisor. It helps pilots evaluate if conditions are safe to fly at paragliding sites near them. By combining real-time multi-altitude weather data from Open-Meteo, site characteristics from ParaglidingEarth, and the reasoning capabilities of Gemini 3.1 Flash, SkyPilot provides clear **GO / MARGINAL / NO-GO** assessments, interactive maps, and conversational advice.
+SkyPilot is a full-stack AI-powered paragliding conditions advisor. It helps pilots evaluate if conditions are safe to fly at paragliding sites near them. By combining real-time multi-altitude weather data from Open-Meteo, site characteristics from ParaglidingEarth, and the reasoning capabilities of Gemini, SkyPilot provides clear **GO / MARGINAL / NO-GO** assessments, interactive maps, and conversational advice.
 
 ## 📸 Screenshots & Walkthrough
 
@@ -19,6 +19,7 @@ SkyPilot is a full-stack AI-powered paragliding conditions advisor. It helps pil
 - **Model Selection:** Choose your preferred weather model: Auto (HRRR for North America + GFS/ECMWF globally), GFS, ECMWF, or ICON.
 - **Site-Specific AI Chat:** A slide-out "Ask SkyPilot" drawer to chat about a specific site. Ask questions like "Can I fly Mussel Rock today?" or "When is the best window this week?"
 - **Search:** Find any site using the Nominatim geocoding API combined with ParaglidingEarth data, prioritizing localized results.
+- **BRING YOUR OWN KEY (BYOK) Growth UX:** Users without an API key can freely explore the interactive map and review the basic, rule-based weather forecasts. However, premium "Ask SkyPilot" chat options and 7-day semantic "AI Verdicts" are gated by a soft-lock upsell that prompts the user to easily configure their own, free Google Gemini API Key inside a settings menu to unlock unlimited analysis. 
 
 ---
 
@@ -38,7 +39,7 @@ Clone the repository and create an `.env` file in the **root** folder of the pro
 touch .env
 ```
 
-Add your API keys to the `.env` file:
+Add your API keys to the `.env` file. (Note: the backend will use this as a master fallback if a user hasn't supplied one in the browser):
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
 PORT=3001
@@ -86,10 +87,10 @@ npm run dev
 SkyPilot leverages a tool-calling architecture in a Node.js Express server, hosting a LangChain-style function-calling loop wrapped around Google's `@google/generative-ai` SDK. When a user interacts with the app, the backend dynamically fetches and synthesizes data from multiple REST APIs.
 
 ### Key Architectural Decisions
-- **Unified Rule Engines:** Flyability is determined by a dual-engine approach combining deterministic algorithms (Rule-Based Engine) and semantic LLM synthesis (AI-Based Engine). The AI-Based Engine acts as the supreme authority when available.
+- **Unified Rule Engines:** Flyability is determined by a dual-engine approach combining deterministic algorithms (Rule-Based Engine) and semantic LLM synthesis (AI-Based Engine). The AI-Based Engine acts as the supreme authority when an API Key is available.
 - **Optimized Gemini Calls:** The AI weekly verdict analyzes all 7 days in a single Gemini API call to reduce latency and token usage.
-- **Caching Mechanism:** `node-cache` is heavily utilized to avoid redundant API calls. ParaglidingEarth API responses are cached for 1 hour, Open-Meteo for 10 minutes, and multi-day Gemini verdicts for 6 hours.
-- **Vite Proxy:** Circumvents CORS issues during development by proxying API calls from port `5173` to `3001`.
+- **Caching Mechanism:** `node-cache` (on the server) and `localStorage` (in the browser) are heavily utilized to avoid redundant calls. ParaglidingEarth API responses are cached for 1 hour, Open-Meteo for 10 minutes, and multi-day Gemini verdicts for 6 hours.
+- **Browser-Side API Keys:** The BYOK architecture allows users to input their own Gemini Keys in the UI. Keys are saved securely into `localStorage`, injected into an `x-gemini-api-key` header, and sent to the backend for execution, bypassing any potential backend rate throttling while hiding the key from the broader public internet.
 - **Fail-Safe Processing:** If a specific site fails to load or an API rate limit is reached, `try-catch` blocks ensure partial arrays are returned gracefully rather than crashing endpoints.
 
 ---
@@ -98,20 +99,20 @@ SkyPilot leverages a tool-calling architecture in a Node.js Express server, host
 
 SkyPilot uses two cooperating engines to determine whether a site is **GO**, **MARGINAL**, or **NO-GO**. 
 
-### 1. Rule-Based Engine (Deterministic Validation)
-Located in `utils/windUtils.js` and `tools/analyzeFlyingConditions.js`, this engine computes a safe baseline using hard math:
+### 1. Rule-Based Engine (Deterministic Validation & Free Tier)
+Located in `utils/windUtils.js` and `tools/analyzeFlyingConditions.js`, this engine computes a safe baseline using hard math. It serves as the primary evaluation mechanism for users unauthenticated with an API key, delivering results straight to the UI.
 - **Wind Speed & Gusts:** Checks 10m wind speeds against physical limits (e.g., > 18mph is generally a NO-GO, > 14mph is MARGINAL depending on site type).
 - **Wind Direction Matching:** Checks if the current or forecasted wind direction (in degrees) falls within the site's acceptable launch angles from ParaglidingEarth. It scores the direction on a scale (0 to 1).
 - **Environmental Factors:** Checks precipitation, visibility, and cloud cover to deduct points or outright flag a NO-GO.
 - **Output:** Returns a quantitative summary composed of `rating`, `issues`, and `positives`.
 
 ### 2. AI-Based Rule Engine (Semantic & Contextual Analysis)
-Located in `services/aiVerdict.js`, this engine utilizes Gemini 3.1 Flash to add nuanced reasoning that raw math misses. It evaluates the holistic picture of the atmosphere and site topology rather than just threshold limits.
+Located in `services/aiVerdict.js`, this engine utilizes `gemini-3-flash-preview` to add nuanced reasoning that raw math misses. It evaluates the holistic picture of the atmosphere and site topology rather than just threshold limits. If a user provides an API key, this evaluation dynamically runs on the backend, supplanting the Rule-Based engine's evaluation in the Forecast Panel.
 
 - **Comprehensive Context:** It consumes the raw 7-day hourly weather data alongside site metadata (altitude, site types, acceptable wind directions).
 - **Daily Syntheses:** For each day, the AI generates a qualitative assessment, providing a conversational `headline`, a detailed `reasoning` paragraph, and identifying the `bestWindow` of time for a flight.
 - **Overrides:** The AI's verdict rating (GO/MARGINAL/NO-GO) supersedes the Rule-Based rating in the UI, ensuring that complex atmospheric subtleties are accounted for.
-- **Graceful Fallback System:** By default, SkyPilot targets Google's `gemini-3-flash-preview` for supreme performance. However, to combat Free Tier quota limitations (`429 Too Many Requests`), the agentic hook wraps completions in a hardened try/catch block. If `gemini-3` limits are hit, it transparently fails over to `gemini-2.5-flash` to complete the request without crashing the user interface, noting this fallback explicitly in a UI badge within the Chat Drawer.
+- **Graceful Fallback System:** By default, SkyPilot targets Google's `gemini-3-flash-preview` for supreme performance. However, to combat potential quota limitations (`429 Too Many Requests`), the agentic hook wraps completions in a hardened try/catch block. If `gemini-3` limits are hit, it transparently fails over to `gemini-2.5-flash` to complete the request without crashing the user interface, noting this fallback explicitly in a UI badge within the Chat Drawer.
 
 #### AI Thought Process & Application Flow
 
@@ -119,7 +120,7 @@ To understand the AI Rule Engine, it is helpful to trace the data flow from the 
 
 **1. Application Load & Initial Data Fetch**
 
-When the user lands on the application, the system quickly fetches the required data using the lightweight Rule-Based engine to populate the map before triggering the heavier AI engine dynamically on-demand.
+When the user lands on the application, the system quickly fetches the required data using the lightweight Rule-Based engine to populate the map before triggering the heavier AI engine dynamically on-demand. In the event a user has not configured a personal Gemini key within the `SettingsModal`, the app skips the AI fetch entirely and immediately prompts an upsell card that unlocks AI usage. 
 
 ```mermaid
 sequenceDiagram
@@ -136,11 +137,18 @@ sequenceDiagram
     SiteAPI-->>MapUI: Returns Sites (Color-coded pins)
     
     User->>MapUI: Clicks on a Paragliding Site Pin
-    MapUI->>ForecastAPI: GET /api/forecast?siteLat=...
-    Note over ForecastAPI: Fetches 7-Day Weather & <br/>Triggers AI Engine
-    ForecastAPI->>AI: getAiWeeklyVerdicts(site, 7day_weather)
-    AI-->>ForecastAPI: Returns 7 structured daily verdicts
-    ForecastAPI-->>MapUI: Renders Forecast Panel & AI Advice
+    MapUI->>ForecastAPI: GET /api/forecast?siteLat=... (with 'x-gemini-api-key' Header)
+    Note over ForecastAPI: Fetches 7-Day Weather from Open-Meteo
+    
+    alt User Provided an API Key
+        ForecastAPI->>AI: getAiWeeklyVerdicts(site, 7day_weather, apiKey)
+        AI-->>ForecastAPI: Returns 7 structured daily verdicts
+        ForecastAPI-->>MapUI: Renders Premium Forecast Panel & AI Advice
+    else User Lacks an API Key
+        ForecastAPI-->>MapUI: Renders Fallback Forecast Panel
+        MapUI->>User: Renders Premium "Wake SkyPilot" Upsell Prompt
+    end
+
 ```
 
 **2. Inside the AI Rule Engine's "Brain"**
@@ -157,7 +165,7 @@ flowchart TD
     C --> E{System Prompt Construction}
     D --> E
     
-    E -->|1 Call for 7 Days| F((Gemini 3.1 Flash))
+    E -->|1 Call for 7 Days| F((gemini-3-flash-preview))
     
     F -->|Analyze Mode| G{Determine Site Mode Flight Viability}
     G -->|Thermaling?| H[Check for heat + instability + light winds]
@@ -182,6 +190,7 @@ flowchart TD
   
 - **`GET /api/forecast`**
   - **Query Params:** `lat`, `lng`, `siteLat` (optional), `siteLng` (optional), `models` (e.g., `best_match`)
+  - **Headers:** `x-gemini-api-key` (optional, overrides `.env` for AI verdicts)
   - **Description:** Returns a 7-day extended forecast with hourly wind arrays, a daily summary block, and full AI verdicts mapped by date.
 
 ### Search API
@@ -191,6 +200,7 @@ flowchart TD
 
 ### Conversational API
 - **`POST /api/chat`**
+  - **Headers:** `x-gemini-api-key` (optional, overrides `.env`)
   - **Request Body:** `{ message: "...", history: [{role: "user"|"model", content: "..."}], location: {lat, lng} }`
   - **Description:** Agentic loop endpoint. Gemini can dynamically invoke local tools such as `analyze_flying_conditions` (which fetches weather and evaluates flyability) or `get_paragliding_sites` before returning a synthesized Markdown response to the user.
 

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Search, MapPin, X, Wind, Loader } from 'lucide-react';
 
-export default function SiteSearch({ onSiteSelect, center, placeholder = 'Search a paragliding site...' }) {
+export default function SiteSearch({ onSiteSelect, center, placeholder = 'Search PG Site...' }) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);

@@ -789,9 +789,9 @@ export default function MapView() {
 
                     {/* ── Navbar portal: search + controls ── */}
                     {portalTarget && createPortal(
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%', maxWidth: 520, justifyContent: 'center' }}>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%', maxWidth: 760, justifyContent: 'center', pointerEvents: 'auto' }}>
                             {!isMobile && (
-                                <div style={{ flex: 1, maxWidth: 340 }}>
+                                <div style={{ flex: 1, maxWidth: 520, transition: 'max-width 0.2s ease' }}>
                                     <SiteSearch onSiteSelect={handleSiteSearchSelect} center={mapCenter} />
                                 </div>
                             )}
@@ -1065,7 +1065,7 @@ export default function MapView() {
                 {/* ── FAB on mobile / vertical tab on desktop ── */}
                 {!chatOpen && (
                     isMobile ? (
-                        <div style={{ position: 'absolute', bottom: 20, right: 20, zIndex: 1000, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+                        <div style={{ position: 'absolute', bottom: 130, right: 20, zIndex: 1000, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
                             <button
                                 onClick={() => { requestLocation(); if (location) { setMapCenter([location.lat, location.lng]); setMapZoom(11); fetchSites(location, distance); } }}
                                 title="Detect my location"

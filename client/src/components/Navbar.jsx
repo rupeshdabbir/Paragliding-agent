@@ -61,10 +61,13 @@ export default function Navbar({ onSearchSelect }) {
 
             {/* Portal target — desktop search goes here via portal */}
             <div id="navbar-portal-target" style={{
-                flex: 1,
+                position: 'absolute',
+                left: '50%',
+                transform: 'translateX(-50%)',
                 display: 'flex',
                 justifyContent: 'center',
-                padding: '0 12px',
+                width: isMobile ? 'calc(100% - 130px)' : 'auto',
+                pointerEvents: 'none',
             }} />
 
             {/* Right side controls */}
