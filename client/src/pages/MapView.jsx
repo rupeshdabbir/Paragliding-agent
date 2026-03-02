@@ -5,7 +5,7 @@ import L from 'leaflet';
 import {
     LocateFixed, SlidersHorizontal, X, AlertCircle,
     MessageSquare, Send, Trash2, ChevronRight, Wind, LocateFixed as LocIcon,
-    Minimize2, Maximize2, Columns, Sparkles, GripVertical, MapPin, ChevronDown, Key
+    Minimize2, Maximize2, Columns, Sparkles, GripVertical, MapPin, ChevronDown, Key, Star
 } from 'lucide-react';
 import SiteCard from '../components/SiteCard.jsx';
 import { FlyabilityBadge } from '../components/FlyabilityBadge.jsx';
@@ -438,7 +438,7 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, chatWidthP
 }
 
 // ─── Mobile Bottom Sheet for Site Forecast ───────────────────────────────────
-function MobileForecaseSheet({ site, onClose, chatContextSite, setChatContextSite, setChatOpen, siteAiVerdict, setSiteAiVerdict }) {
+function MobileForecaseSheet({ site, onClose, chatContextSite, setChatContextSite, setChatOpen, siteAiVerdict, setSiteAiVerdict, isFavorite, onToggleFavorite }) {
     return (
         <>
             {/* backdrop */}
@@ -478,7 +478,13 @@ function MobileForecaseSheet({ site, onClose, chatContextSite, setChatContextSit
                 </div>
                 {/* Forecast content */}
                 <div style={{ padding: '0 16px', maxHeight: 'calc(88vh - 100px)', overflowY: 'auto' }}>
-                    <SiteForecast site={site} onClose={onClose} onVerdictReady={setSiteAiVerdict} />
+                    <SiteForecast
+                        site={site}
+                        onClose={onClose}
+                        onVerdictReady={setSiteAiVerdict}
+                        isFavorite={isFavorite}
+                        onToggleFavorite={onToggleFavorite}
+                    />
                 </div>
             </div>
         </>
@@ -505,6 +511,29 @@ export default function MapView() {
     const [chatWidthPx, setChatWidthPx] = useState(440);
     const [chatContextSite, setChatContextSite] = useState(null);
     const [siteAiVerdict, setSiteAiVerdict] = useState(null);
+    const [favorites, setFavorites] = useState(() => {
+        try {
+            return JSON.parse(localStorage.getItem('skypilot_favorites') || '[]');
+        } catch (e) { return []; }
+    });
+
+    // Persist favorites
+    useEffect(() => {
+        localStorage.setItem('skypilot_favorites', JSON.stringify(favorites));
+    }, [favorites]);
+
+    const toggleFavorite = useCallback((site) => {
+        setFavorites(prev => {
+            const exists = prev.some(f => f.id === site.id || (f.lat === site.lat && f.lng === site.lng));
+            if (exists) {
+                return prev.filter(f => !(f.id === site.id || (f.lat === site.lat && f.lng === site.lng)));
+            } else {
+                return [...prev, site];
+            }
+        });
+    }, []);
+
+    const isFavorite = (site) => favorites.some(f => f.id === site.id || (f.lat === site.lat && f.lng === site.lng));
 
     // For forecast drag
     const isDraggingForecast = useRef(false);
@@ -680,7 +709,19 @@ export default function MapView() {
                             >
                                 <Popup>
                                     <div style={{ minWidth: 200, fontFamily: 'var(--font-body)' }}>
-                                        <div style={{ fontWeight: 700, marginBottom: 5, color: 'var(--color-text-heading)', fontSize: '0.9rem' }}>{site.name}</div>
+                                        <div style={{ fontWeight: 700, marginBottom: 5, color: 'var(--color-text-heading)', fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            {site.name}
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); toggleFavorite(site); }}
+                                                style={{
+                                                    background: 'transparent', border: 'none', cursor: 'pointer',
+                                                    padding: '0 4px', display: 'flex', alignItems: 'center',
+                                                    color: isFavorite(site) ? 'var(--color-amber)' : 'var(--color-text-dim)',
+                                                }}
+                                            >
+                                                <Star size={14} fill={isFavorite(site) ? 'var(--color-amber)' : 'none'} />
+                                            </button>
+                                        </div>
                                         <div style={{ marginBottom: 8 }}><FlyabilityBadge rating={site.rating} size="sm" /></div>
                                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>
                                             ⛰️ {site.altitude}ft altitude
@@ -1009,7 +1050,13 @@ export default function MapView() {
                                     </button>
                                 </div>
                             </div>
-                            <SiteForecast site={selectedSite} onClose={() => setSelectedSite(null)} onVerdictReady={(v) => setSiteAiVerdict(v)} />
+                            <SiteForecast
+                                site={selectedSite}
+                                onClose={() => setSelectedSite(null)}
+                                onVerdictReady={(v) => setSiteAiVerdict(v)}
+                                isFavorite={isFavorite(selectedSite)}
+                                onToggleFavorite={toggleFavorite}
+                            />
                             {/* Drag handle */}
                             <div
                                 onMouseDown={handleDragStart}
@@ -1045,6 +1092,8 @@ export default function MapView() {
                             setChatOpen={setChatOpen}
                             siteAiVerdict={siteAiVerdict}
                             setSiteAiVerdict={setSiteAiVerdict}
+                            isFavorite={isFavorite(selectedSite)}
+                            onToggleFavorite={toggleFavorite}
                         />
                     )}
                 </div>

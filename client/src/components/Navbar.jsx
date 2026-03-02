@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { MessageSquare, Map, Wind, Search, X, Sun, Moon } from 'lucide-react';
+import { MessageSquare, Map, Wind, Search, X, Sun, Moon, Sparkles } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext.jsx';
 import SettingsDropdown from './SettingsDropdown.jsx';
 import SettingsModal from './SettingsModal.jsx';
@@ -72,6 +72,16 @@ export default function Navbar({ onSearchSelect }) {
 
             {/* Right side controls */}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                <NavLink to="/brief" className="btn btn-secondary" style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    fontSize: isMobile ? '0.75rem' : '0.8rem',
+                    padding: isMobile ? '5px 10px' : '6px 14px',
+                }}>
+                    <Sparkles size={isMobile ? 13 : 15} color="var(--color-sky)" />
+                    {!isMobile && 'Morning Brief'}
+                    {isMobile && 'Brief'}
+                </NavLink>
+
                 {location.pathname === '/chat' && (
                     <NavLink to="/" className="btn btn-primary" style={{
                         display: 'flex', alignItems: 'center', gap: 6,

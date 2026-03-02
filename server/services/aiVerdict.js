@@ -227,6 +227,150 @@ function buildFallbackWeekVerdicts(dates, errorMessage, usedModel = 'unknown') {
     return result;
 }
 
+
+/**
+ * Perform a comparative analysis across multiple sites to find the best flight options.
+ */
+export async function getRegionalComparativeVerdict(sitesData = [], apiKey = null) {
+    if (sitesData.length === 0) return { bestSite: null, rankings: [] };
+
+    // Build a condensed summary for each site
+    const siteSummaries = sitesData.map(({ site, weather }) => {
+        const today = new Date().toISOString().slice(0, 10);
+        const hours = (weather?.hourly?.times || []).filter(t => t.startsWith(today));
+
+        // Find daylight hours (6am-8pm)
+        const daylight = hours.filter(t => {
+            const hr = new Date(t).getHours();
+            return hr >= 6 && hr <= 20;
+        });
+
+        const avgWind = daylight.reduce((s, t, i) => s + (weather.hourly.windSpeed10m[i] || 0), 0) / daylight.length;
+        const maxGust = Math.max(...daylight.map((t, i) => weather.hourly.windGusts[i] || 0));
+        const dirs = [...new Set(daylight.map((t, i) => degreesToCardinal(weather.hourly.windDirection10m[i] || 0)))].join('/');
+
+        const windDirsSupported = site.windDirections
+            ? Object.entries(site.windDirections)
+                .filter(([, s]) => parseInt(s) >= 1)
+                .map(([dir, s]) => `${dir} (${s === '2' ? 'ideal' : 'marginal'})`)
+                .join(', ')
+            : 'Unknown';
+
+        return `SITE: ${site.name}
+- Launch Altitude: ${site.altitude}ft ASL
+- Supported Directions: ${windDirsSupported}
+- Today's Summary: avg wind ${avgWind.toFixed(0)} mph from ${dirs}, max gusts ${maxGust.toFixed(0)} mph
+- Site Types: ${JSON.stringify(site.siteTypes)}
+${site.starred ? '- User Preference: This is a STARRED/FAVORITE site by the user.' : ''}`;
+    }).join('\n---\n');
+
+    const prompt = `You are an expert paragliding regional coordinator. Analyze the following paragliding sites and their conditions for TODAY to provide a ranked "Morning Brief" for pilots.
+
+Some sites are "STARRED/FAVORITE" by the user. While safety is the priority, give these sites extra consideration for "Site of the Day" if they are flyable (GO or MARGINAL).
+
+SITES DATA:
+${siteSummaries}
+
+ANALYSIS TASK:
+1. Identify the "Site of the Day" (the absolute best option).
+2. Rank all sites from best to worst based on flight safety, quality (ridge soaring vs sled ride), and reliability of wind direction.
+3. Provide a punchy "Morning Headline" for the whole region.
+4. For EACH site, providing a 1-sentence "Why this rank?" explanation.
+
+Respond with ONLY a valid JSON object:
+{
+  "regionHeadline": "e.g. 'Epic Ridge Soaring day at the coast; inland too gusty.'",
+  "siteOfDay": "Site Name",
+  "rankings": [
+    {
+      "siteName": "Site Name",
+      "rank": 1,
+      "rating": "GO" | "MARGINAL" | "NO_GO",
+      "bestWindow": "e.g. 1pm-4pm",
+      "reasoning": "1 sentence explanation",
+      "recommendedMode": "ridgeSoaring" | "thermaling" | "sledRide"
+    }
+  ],
+  "overallSafetyNote": "Important regional safety advisory"
+}`;
+
+    try {
+        const ai = getGenAI(apiKey);
+
+        const attemptGenerate = async (modelName) => {
+            const generativeModel = ai.getGenerativeModel({
+                model: modelName,
+                generationConfig: {
+                    temperature: 0.1,
+                    maxOutputTokens: 2000,
+                    responseMimeType: 'application/json'
+                },
+            });
+            console.log(`[aiVerdict] Calling Gemini for Regional Comparative Brief using ${modelName}...`);
+            return await generativeModel.generateContent(prompt);
+        };
+
+        let result;
+        let usedModel = 'gemini-3-flash-preview';
+        try {
+            result = await attemptGenerate('gemini-3-flash-preview');
+        } catch (err) {
+            const msg = err.message || '';
+            if (msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('too many requests')) {
+                console.warn(`[aiVerdict] 429 Quota Exceeded on gemini-3-flash-preview. Falling back to gemini-2.5-flash`);
+                usedModel = 'gemini-2.5-flash';
+                result = await attemptGenerate('gemini-2.5-flash');
+            } else {
+                throw err;
+            }
+        }
+
+        const raw = (result?.response?.text && typeof result.response.text === 'function')
+            ? result.response.text().trim()
+            : '';
+
+        const cleaned = raw
+            .replace(/^```json\s*/i, '')
+            .replace(/^```\s*/i, '')
+            .replace(/\s*```$/i, '')
+            .trim();
+
+        if (!cleaned) throw new Error('Empty AI response');
+
+        const parsed = JSON.parse(cleaned);
+        parsed.usedModel = usedModel;
+
+        // Post-process: Add isStarred flag to rankings for UI
+        if (parsed.rankings) {
+            parsed.rankings = parsed.rankings.map(r => {
+                const originalSite = sitesData.find(d => d.site?.name === r.siteName);
+                if (originalSite?.site?.starred) {
+                    return { ...r, isStarred: true };
+                }
+                return r;
+            });
+        }
+
+        return parsed;
+    } catch (err) {
+        console.error('[aiVerdict] Regional Brief FAILED:', err.message);
+        // Minimal fallback
+        return {
+            regionHeadline: "Regional analysis unavailable.",
+            siteOfDay: sitesData[0]?.site?.name || "Unknown",
+            rankings: sitesData.map((d, i) => ({
+                siteName: d.site?.name,
+                rank: i + 1,
+                rating: 'MARGINAL',
+                reasoning: `AI analysis failed: ${err.message}`, // Added for debugging
+                recommendedMode: 'mixed'
+            })),
+            overallSafetyNote: "Always check local conditions before launching.",
+            _error: err.message
+        };
+    }
+}
+
 // Legacy single-day export (kept for backward compat — now delegates to weekly)
 export async function getAiVerdict(site, weather, apiKey = null) {
     const verdicts = await getAiWeeklyVerdicts(site, weather, apiKey);

@@ -1,6 +1,6 @@
 import express from 'express';
 import { getSites } from '../tools/getSites.js';
-import { getWeather } from '../tools/getWeather.js';
+import { getExtendedWeather } from '../tools/getWeather.js';
 import { degreesToCardinal, getSiteWindScore, isWindSpeedFlyable, scoreFlyingConditions } from '../utils/windUtils.js';
 import { getAiWeeklyVerdicts } from '../services/aiVerdict.js';
 
@@ -154,74 +154,5 @@ router.get('/', async (req, res) => {
     }
 });
 
-/**
- * Extended weather fetch — 7 full days of hourly data
- */
-async function getExtendedWeather(lat, lng, modelsStr = 'best_match') {
-    const axios = (await import('axios')).default;
-
-    const hourlyVars = [
-        'wind_speed_10m', 'wind_speed_80m', 'wind_speed_120m', 'wind_speed_180m',
-        'wind_direction_10m', 'wind_direction_80m', 'wind_direction_120m', 'wind_direction_180m',
-        'wind_gusts_10m', 'temperature_2m', 'cloud_cover', 'visibility',
-        'precipitation', 'relative_humidity_2m', 'surface_pressure', 'weather_code',
-    ];
-    const currentVars = [
-        'wind_speed_10m', 'wind_direction_10m', 'wind_gusts_10m',
-        'temperature_2m', 'cloud_cover', 'visibility', 'precipitation',
-        'relative_humidity_2m', 'surface_pressure', 'weather_code',
-    ];
-
-    const params = {
-        latitude: lat, longitude: lng,
-        hourly: hourlyVars.join(','),
-        current: currentVars.join(','),
-        forecast_days: 7,
-        timezone: 'auto',
-        wind_speed_unit: 'mph',
-    };
-    if (modelsStr) params.models = modelsStr;
-
-    const resp = await axios.get('https://api.open-meteo.com/v1/forecast', {
-        params,
-        timeout: 12000,
-    });
-
-    const data = resp.data;
-    const h = data.hourly;
-
-    return {
-        current: {
-            time: data.current.time,
-            windSpeed10m: data.current.wind_speed_10m,
-            windDirection10m: data.current.wind_direction_10m,
-            windGusts: data.current.wind_gusts_10m,
-            temperature: data.current.temperature_2m,
-            cloudCover: data.current.cloud_cover,
-            visibility: data.current.visibility,
-            precipitation: data.current.precipitation,
-            humidity: data.current.relative_humidity_2m,
-            pressure: data.current.surface_pressure,
-            weatherCode: data.current.weather_code,
-        },
-        hourly: {
-            times: h.time,
-            windSpeed10m: h.wind_speed_10m,
-            windSpeed80m: h.wind_speed_80m,
-            windSpeed120m: h.wind_speed_120m,
-            windSpeed180m: h.wind_speed_180m,
-            windDirection10m: h.wind_direction_10m,
-            windGusts: h.wind_gusts_10m,
-            cloudCover: h.cloud_cover,
-            visibility: h.visibility,
-            precipitation: h.precipitation,
-            temperature: h.temperature_2m,
-            humidity: h.relative_humidity_2m,
-            pressure: h.surface_pressure,
-            weatherCode: h.weather_code,
-        },
-        units: { windSpeed: 'mph', temperature: '°C', visibility: 'mi', precipitation: 'mm/h', pressure: 'hPa' },
-    };
-}
 
 export default router;

@@ -15,6 +15,7 @@ import sitesRouter from './routes/sites.js';
 import weatherRouter from './routes/weather.js';
 import searchRouter from './routes/search.js';
 import forecastRouter from './routes/forecast.js';
+import briefRouter from './routes/brief.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -35,6 +36,7 @@ app.use('/api/sites', sitesRouter);
 app.use('/api/weather', weatherRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/forecast', forecastRouter);
+app.use('/api/brief', briefRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

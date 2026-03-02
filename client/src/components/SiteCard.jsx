@@ -1,10 +1,10 @@
 import { FlyabilityBadge } from './FlyabilityBadge.jsx';
 import WindRose from './WindRose.jsx';
 import WeatherCard from './WeatherCard.jsx';
-import { MapPin, Mountain, Wind, ChevronDown, ChevronUp } from 'lucide-react';
+import { MapPin, Mountain, Wind, ChevronDown, ChevronUp, Star } from 'lucide-react';
 import { useState } from 'react';
 
-export default function SiteCard({ site, analysis, weather, defaultExpanded = false }) {
+export default function SiteCard({ site, analysis, weather, defaultExpanded = false, isFavorite = false, onToggleFavorite }) {
     const [expanded, setExpanded] = useState(defaultExpanded);
 
     if (!site) return null;
@@ -37,6 +37,21 @@ export default function SiteCard({ site, analysis, weather, defaultExpanded = fa
                     <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                             <FlyabilityBadge rating={rating} />
+                            {onToggleFavorite && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(site); }}
+                                    style={{
+                                        background: 'transparent', border: 'none', cursor: 'pointer',
+                                        padding: 0, display: 'flex', alignItems: 'center',
+                                        color: isFavorite ? 'var(--color-amber)' : 'var(--color-text-dim)',
+                                        transition: 'all 0.2s ease',
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.2)'}
+                                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                                >
+                                    <Star size={16} fill={isFavorite ? 'var(--color-amber)' : 'none'} />
+                                </button>
+                            )}
                             {site.distanceFromSearch > 0 && (
                                 <span style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)' }}>
                                     {(site.distanceFromSearch / 1000).toFixed(1)} km away

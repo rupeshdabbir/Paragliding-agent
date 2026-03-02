@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, Wind, AlertTriangle, ChevronRight, CheckCircle, XCircle, MinusCircle, RefreshCw, Info, Sparkles, Key } from 'lucide-react';
+import { Calendar, Clock, Wind, AlertTriangle, ChevronRight, CheckCircle, XCircle, MinusCircle, RefreshCw, Info, Sparkles, Key, Star } from 'lucide-react';
 import WindChart from './WindChart.jsx';
 import { FlyabilityBadge } from './FlyabilityBadge.jsx';
 
@@ -371,7 +371,7 @@ function WindAltBar({ hours, baseAlt = 0 }) {
 }
 
 // ─── Main SiteForecast ────────────────────────────────────────────────────────
-export default function SiteForecast({ site, onClose, onVerdictReady }) {
+export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite = false, onToggleFavorite }) {
     const [forecast, setForecast] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -444,8 +444,23 @@ export default function SiteForecast({ site, onClose, onVerdictReady }) {
                 )}
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
                     <div style={{ flex: 1 }}>
-                        <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-text-heading)', marginBottom: 5, letterSpacing: '-0.01em' }}>
+                        <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-text-heading)', marginBottom: 5, letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', gap: 8 }}>
                             {site?.name}
+                            {onToggleFavorite && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(site); }}
+                                    style={{
+                                        background: 'transparent', border: 'none', cursor: 'pointer',
+                                        padding: 0, display: 'flex', alignItems: 'center',
+                                        color: isFavorite ? 'var(--color-amber)' : 'var(--color-text-dim)',
+                                        transition: 'all 0.2s ease',
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.2)'}
+                                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                                >
+                                    <Star size={16} fill={isFavorite ? 'var(--color-amber)' : 'none'} />
+                                </button>
+                            )}
                         </h3>
                         {site?.description && (
                             <div style={{ fontSize: '0.74rem', color: 'var(--color-text-secondary)', marginBottom: 8, lineHeight: 1.45, maxWidth: '96%' }}>

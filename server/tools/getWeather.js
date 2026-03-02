@@ -15,7 +15,7 @@ export const getWeatherDeclaration = {
     },
 };
 
-export async function getWeather({ lat, lng, timezone = 'auto', models = 'best_match' }) {
+export async function getWeather({ lat, lng, timezone = 'auto', models = 'best_match', forecastDays = 2 }) {
     // Generate cache key incorporating models
     const cacheKey = `${lat},${lng},${models}`;
     const cached = cache.getWeather(cacheKey);
@@ -48,7 +48,7 @@ export async function getWeather({ lat, lng, timezone = 'auto', models = 'best_m
         longitude: lng,
         hourly: hourlyVars.join(','),
         current: currentVars.join(','),
-        forecast_days: 2,
+        forecast_days: forecastDays,
         timezone,
         wind_speed_unit: 'mph',
     };
@@ -112,4 +112,12 @@ export async function getWeather({ lat, lng, timezone = 'auto', models = 'best_m
 
     cache.setWeather(cacheKey, result);
     return result;
+}
+
+/**
+ * Extended weather fetch — 7 full days of hourly data.
+ * Wraps getWeather for simplicity.
+ */
+export async function getExtendedWeather(lat, lng, models = 'best_match') {
+    return await getWeather({ lat, lng, models, forecastDays: 7 });
 }
