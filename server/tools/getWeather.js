@@ -63,10 +63,16 @@ export async function getWeather({ lat, lng, timezone = 'auto', models = 'best_m
     const current = data.current;
 
     // Get next 12 hours of hourly data starting from current hour
-    const now = new Date();
+    // (Or full data if extended forecast is requested)
     const hourlyTimes = data.hourly?.time || [];
-    const startIdx = hourlyTimes.findIndex(t => new Date(t) >= now);
-    const slice = (arr) => (arr || []).slice(startIdx >= 0 ? startIdx : 0, (startIdx >= 0 ? startIdx : 0) + 12);
+    // String comparison skips timezone issues since Open-Meteo returns '2026-03-07T14:00' format
+    const startIdx = hourlyTimes.findIndex(t => t >= current.time);
+
+    const slice = (arr) => {
+        if (!arr) return [];
+        if (forecastDays > 2) return arr; // return all data for extended forecast
+        return arr.slice(startIdx >= 0 ? startIdx : 0, (startIdx >= 0 ? startIdx : 0) + 12);
+    };
 
     const result = {
         current: {

@@ -18,7 +18,7 @@ const verdictCache = new Map();
  */
 function buildDaySummary(hours = [], date) {
     const daylight = hours.filter(h => {
-        const hr = new Date(h.time).getHours();
+        const hr = parseInt(h.time.slice(11, 13), 10);
         return hr >= 6 && hr <= 20;
     });
     if (daylight.length === 0) return `  ${date}: No data`;
@@ -41,7 +41,7 @@ function buildDaySummary(hours = [], date) {
  * @returns {Promise<{[date: string]: DayVerdict}>}
  */
 export async function getAiWeeklyVerdicts(site, weather, apiKey = null) {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = weather.current?.time?.slice(0, 10) || new Date().toISOString().slice(0, 10);
     const keyPrefix = apiKey ? apiKey.slice(-6) : 'env';
     const cacheKey = `${keyPrefix}_${site.lat?.toFixed(4)},${site.lng?.toFixed(4)},${today}`;
 
@@ -236,12 +236,12 @@ export async function getRegionalComparativeVerdict(sitesData = [], apiKey = nul
 
     // Build a condensed summary for each site
     const siteSummaries = sitesData.map(({ site, weather }) => {
-        const today = new Date().toISOString().slice(0, 10);
+        const today = weather.current?.time?.slice(0, 10) || new Date().toISOString().slice(0, 10);
         const hours = (weather?.hourly?.times || []).filter(t => t.startsWith(today));
 
         // Find daylight hours (6am-8pm)
         const daylight = hours.filter(t => {
-            const hr = new Date(t).getHours();
+            const hr = parseInt(t.slice(11, 13), 10);
             return hr >= 6 && hr <= 20;
         });
 
@@ -374,6 +374,6 @@ Respond with ONLY a valid JSON object:
 // Legacy single-day export (kept for backward compat — now delegates to weekly)
 export async function getAiVerdict(site, weather, apiKey = null) {
     const verdicts = await getAiWeeklyVerdicts(site, weather, apiKey);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = weather.current?.time?.slice(0, 10) || new Date().toISOString().slice(0, 10);
     return verdicts[today] || buildFallbackDayVerdict(today, 'Today not in weekly verdicts', 'unknown');
 }
