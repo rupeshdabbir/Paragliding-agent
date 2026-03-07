@@ -60,22 +60,32 @@ export default function Navbar({ onSearchSelect }) {
             </NavLink>
 
             {/* Portal target — desktop search goes here via portal */}
-            <div id="navbar-portal-target" style={{
-                position: 'absolute',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                display: 'flex',
-                justifyContent: 'center',
-                width: isMobile ? 'calc(100% - 130px)' : 'auto',
-                pointerEvents: 'none',
-            }} />
+            <div id="navbar-portal-target" style={
+                isMobile ? {
+                    flex: 1,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    pointerEvents: 'none',
+                    margin: '0 10px',
+                    minWidth: 0,
+                } : {
+                    position: 'absolute',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    width: 'auto',
+                    pointerEvents: 'none',
+                }
+            } />
 
             {/* Right side controls */}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
                 <NavLink to="/brief" className="btn btn-secondary" style={{
                     display: 'flex', alignItems: 'center', gap: 6,
                     fontSize: isMobile ? '0.75rem' : '0.8rem',
                     padding: isMobile ? '5px 10px' : '6px 14px',
+                    whiteSpace: 'nowrap',
                 }}>
                     <Sparkles size={isMobile ? 13 : 15} color="var(--color-sky)" />
                     {!isMobile && 'Morning Brief'}
