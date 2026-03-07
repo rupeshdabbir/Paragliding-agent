@@ -25,7 +25,7 @@ export function useChat() {
         }));
 
         try {
-            const apiKey = localStorage.getItem('geminiApiKey') || '';
+            const apiKey = (localStorage.getItem('geminiApiKey') || '').trim();
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {

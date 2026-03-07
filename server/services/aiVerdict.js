@@ -42,8 +42,8 @@ function buildDaySummary(hours = [], date) {
  */
 export async function getAiWeeklyVerdicts(site, weather, apiKey = null) {
     const today = weather.current?.time?.slice(0, 10) || new Date().toISOString().slice(0, 10);
-    const keyPrefix = apiKey ? apiKey.slice(-6) : 'env';
-    const cacheKey = `${keyPrefix}_${site.lat?.toFixed(4)},${site.lng?.toFixed(4)},${today}`;
+    // Global cache across all users for the site + day
+    const cacheKey = `week_${site.lat?.toFixed(4)},${site.lng?.toFixed(4)},${today}`;
 
     const cached = verdictCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {

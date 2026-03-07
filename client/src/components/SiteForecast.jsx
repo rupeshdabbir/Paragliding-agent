@@ -392,7 +392,7 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
         if (!site?.lat || !site?.lng) return;
         setLoading(true); setError(null);
         try {
-            const apiKey = localStorage.getItem('geminiApiKey') || '';
+            const apiKey = (localStorage.getItem('geminiApiKey') || '').trim();
             const res = await fetch(`/api/forecast?lat=${site.lat}&lng=${site.lng}&models=${weatherModel}`, {
                 headers: {
                     'x-gemini-api-key': apiKey

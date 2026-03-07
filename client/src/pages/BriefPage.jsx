@@ -15,7 +15,7 @@ export default function BriefPage() {
         setLoading(true);
         setError(null);
         try {
-            const apiKey = localStorage.getItem('geminiApiKey');
+            const apiKey = (localStorage.getItem('geminiApiKey') || '').trim();
             const favorites = localStorage.getItem('skypilot_favorites') || '[]';
             const headers = apiKey ? { 'x-gemini-api-key': apiKey } : {};
 
