@@ -159,6 +159,10 @@ export default function SettingsDropdown({ onOpenSettings }) {
                         {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
                         {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
                     </button>
+
+                    <div style={{ marginTop: 4, paddingTop: 8, borderTop: '1px solid var(--color-border-subtle)', textAlign: 'center', color: 'var(--color-text-dim)', fontSize: '0.7rem', fontWeight: 500, letterSpacing: '0.02em' }}>
+                        v{__APP_VERSION__}
+                    </div>
                 </div>
             )}
         </div>
