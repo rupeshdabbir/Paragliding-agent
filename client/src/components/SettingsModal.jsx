@@ -186,10 +186,7 @@ export default function SettingsModal({ open, onClose }) {
     const handleSave = async () => {
         const keyToSave = currentKey.trim();
         if (!keyToSave) {
-            localStorage.removeItem(selectedProvider.storageKey);
-            localStorage.setItem('aiProvider', selectedProviderId);
-            setSaved(true);
-            setTimeout(() => { setSaved(false); onClose(); }, 1300);
+            setValidationError('Please enter an API key to activate.');
             return;
         }
 
@@ -478,21 +475,21 @@ export default function SettingsModal({ open, onClose }) {
                 {/* Save button */}
                 <button
                     onClick={handleSave}
-                    disabled={isValidating}
+                    disabled={isValidating || !currentKey.trim()}
                     style={{
                         width: '100%', padding: '14px', borderRadius: 12, border: 'none',
                         background: saved
                             ? 'var(--color-go)'
-                            : isValidating
+                            : (isValidating || !currentKey.trim())
                                 ? 'var(--color-surface-4)'
                                 : selectedProvider.gradient,
-                        color: isValidating ? 'var(--color-text-dim)' : '#fff',
+                        color: (isValidating || !currentKey.trim()) ? 'var(--color-text-dim)' : '#fff',
                         fontSize: '0.95rem', fontWeight: 700,
-                        cursor: isValidating ? 'wait' : 'pointer',
+                        cursor: (isValidating || !currentKey.trim()) ? 'not-allowed' : 'pointer',
                         transition: 'all 0.25s ease',
                         boxShadow: saved
                             ? '0 4px 16px rgba(16,185,129,0.35)'
-                            : isValidating
+                            : (isValidating || !currentKey.trim())
                                 ? 'none'
                                 : `0 4px 20px ${selectedProvider.accentColor}35`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,

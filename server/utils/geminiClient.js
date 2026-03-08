@@ -10,7 +10,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
  * @throws {Error} If no API key is available
  */
 export function getGenAI(userApiKey) {
-    const keyToUse = userApiKey || process.env.GEMINI_API_KEY;
+    const keyToUse = userApiKey; // Strict BYOK constraint (no server fallback)
 
     if (!keyToUse) {
         throw new Error('No API key found. Please provide a Gemini API Key in the settings.');

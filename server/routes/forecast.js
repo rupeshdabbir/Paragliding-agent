@@ -139,7 +139,9 @@ router.get('/', async (req, res) => {
         if (profileHeader && profileHeader.trim()) {
             try { pilotProfile = JSON.parse(profileHeader); } catch { /* ignore */ }
         }
-        const aiVerdicts = site
+
+        // Short-circuit AI analysis if the user has not provided a BYOK API key.
+        const aiVerdicts = (site && apiKey)
             ? await getAiWeeklyVerdicts(site, rawWeather, apiKey, pilotProfile, provider)
             : null;
 
