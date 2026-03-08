@@ -4,6 +4,7 @@ import { AlertTriangle, Check, X } from 'lucide-react';
 export default function DisclaimerModal() {
     const [accepted, setAccepted] = useState(true);
     const [showDeclineMsg, setShowDeclineMsg] = useState(false);
+    const [liabilityChecked, setLiabilityChecked] = useState(false);
 
     useEffect(() => {
         const hasAccepted = localStorage.getItem('skypilot_disclaimer_accepted');
@@ -91,6 +92,23 @@ export default function DisclaimerModal() {
                     </div>
                 )}
 
+                <label style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer',
+                    background: 'var(--color-surface-2)', padding: '16px', borderRadius: 12,
+                    border: liabilityChecked ? '1px solid var(--color-go)' : '1px solid var(--color-border-base)',
+                    transition: 'all 0.2s'
+                }}>
+                    <input
+                        type="checkbox"
+                        checked={liabilityChecked}
+                        onChange={(e) => setLiabilityChecked(e.target.checked)}
+                        style={{ marginTop: 2, transform: 'scale(1.2)', accentColor: 'var(--color-go)', cursor: 'pointer' }}
+                    />
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>
+                        I understand this is AI-generated advice, it may be fatally incorrect, and the author carries <strong>ZERO</strong> liability for my safety.
+                    </div>
+                </label>
+
                 <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
                     <button
                         onClick={handleDecline}
@@ -110,17 +128,18 @@ export default function DisclaimerModal() {
                     </button>
                     <button
                         onClick={handleAccept}
+                        disabled={!liabilityChecked}
                         style={{
                             flex: 1.5, padding: '14px 0', borderRadius: 12,
-                            background: 'linear-gradient(135deg, #00c8ff, #0044bb)',
-                            border: 'none', color: '#fff',
-                            fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer',
-                            boxShadow: '0 8px 24px rgba(0, 200, 255, 0.25)',
+                            background: liabilityChecked ? 'linear-gradient(135deg, #00c8ff, #0044bb)' : 'var(--color-surface-4)',
+                            border: 'none', color: liabilityChecked ? '#fff' : 'var(--color-text-dim)',
+                            fontSize: '0.95rem', fontWeight: 700, cursor: liabilityChecked ? 'pointer' : 'not-allowed',
+                            boxShadow: liabilityChecked ? '0 8px 24px rgba(0, 200, 255, 0.25)' : 'none',
                             transition: 'all 0.2s',
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
                         }}
-                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(0, 200, 255, 0.4)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 200, 255, 0.25)'; }}
+                        onMouseEnter={e => { if (liabilityChecked) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(0, 200, 255, 0.4)'; } }}
+                        onMouseLeave={e => { if (liabilityChecked) { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 200, 255, 0.25)'; } }}
                     >
                         <Check size={18} strokeWidth={3} /> I Understand & Accept
                     </button>

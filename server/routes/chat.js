@@ -31,6 +31,9 @@ router.post('/', async (req, res) => {
         return res.status(400).json({ error: 'message is required' });
     }
 
+    // Hard truncate to prevent massive prompt-stuffing OOM attacks
+    const safeMessage = message.slice(0, 2000);
+
     try {
         // Read provider + key from the new unified headers (with fallback to old header name)
         const provider = (req.headers['x-ai-provider'] || 'gemini').toLowerCase();
@@ -56,7 +59,7 @@ router.post('/', async (req, res) => {
         const { reply, toolResults, usage, usedModel } = await runProviderAgent({
             provider,
             apiKey,
-            userMessage: message,
+            userMessage: safeMessage,
             history: normalizedHistory,
             userLocation: location,
             pilotProfile,
