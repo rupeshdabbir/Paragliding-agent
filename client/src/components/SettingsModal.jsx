@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Key, ExternalLink, Sparkles, Check, ChevronRight } from 'lucide-react';
+import { X, Key, ExternalLink, Sparkles, Check, ChevronRight, Loader2, AlertTriangle } from 'lucide-react';
 import { getAIProvider, hasActiveKey } from '../utils/aiHeaders.js';
 
 // ─── Provider configuration ───────────────────────────────────────────────────
@@ -150,6 +150,8 @@ export default function SettingsModal({ open, onClose }) {
     const [keyValues, setKeyValues] = useState({});
     const [saved, setSaved] = useState(false);
     const [showKey, setShowKey] = useState(false);
+    const [isValidating, setIsValidating] = useState(false);
+    const [validationError, setValidationError] = useState('');
 
     useEffect(() => {
         if (open) {
@@ -158,6 +160,7 @@ export default function SettingsModal({ open, onClose }) {
             setSelectedProviderId(provider);
             setSaved(false);
             setShowKey(false);
+            setValidationError('');
 
             const loaded = {};
             PROVIDERS.forEach(p => {
@@ -177,22 +180,49 @@ export default function SettingsModal({ open, onClose }) {
 
     const handleKeyChange = (val) => {
         setKeyValues(prev => ({ ...prev, [selectedProviderId]: val }));
+        setValidationError('');
     };
 
-    const handleSave = () => {
-        // Save the key for the selected provider
-        if (currentKey.trim()) {
-            localStorage.setItem(selectedProvider.storageKey, currentKey.trim());
-        } else {
+    const handleSave = async () => {
+        const keyToSave = currentKey.trim();
+        if (!keyToSave) {
             localStorage.removeItem(selectedProvider.storageKey);
+            localStorage.setItem('aiProvider', selectedProviderId);
+            setSaved(true);
+            setTimeout(() => { setSaved(false); onClose(); }, 1300);
+            return;
         }
-        // Set this as the active provider
-        localStorage.setItem('aiProvider', selectedProviderId);
-        setSaved(true);
-        setTimeout(() => {
-            setSaved(false);
-            onClose();
-        }, 1300);
+
+        setIsValidating(true);
+        setValidationError('');
+        try {
+            const res = await fetch('/api/validate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ provider: selectedProviderId, apiKey: keyToSave })
+            });
+            const data = await res.json();
+
+            if (!data.valid) {
+                setValidationError(data.error || 'Invalid API key');
+                setIsValidating(false);
+                return;
+            }
+
+            // Save the key for the selected provider
+            localStorage.setItem(selectedProvider.storageKey, keyToSave);
+            // Set this as the active provider
+            localStorage.setItem('aiProvider', selectedProviderId);
+            setSaved(true);
+            setTimeout(() => {
+                setSaved(false);
+                onClose();
+            }, 1300);
+        } catch (err) {
+            setValidationError('Connection failed. Could not validate key.');
+        } finally {
+            setIsValidating(false);
+        }
     };
 
     const handleRemoveProvider = (providerId) => {
@@ -300,7 +330,7 @@ export default function SettingsModal({ open, onClose }) {
                                 provider={p}
                                 isSelected={selectedProviderId === p.id}
                                 hasKey={!!(keyValues[p.id]?.trim())}
-                                onClick={() => { setSelectedProviderId(p.id); setShowKey(false); }}
+                                onClick={() => { setSelectedProviderId(p.id); setShowKey(false); setValidationError(''); }}
                             />
                         ))}
                     </div>
@@ -416,34 +446,62 @@ export default function SettingsModal({ open, onClose }) {
 
                 {/* Feature note */}
                 <div style={{
-                    fontSize: '0.72rem', color: 'var(--color-text-dim)', lineHeight: 1.5,
-                    padding: '10px 14px', borderRadius: 10,
-                    background: 'var(--color-surface-3)',
-                    border: '1px solid var(--color-border-subtle)',
-                    marginBottom: 16,
+                    fontSize: '0.75rem', color: 'var(--color-text-secondary)', lineHeight: 1.5,
+                    padding: '12px 14px', borderRadius: 10,
+                    background: 'rgba(34, 197, 94, 0.08)',
+                    border: '1px solid rgba(34, 197, 94, 0.25)',
+                    marginBottom: 16, display: 'flex', gap: 10, alignItems: 'flex-start'
                 }}>
-                    <strong style={{ color: 'var(--color-text-secondary)' }}>All providers include:</strong>{' '}
-                    full tool calling (live site lookup, real-time weather, flyability analysis). Your key is stored only in your browser and never sent to our servers.
+                    <span style={{ fontSize: '1.2rem', marginTop: -2 }}>🔒</span>
+                    <div>
+                        <strong style={{ color: 'var(--color-text-heading)' }}>Privacy first:</strong> Your key is stored <strong>only</strong> in your browser and never sent to our servers.
+                        <div style={{ marginTop: 6, color: 'var(--color-text-dim)', fontSize: '0.7rem' }}>
+                            All providers include full tool calling (live site lookup, real-time weather, flyability analysis).
+                        </div>
+                    </div>
                 </div>
+
+                {/* Error message */}
+                {validationError && (
+                    <div style={{
+                        display: 'flex', alignItems: 'flex-start', gap: 8,
+                        background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)',
+                        padding: '10px 14px', borderRadius: 10, color: '#fca5a5',
+                        fontSize: '0.78rem', marginBottom: 16, lineHeight: 1.4,
+                        animation: 'shake 0.4s ease-in-out',
+                    }}>
+                        <AlertTriangle size={15} color="#fca5a5" style={{ flexShrink: 0, marginTop: 1 }} />
+                        <span>{validationError}</span>
+                    </div>
+                )}
 
                 {/* Save button */}
                 <button
                     onClick={handleSave}
+                    disabled={isValidating}
                     style={{
                         width: '100%', padding: '14px', borderRadius: 12, border: 'none',
                         background: saved
                             ? 'var(--color-go)'
-                            : selectedProvider.gradient,
-                        color: '#fff', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer',
+                            : isValidating
+                                ? 'var(--color-surface-4)'
+                                : selectedProvider.gradient,
+                        color: isValidating ? 'var(--color-text-dim)' : '#fff',
+                        fontSize: '0.95rem', fontWeight: 700,
+                        cursor: isValidating ? 'wait' : 'pointer',
                         transition: 'all 0.25s ease',
                         boxShadow: saved
                             ? '0 4px 16px rgba(16,185,129,0.35)'
-                            : `0 4px 20px ${selectedProvider.accentColor}35`,
+                            : isValidating
+                                ? 'none'
+                                : `0 4px 20px ${selectedProvider.accentColor}35`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                         transform: saved ? 'scale(1.01)' : 'scale(1)',
                     }}
                 >
-                    {saved ? (
+                    {isValidating ? (
+                        <><Loader2 size={16} style={{ animation: 'spin 1.5s linear infinite' }} /> Validating...</>
+                    ) : saved ? (
                         <><Check size={18} /> Activated!</>
                     ) : (
                         <>Activate {selectedProvider.company} {selectedProvider.name} <ChevronRight size={16} /></>

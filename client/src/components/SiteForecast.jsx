@@ -289,8 +289,14 @@ function AiVerdictCard({ verdict }) {
                         borderRadius: 8, border: '1px solid rgba(245,158,11,0.2)',
                         wordBreak: 'break-word', overflowWrap: 'anywhere'
                     }}>
-                        <span style={{ display: 'block', fontWeight: 600, marginBottom: 4 }}>API Error Details:</span>
-                        {verdict._error}
+                        <span style={{ display: 'block', fontWeight: 600, marginBottom: 4 }}>Error:</span>
+                        {(() => {
+                            const errStr = String(verdict._error).toLowerCase();
+                            if (errStr.includes('401') || errStr.includes('403') || errStr.includes('api key')) return 'Invalid API Key. Please update your key in Settings.';
+                            if (errStr.includes('429') || errStr.includes('rate limit')) return 'Rate limited — please wait a minute and try again.';
+                            if (errStr.includes('503') || errStr.includes('overloaded')) return 'AI service is currently overloaded. Please try again later.';
+                            return 'Something went wrong connecting to the AI provider. Please check your settings.';
+                        })()}
                     </div>
                 ) : (
                     verdict.reasoning
@@ -733,6 +739,14 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
                                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
                                     You are currently viewing basic rule-based forecasts. Connect your API key to unlock precision AI weather intelligence and safety recommendations.
                                 </p>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)', background: 'var(--color-surface-3)', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--color-border-subtle)' }}>
+                                    ℹ️ <strong>Recommendation:</strong> Google Gemini offers a generous free tier perfect for personal use.{' '}
+                                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-sky)', textDecoration: 'none' }}>Get a free key →</a>
+                                </div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-dim)', textAlign: 'center', marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                                    <span style={{ fontSize: '1rem' }}>🔒</span>
+                                    <span><strong>Privacy first:</strong> Your key is stored <strong>only</strong> in your browser and never sent to our servers.</span>
+                                </div>
                                 <button
                                     onClick={() => window.dispatchEvent(new Event('open-settings'))}
                                     style={{

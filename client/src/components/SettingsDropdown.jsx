@@ -8,8 +8,11 @@ export default function SettingsDropdown({ onOpenSettings }) {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
     const buttonRef = useRef(null);
-    const [hasProfile, setHasProfile] = useState(false);
     const [hasApiKey, setHasApiKey] = useState(!!localStorage.getItem('geminiApiKey'));
+    const [hasProfile, setHasProfile] = useState(false);
+    const [showWelcomeTooltip, setShowWelcomeTooltip] = useState(() => {
+        return !localStorage.getItem('skypilot_welcome_seen');
+    });
 
     useEffect(() => {
         const check = () => {
@@ -65,7 +68,13 @@ export default function SettingsDropdown({ onOpenSettings }) {
         <div style={{ position: 'relative' }}>
             <button
                 ref={buttonRef}
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => {
+                    setIsOpen(!isOpen);
+                    if (showWelcomeTooltip) {
+                        localStorage.setItem('skypilot_welcome_seen', 'true');
+                        setShowWelcomeTooltip(false);
+                    }
+                }}
                 title="Settings"
                 style={{
                     width: 36, height: 36, borderRadius: '50%',
@@ -98,6 +107,30 @@ export default function SettingsDropdown({ onOpenSettings }) {
                     }} />
                 )}
             </button>
+
+            {showWelcomeTooltip && !hasApiKey && !isOpen && (
+                <div style={{
+                    position: 'absolute', top: '100%', right: 0, marginTop: 14, width: 230,
+                    background: 'var(--color-sky-gradient)', color: '#fff',
+                    padding: '12px 14px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600,
+                    boxShadow: '0 8px 30px rgba(0,200,255,0.4)', zIndex: 4000,
+                    animation: 'float-gentle 3s ease-in-out infinite, fade-in 0.5s ease-out',
+                    lineHeight: 1.4, cursor: 'pointer', pointerEvents: 'auto',
+                }} onClick={() => {
+                    localStorage.setItem('skypilot_welcome_seen', 'true');
+                    setShowWelcomeTooltip(false);
+                    onOpenSettings();
+                }}>
+                    <div style={{
+                        position: 'absolute', top: -6, right: 12, width: 12, height: 12,
+                        background: '#0ea5e9', transform: 'rotate(45deg)', borderRadius: 2
+                    }} />
+                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                        <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>👋</span>
+                        <span>Welcome! Click here to set up your free API key and unlock AI forecasts.</span>
+                    </div>
+                </div>
+            )}
 
             {isOpen && (
                 <div
