@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Calendar, Clock, Wind, AlertTriangle, ChevronRight, CheckCircle, XCircle, MinusCircle, RefreshCw, Info, Sparkles, Key, Star, User } from 'lucide-react';
 import WindChart from './WindChart.jsx';
 import { FlyabilityBadge } from './FlyabilityBadge.jsx';
@@ -433,8 +433,16 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
         return () => clearInterval(interval);
     }, []);
 
+    // Store onVerdictReady in a ref so it never needs to be a useCallback/useEffect dep.
+    // This prevents an infinite loop: parent re-creates the function each render, which would
+    // change fetchForecast's identity -> trigger the effect -> fetch -> state update -> repeat.
+    const onVerdictReadyRef = useRef(onVerdictReady);
+    useEffect(() => { onVerdictReadyRef.current = onVerdictReady; }); // no deps — always current
+
     // Re-run the AI forecast when pilot profile changes
     const fetchForecastRef = useRef(null);
+    const abortControllerRef = useRef(null);
+
     useEffect(() => {
         const handleProfileSaved = (e) => {
             if (e.detail?.changed) {
@@ -449,13 +457,22 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
         return () => window.removeEventListener('pilot-profile-saved', handleProfileSaved);
     }, []);
 
-    const fetchForecast = async () => {
+    const fetchForecast = useCallback(async () => {
         if (!site?.lat || !site?.lng) return;
+
+        // Abort any currently in-flight request for this component
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
         setLoading(true); setError(null);
         try {
             const aiHeaders = getAIHeaders();
             const pilotProfile = localStorage.getItem('skypilot_pilot_profile') || '';
             const res = await fetch(`/api/forecast?lat=${site.lat}&lng=${site.lng}&models=${weatherModel}`, {
+                signal: controller.signal,
                 headers: {
                     ...aiHeaders,
                     ...(pilotProfile ? { 'x-pilot-profile': pilotProfile } : {}),
@@ -480,18 +497,37 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
                 if (todayVerdict?._fallback) {
                     console.error('[SkyPilot] AI Verdict FALLBACK — reason:', todayVerdict._error || 'unknown');
                 }
-                if (onVerdictReady) onVerdictReady(data.aiVerdict);
+                // Call via ref so this callback never needs onVerdictReady as a dep
+                onVerdictReadyRef.current?.(data.aiVerdict);
             }
         } catch (err) {
+            if (err.name === 'AbortError') {
+                console.log('[SiteForecast] Fetch aborted (likely StrictMode or rapid switch)');
+                return; // Bail out silently, allow the new request to finish
+            }
             setError(err.message);
         } finally {
-            setLoading(false);
-            setProfileRefreshing(false);
+            // Only clear loading state if this wasn't an aborted request (meaning a new one might be running)
+            if (!abortControllerRef.current || abortControllerRef.current === controller) {
+                setLoading(false);
+                setProfileRefreshing(false);
+            }
         }
-    };
+        // Only legitimate trigger conditions: site coords change or user switches weather model
+    }, [site?.lat, site?.lng, weatherModel]);
 
-    useEffect(() => { fetchForecastRef.current = fetchForecast; });
-    useEffect(() => { fetchForecast(); }, [site?.lat, site?.lng, weatherModel]);
+    // Keep the imperative ref in sync (used by the pilot-profile-saved handler)
+    useEffect(() => { fetchForecastRef.current = fetchForecast; }, [fetchForecast]);
+    // Fire the fetch exactly once per unique (site, model) combination
+    useEffect(() => {
+        fetchForecast();
+        // Cleanup: abort request if component unmounts (crucial for StrictMode)
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
+    }, [fetchForecast]);
 
     const today = forecast?.days?.[0];
     const tomorrow = forecast?.days?.[1];
