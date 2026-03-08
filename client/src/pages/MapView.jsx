@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -110,16 +110,12 @@ function MapClickHandler({ onClick }) {
 }
 
 // ─── Map Move Handler (for "Search this area") ────────────────────────────────
-function MapMoveHandler({ onMoveEnd, initialCenter }) {
+function MapMoveHandler({ onMoveEnd }) {
     const map = useMap();
-    const initialRef = useRef(initialCenter);
     useEffect(() => {
         const handler = () => {
             const c = map.getCenter();
-            const init = initialRef.current;
-            // Only show the button if user has meaningfully panned (>0.05 deg)
-            const moved = init && (Math.abs(c.lat - init[0]) > 0.05 || Math.abs(c.lng - init[1]) > 0.05);
-            onMoveEnd({ lat: c.lat, lng: c.lng }, moved);
+            onMoveEnd({ lat: c.lat, lng: c.lng });
         };
         map.on('moveend', handler);
         return () => map.off('moveend', handler);
@@ -551,6 +547,7 @@ export default function MapView() {
     const [searchedSite, setSearchedSite] = useState(null); // site selected via search that may be outside radius
     const [showSearchHere, setShowSearchHere] = useState(false);
     const [viewportCenter, setViewportCenter] = useState(null); // center of map when user panned
+    const lastFetchCenter = useRef(null); // where sites were last fetched from
     const [favorites, setFavorites] = useState(() => {
         try {
             return JSON.parse(localStorage.getItem('skypilot_favorites') || '[]');
@@ -634,6 +631,7 @@ export default function MapView() {
             if (!res.ok) throw new Error('Failed');
             const data = await res.json();
             setSites(data.sites || []);
+            lastFetchCenter.current = { lat: loc.lat, lng: loc.lng }; // record where we fetched from
         } catch (err) { console.error(err); }
         finally { setLoadingSites(false); }
     }, []);
@@ -646,14 +644,24 @@ export default function MapView() {
         const distKm = (distance * 1.60934).toFixed(1);
         fetch(`/api/sites?lat=${viewportCenter.lat}&lng=${viewportCenter.lng}&distance=${distKm}&limit=20`)
             .then(r => r.json())
-            .then(data => setSites(data.sites || []))
+            .then(data => {
+                setSites(data.sites || []);
+                lastFetchCenter.current = { lat: viewportCenter.lat, lng: viewportCenter.lng };
+            })
             .catch(err => console.error(err))
             .finally(() => setLoadingSites(false));
     }, [viewportCenter, distance]);
 
-    const handleMapMoveEnd = useCallback((center, hasMoved) => {
-        setViewportCenter(center);
-        setShowSearchHere(hasMoved);
+    const handleMapMoveEnd = useCallback((center) => {
+        setViewportCenter(prev => {
+            if (prev && Math.abs(prev.lat - center.lat) < 0.0001 && Math.abs(prev.lng - center.lng) < 0.0001) return prev;
+            return center;
+        });
+        // Only show "Search this area" if sites have been loaded AND we've moved far enough from the last fetch point
+        const fc = lastFetchCenter.current;
+        if (!fc) return; // no fetch yet — don't show
+        const distDeg = Math.sqrt(Math.pow(center.lat - fc.lat, 2) + Math.pow(center.lng - fc.lng, 2));
+        setShowSearchHere(distDeg > 0.15); // ~10 miles threshold
     }, []);
 
     const handleDistanceChange = (v) => { setDistance(v); if (location) fetchSites(location, v); };
@@ -664,7 +672,11 @@ export default function MapView() {
         NO_GO: sites.filter(s => s.rating === 'NO_GO').length
     };
 
-    // Best site = first GO site, or first MARGINAL
+    // Memoize location position so Circle/UserMarker don't get a new array ref every render
+    const userPosition = useMemo(
+        () => location ? [location.lat, location.lng] : null,
+        [location?.lat, location?.lng]
+    );
     const bestSite = sites.find(s => s.rating === 'GO') || sites.find(s => s.rating === 'MARGINAL');
 
     // Drag resize handlers (desktop only)
@@ -730,7 +742,7 @@ export default function MapView() {
                             setSelectedSite(null);
                             setChatOpen(false);
                         }} />
-                        <MapMoveHandler onMoveEnd={handleMapMoveEnd} initialCenter={mapCenter} />
+                        <MapMoveHandler onMoveEnd={handleMapMoveEnd} />
                         {/* Tile layer: CartoDB Voyager for light (vivid blue water), Stadia dark for dark mode */}
                         <TileLayer
                             key={theme}
@@ -744,12 +756,11 @@ export default function MapView() {
                             }
                             maxZoom={19}
                         />
-                        <FlyTo center={mapCenter} zoom={mapZoom} />
-                        {location && (
+                        {userPosition && (
                             <>
-                                <UserMarker position={[location.lat, location.lng]} />
+                                <UserMarker position={userPosition} />
                                 <Circle
-                                    center={[location.lat, location.lng]}
+                                    center={userPosition}
                                     radius={distance * 1609.34}
                                     pathOptions={{
                                         color: 'rgba(0,200,255,0.28)',

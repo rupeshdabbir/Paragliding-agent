@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { FlyabilityBadge } from './FlyabilityBadge.jsx';
 import SiteCard from './SiteCard.jsx';
-import { Wind, User, Loader2, Map, CloudSun, Compass } from 'lucide-react';
+import { Wind, User, Loader2, Map, CloudSun, Compass, AlertTriangle } from 'lucide-react';
 
 // ─── Tool step icons map ──────────────────────────────────────────────────────
 const TOOL_ICONS = {
@@ -177,8 +177,10 @@ export default function ChatMessage({ message }) {
                 <div style={{
                     background: isUser
                         ? 'linear-gradient(135deg, rgba(79,70,229,0.35), rgba(124,58,237,0.25))'
-                        : 'var(--color-bubble-bot-bg)',
-                    border: `1px solid ${isUser ? 'rgba(79,70,229,0.3)' : 'var(--color-bubble-bot-border)'}`,
+                        : message.isError
+                            ? 'rgba(239,68,68,0.08)'
+                            : 'var(--color-bubble-bot-bg)',
+                    border: `1px solid ${isUser ? 'rgba(79,70,229,0.3)' : message.isError ? 'rgba(239,68,68,0.25)' : 'var(--color-bubble-bot-border)'}`,
                     borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                     padding: '14px 18px',
                     backdropFilter: 'blur(12px)',
@@ -188,6 +190,27 @@ export default function ChatMessage({ message }) {
                 }}>
                     {isUser ? (
                         <span>{message.content}</span>
+                    ) : message.isError ? (
+                        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                            <div style={{
+                                width: 32, height: 32, borderRadius: 10, flexShrink: 0,
+                                background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.2)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>
+                                <AlertTriangle size={15} color="rgba(239,68,68,0.8)" />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'rgba(239,68,68,0.85)', marginBottom: 5 }}>
+                                    {message.errorCode === '503' ? 'AI Overloaded' :
+                                        message.errorCode === '429' ? 'Rate Limited' :
+                                            message.errorCode === 'auth' ? 'API Key Error' :
+                                                message.errorCode === 'network' ? 'Network Error' : 'Something went wrong'}
+                                </div>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', lineHeight: 1.55 }}>
+                                    {message.content}
+                                </div>
+                            </div>
+                        </div>
                     ) : (
                         <div className="markdown-body">
                             <MarkdownRenderer content={message.content} />

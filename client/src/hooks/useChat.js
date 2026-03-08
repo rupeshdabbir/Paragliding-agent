@@ -11,6 +11,20 @@ const THINKING_STEPS = [
     'Putting together your brief ✨',
 ];
 
+function friendlyError(rawMessage) {
+    if (!rawMessage) return { message: 'Something went wrong. Please try again.', code: 'unknown' };
+    const m = rawMessage.toLowerCase();
+    if (m.includes('503') || m.includes('service unavailable') || m.includes('high demand'))
+        return { message: 'The AI model is under very high demand right now. This is temporary — try again in a moment.', code: '503' };
+    if (m.includes('429') || m.includes('rate limit') || m.includes('quota'))
+        return { message: "You've hit the API rate limit. Wait a minute, then try again.", code: '429' };
+    if (m.includes('401') || m.includes('unauthorized') || m.includes('invalid api key'))
+        return { message: 'Your API key looks invalid or expired. Check your key in Settings.', code: 'auth' };
+    if (m.includes('failed to fetch') || m.includes('networkerror') || m.includes('network'))
+        return { message: 'Network error — check your connection and try again.', code: 'network' };
+    return { message: 'Something went wrong on our end. Please try again.', code: 'unknown' };
+}
+
 export function useChat() {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -92,14 +106,17 @@ export function useChat() {
 
             setMessages(prev => [...prev, aiMessage]);
         } catch (err) {
-            setError(err.message);
+            const { message: friendlyMsg, code: errorCode } = friendlyError(err.message);
+            setError(friendlyMsg);
             setMessages(prev => [
                 ...prev,
                 {
                     role: 'model',
-                    content: `Sorry, I encountered an error: ${err.message}`,
+                    content: friendlyMsg,
+                    isError: true,
+                    errorCode,
                     timestamp: new Date().toISOString(),
-                    usedModel: err.usedModel || 'unknown',
+                    usedModel: err.usedModel,
                 },
             ]);
         } finally {
