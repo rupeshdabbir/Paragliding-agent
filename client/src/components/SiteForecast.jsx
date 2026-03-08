@@ -415,6 +415,39 @@ function WindAltBar({ hours, baseAlt = 0 }) {
     );
 }
 
+// ─── Expandable Description Component ─────────────────────────────────────────
+function ExpandableDescription({ text, maxLength = 150 }) {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    if (!text) return null;
+
+    if (text.length <= maxLength) {
+        return (
+            <div style={{ fontSize: '0.74rem', color: 'var(--color-text-secondary)', marginBottom: 8, lineHeight: 1.45, maxWidth: '96%', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                <strong style={{ color: 'var(--color-text-secondary)' }}>Takeoff:</strong> {text}
+            </div>
+        );
+    }
+
+    const displayText = isExpanded ? text : text.slice(0, maxLength) + '...';
+
+    return (
+        <div style={{ fontSize: '0.74rem', color: 'var(--color-text-secondary)', marginBottom: 8, lineHeight: 1.45, maxWidth: '96%', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+            <strong style={{ color: 'var(--color-text-secondary)' }}>Takeoff:</strong> {displayText}
+            <button
+                onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+                style={{
+                    background: 'none', border: 'none', padding: 0, marginTop: 4,
+                    color: 'var(--color-sky)', fontSize: '0.74rem', fontWeight: 600,
+                    cursor: 'pointer', display: 'block'
+                }}
+            >
+                {isExpanded ? 'Show less' : 'Show more'}
+            </button>
+        </div>
+    );
+}
+
 // ─── Main SiteForecast ────────────────────────────────────────────────────────
 export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite = false, onToggleFavorite }) {
     const [forecast, setForecast] = useState(null);
@@ -602,11 +635,7 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
                                 </button>
                             )}
                         </h3>
-                        {site?.description && (
-                            <div style={{ fontSize: '0.74rem', color: 'var(--color-text-secondary)', marginBottom: 8, lineHeight: 1.45, maxWidth: '96%' }}>
-                                <strong style={{ color: 'var(--color-text-secondary)' }}>Takeoff:</strong> {site.description}
-                            </div>
-                        )}
+                        {site?.description && <ExpandableDescription text={site.description} />}
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: '0.71rem', color: 'var(--color-text-dim)', alignItems: 'center' }}>
                             {site?.altitude > 0 && <span>⛰️ {site.altitude}ft</span>}
                             {site?.siteTypes?.paragliding && <span>🪂 Paragliding</span>}

@@ -479,7 +479,7 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, chatWidthP
 }
 
 // ─── Mobile Bottom Sheet for Site Forecast ───────────────────────────────────
-function MobileForecaseSheet({ site, onClose, chatContextSite, setChatContextSite, setChatOpen, siteAiVerdict, setSiteAiVerdict, isFavorite, onToggleFavorite }) {
+function MobileForecaseSheet({ site, onClose, chatContextSite, setChatContextSite, setChatOpen, siteAiVerdict, setSiteAiVerdict, isFavorite, onToggleFavorite, openChatPanel }) {
     return (
         <>
             {/* backdrop */}
@@ -995,18 +995,21 @@ export default function MapView() {
                     )}
 
                     {/* Radius label badge — shown when we have a location */}
-                    {location && !loadingSites && (
-                        <div style={{
-                            position: 'absolute', top: 14, right: 14,
-                            zIndex: 1300,
-                            display: 'flex', alignItems: 'center', gap: 6,
-                            padding: '5px 10px', borderRadius: 100,
-                            background: 'var(--color-surface-overlay)', backdropFilter: 'blur(16px)',
-                            border: '1px solid rgba(0,200,255,0.2)',
-                            fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)',
-                            boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
-                            pointerEvents: 'none',
-                        }}>
+                    {location && !loadingSites && !showSearchHere && (
+                        <button
+                            onClick={() => setShowFilters(true)}
+                            style={{
+                                position: 'absolute', top: 14, right: 14,
+                                zIndex: 1300,
+                                display: 'flex', alignItems: 'center', gap: 6,
+                                padding: '5px 10px', borderRadius: 100,
+                                background: 'var(--color-surface-overlay)', backdropFilter: 'blur(16px)',
+                                border: '1px solid rgba(0,200,255,0.2)',
+                                fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)',
+                                boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
+                                pointerEvents: 'auto',
+                                cursor: 'pointer',
+                            }}>
                             <span style={{ color: 'var(--color-sky)' }}>{distance} mi</span>
                             {sites.length > 0 && (
                                 <>
@@ -1014,11 +1017,11 @@ export default function MapView() {
                                     <span>{sites.length} sites</span>
                                 </>
                             )}
-                        </div>
+                        </button>
                     )}
 
                     {/* Quick Stats Bar */}
-                    {sites.length > 0 && !loadingSites && (
+                    {sites.length > 0 && !loadingSites && !showSearchHere && (
                         <QuickStatsBar sites={sites} bestSite={bestSite} />
                     )}
 
@@ -1353,6 +1356,7 @@ export default function MapView() {
                             setSiteAiVerdict={setSiteAiVerdict}
                             isFavorite={isFavorite(selectedSite)}
                             onToggleFavorite={toggleFavorite}
+                            openChatPanel={openChatPanel}
                         />
                     )}
                 </div>

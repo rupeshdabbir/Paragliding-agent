@@ -51,7 +51,7 @@ export default function Navbar({ onSearchSelect }) {
     return (
         <nav className="navbar">
             {/* Logo */}
-            <NavLink to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
+            <a href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
                 <div style={{
                     width: isMobile ? 30 : 34, height: isMobile ? 30 : 34,
                     background: 'var(--color-sky-gradient)',
@@ -68,7 +68,7 @@ export default function Navbar({ onSearchSelect }) {
                 }}>
                     Sky<span style={{ color: 'var(--color-sky)' }}>Pilot</span>
                 </span>
-            </NavLink>
+            </a>
 
             {/* Portal target — desktop search goes here via portal */}
             <div id="navbar-portal-target" style={
