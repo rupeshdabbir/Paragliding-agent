@@ -20,7 +20,7 @@ SkyPilot is a full-stack AI-powered paragliding conditions advisor. It helps pil
 - **Multi-Provider AI Verdicts:** Full feature parity for 7-day extended forecasts and chat across Anthropic Claude, Grok, OpenAI, and Gemini. Choose your preferred AI provider to reliably analyze long-term flyability without rate-limit anxiety.
 - **Model Selection:** Choose your preferred weather model: Auto (HRRR for North America + GFS/ECMWF globally), GFS, ECMWF, or ICON.
 - **Site-Specific AI Chat:** A slide-out "Ask SkyPilot" drawer to chat about a specific site. Ask questions like "Can I fly Mussel Rock today?" or "When is the best window this week?" Features an engaging "Thinking" UI that provides visibility into the AI's processing stages.
-- **BRING YOUR OWN KEY (BYOK) Growth UX:** Users without an API key can freely explore the interactive map and basic weather forecasts. Premium chat options and 7-day "AI Verdicts" are gated by an intuitive upsell that prompts the user to easily configure their own, free API keys (Gemini, Claude, Grok, OpenAI) inside a dedicated **Pilot Profile Settings** modal.
+- **Strict BRING YOUR OWN KEY (BYOK) Architecture:** The application operates on a strict BYOK model. Users can freely explore the interactive map and basic rule-based weather forecasts. Premium chat options and 7-day "AI Verdicts" are gated by an intuitive upsell that prompts the user to easily configure their own API keys (Gemini, Claude, Grok, or OpenAI) inside the Settings modal. *Keys are stored only in the browser's `localStorage` and are never saved to the server.*
 
 ---
 
@@ -33,16 +33,16 @@ This project uses a monorepo structure with a **React (Vite)** frontend and a **
 - A [Google Gemini API Key](https://aistudio.google.com/)
 
 ### 1. Clone & Set up Environment
-Clone the repository and create an `.env` file in the **root** folder of the project:
+Clone the repository. Because SkyPilot enforces a strict BYOK (Bring Your Own Key) model, **no server-side API keys are strictly required** to run the base application. Users provide their own keys via the web interface.
+
+However, if you wish to set up default environment variables for local testing scripts, create an `.env` file in the **root** folder:
 
 ```bash
 # In the root folder: Paragliding-agent/
 touch .env
 ```
 
-Add your API keys to the `.env` file. (Note: the backend will use this as a master fallback if a user hasn't supplied one in the browser):
 ```env
-GEMINI_API_KEY=your_gemini_api_key_here
 PORT=3001
 
 # Optional: For future vector database integrations
@@ -89,10 +89,10 @@ SkyPilot leverages a tool-calling architecture in a Node.js Express server, host
 
 ### Key Architectural Decisions
 - **Unified Rule Engines:** Flyability is determined by a dual-engine approach combining deterministic algorithms (Rule-Based Engine) and semantic LLM synthesis (AI-Based Engine). The AI-Based Engine acts as the supreme authority when an API Key is available.
-- **Optimized Gemini Calls:** The AI weekly verdict analyzes all 7 days in a single Gemini API call to reduce latency and token usage.
-- **Caching Mechanism:** `node-cache` (on the server) and `localStorage` (in the browser) are heavily utilized to avoid redundant calls. ParaglidingEarth API responses are cached for 1 hour, Open-Meteo for 10 minutes, and multi-day Gemini verdicts for 6 hours.
-- **Browser-Side API Keys:** The BYOK architecture allows users to input their own Gemini Keys in the UI. Keys are saved securely into `localStorage`, injected into an `x-gemini-api-key` header, and sent to the backend for execution, bypassing any potential backend rate throttling while hiding the key from the broader public internet.
-- **Fail-Safe Processing:** If a specific site fails to load or an API rate limit is reached, `try-catch` blocks ensure partial arrays are returned gracefully rather than crashing endpoints.
+- **Optimized AI Calls:** The AI weekly verdict analyzes all 7 days in a single LLM API call to reduce latency and token usage.
+- **Caching Mechanism:** `node-cache` (on the server) and `localStorage` (in the browser) are heavily utilized to avoid redundant calls. ParaglidingEarth API responses are cached for 1 hour, Open-Meteo for 10 minutes, and multi-day AI verdicts for 6 hours.
+- **Strict BYOK / Browser-Side API Keys:** Users input their own API Keys (Gemini, Anthropic, OpenAI, or Grok) in the UI. Keys are validated against the provider's API, saved securely into `localStorage`, injected into specific headers (e.g., `x-ai-api-key`), and sent to the backend for execution. The backend strictly enforces this: if no header is present, the AI layer is bypassed completely.
+- **Fail-Safe Processing:** If a specific site fails to load or an API rate limit is reached, `try-catch` blocks ensure partial arrays are returned gracefully. API errors (like `429 Too Many Requests` or `401 Unauthorized`) are caught and translated into user-friendly UI warnings.
 
 ---
 
@@ -121,7 +121,7 @@ To understand the AI Rule Engine, it is helpful to trace the data flow from the 
 
 **1. Application Load & Initial Data Fetch**
 
-When the user lands on the application, the system quickly fetches the required data using the lightweight Rule-Based engine to populate the map before triggering the heavier AI engine dynamically on-demand. In the event a user has not configured a personal Gemini key within the `SettingsModal`, the app skips the AI fetch entirely and immediately prompts an upsell card that unlocks AI usage. 
+When the user lands on the application, the system quickly fetches the required data using the lightweight Rule-Based engine to populate the map before triggering the heavier AI engine dynamically on-demand. In the event a user has not configured a personal API key within the Settings, the app skips the AI fetch entirely and immediately prompts an upsell card that guides them to unlock AI usage. 
 
 ```mermaid
 sequenceDiagram
@@ -129,7 +129,7 @@ sequenceDiagram
     participant MapUI as React MapView
     participant SiteAPI as Express /api/sites
     participant ForecastAPI as Express /api/forecast
-    participant AI as aiVerdict (Gemini)
+    participant AI as aiVerdict (LLM Provider)
     
     User->>MapUI: Opens Application
     MapUI->>MapUI: Get User Location (Browser Geolocation)
@@ -138,23 +138,23 @@ sequenceDiagram
     SiteAPI-->>MapUI: Returns Sites (Color-coded pins)
     
     User->>MapUI: Clicks on a Paragliding Site Pin
-    MapUI->>ForecastAPI: GET /api/forecast?siteLat=... (with 'x-gemini-api-key' Header)
+    MapUI->>ForecastAPI: GET /api/forecast?siteLat=... (with 'x-ai-api-key' Header)
     Note over ForecastAPI: Fetches 7-Day Weather from Open-Meteo
     
     alt User Provided an API Key
-        ForecastAPI->>AI: getAiWeeklyVerdicts(site, 7day_weather, apiKey)
+        ForecastAPI->>AI: getAiWeeklyVerdicts(site, weather, apiKey, provider)
         AI-->>ForecastAPI: Returns 7 structured daily verdicts
         ForecastAPI-->>MapUI: Renders Premium Forecast Panel & AI Advice
     else User Lacks an API Key
-        ForecastAPI-->>MapUI: Renders Fallback Forecast Panel
-        MapUI->>User: Renders Premium "Wake SkyPilot" Upsell Prompt
+        ForecastAPI-->>MapUI: Renders Fallback Rule-Based Forecast
+        MapUI->>User: Renders Premium "Wake SkyPilot" Upsell Card
     end
 
 ```
 
 **2. Inside the AI Rule Engine's "Brain"**
 
-Once `aiVerdict.js` is invoked, it aggregates thousands of raw data points into a condensed format, structures a strict system prompt, and asks Gemini to perform expert-level semantic evaluation.
+Once `aiVerdict.js` is invoked, it aggregates thousands of raw data points into a condensed format, structures a strict system prompt, and asks the selected LLM provider (Gemini, Anthropic, OpenAI, Grok) to perform expert-level semantic evaluation.
 
 ```mermaid
 flowchart TD
@@ -166,7 +166,7 @@ flowchart TD
     C --> E{System Prompt Construction}
     D --> E
     
-    E -->|1 Call for 7 Days| F((gemini-3-flash-preview))
+    E -->|1 Call for 7 Days| F((LLM Provider / JSON Mode))
     
     F -->|Analyze Mode| G{Determine Site Mode Flight Viability}
     G -->|Thermaling?| H[Check for heat + instability + light winds]
@@ -191,8 +191,12 @@ flowchart TD
   
 - **`GET /api/forecast`**
   - **Query Params:** `lat`, `lng`, `siteLat` (optional), `siteLng` (optional), `models` (e.g., `best_match`)
-  - **Headers:** `x-gemini-api-key` (optional, overrides `.env` for AI verdicts)
+  - **Headers:** `x-ai-provider`, `x-ai-api-key` (or legacy `x-gemini-api-key`)
   - **Description:** Returns a 7-day extended forecast with hourly wind arrays, a daily summary block, and full AI verdicts mapped by date.
+
+- **`POST /api/validate`**
+  - **Request Body:** `{ provider: "gemini", apiKey: "..." }`
+  - **Description:** Performs a lightweight validation request against the selected provider to ensure the key is functional before saving to browser storage.
 
 ### Search API
 - **`GET /api/search`**
@@ -201,9 +205,9 @@ flowchart TD
 
 ### Conversational API
 - **`POST /api/chat`**
-  - **Headers:** `x-gemini-api-key` (optional, overrides `.env`)
+  - **Headers:** `x-ai-provider`, `x-ai-api-key` (or legacy `x-gemini-api-key`)
   - **Request Body:** `{ message: "...", history: [{role: "user"|"model", content: "..."}], location: {lat, lng} }`
-  - **Description:** Agentic loop endpoint. Gemini can dynamically invoke local tools such as `analyze_flying_conditions` (which fetches weather and evaluates flyability) or `get_paragliding_sites` before returning a synthesized Markdown response to the user.
+  - **Description:** Agentic loop endpoint. The selected LLM can dynamically invoke local tools such as `analyze_flying_conditions` (which fetches weather and evaluates flyability) or `get_paragliding_sites` before returning a synthesized Markdown response to the user.
 
 ---
 
