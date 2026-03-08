@@ -3,7 +3,7 @@ import { Calendar, Clock, Wind, AlertTriangle, ChevronRight, CheckCircle, XCircl
 import WindChart from './WindChart.jsx';
 import { FlyabilityBadge } from './FlyabilityBadge.jsx';
 import { formatProfileSummary, isProfileComplete } from '../hooks/usePilotProfile.js';
-import { getAIHeaders, hasActiveKey } from '../utils/aiHeaders.js';
+import { getAIHeaders, hasActiveKey, getAIProvider, PROVIDERS } from '../utils/aiHeaders.jsx';
 
 const RATING_COLOR = { GO: 'var(--color-go)', MARGINAL: 'var(--color-marginal)', NO_GO: 'var(--color-no-go)' };
 const RATING_BG = { GO: 'var(--color-rating-go-bg)', MARGINAL: 'var(--color-rating-marginal-bg)', NO_GO: 'var(--color-rating-nogo-bg)' };
@@ -197,8 +197,22 @@ function AiVerdictCard({ verdict }) {
                     </div>
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, lineHeight: 1 }}>
-                            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-muted)', letterSpacing: '0.07em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 }}>
                                 SkyPilot AI
+                                {(() => {
+                                    const activeP = PROVIDERS.find(p => p.id === getAIProvider());
+                                    if (!activeP) return null;
+                                    return (
+                                        <div style={{
+                                            color: activeP.accentColor,
+                                            display: 'flex', alignItems: 'center',
+                                            width: 12, height: 12,
+                                            opacity: 0.8
+                                        }}>
+                                            {activeP.icon}
+                                        </div>
+                                    );
+                                })()}
                             </span>
                             {verdict.usedModel && (
                                 <span style={{

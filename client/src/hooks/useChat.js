@@ -73,7 +73,7 @@ export function useChat() {
         }));
 
         try {
-            const { getAIHeaders } = await import('../utils/aiHeaders.js');
+            const { getAIHeaders } = await import('../utils/aiHeaders.jsx');
             const aiHeaders = getAIHeaders();
             const pilotProfile = localStorage.getItem('skypilot_pilot_profile') || '';
 

@@ -16,16 +16,10 @@ export default function Navbar({ onSearchSelect }) {
     const [settingsModalOpen, setSettingsModalOpen] = useState(false);
     const [pilotProfileOpen, setPilotProfileOpen] = useState(false);
 
-    // Auto-open settings if no API key is found
-    useEffect(() => {
-        const storedKey = localStorage.getItem('geminiApiKey');
-        if (!storedKey) {
-            setSettingsModalOpen(true);
-        }
+    // Note: Auto-open Settings logic has been moved to App.jsx -> OnboardingStepper
 
-        const handleOpenSettings = (e) => {
-            setSettingsModalOpen(true);
-        };
+    useEffect(() => {
+        const handleOpenSettings = () => setSettingsModalOpen(true);
         window.addEventListener('open-settings', handleOpenSettings);
 
         const handleOpenPilotProfile = () => setPilotProfileOpen(true);

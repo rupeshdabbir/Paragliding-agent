@@ -17,7 +17,7 @@ import DisclaimerModal from '../components/DisclaimerModal.jsx';
 import { useGeolocation } from '../hooks/useGeolocation.js';
 import { useChat } from '../hooks/useChat.js';
 import { useTheme } from '../context/ThemeContext.jsx';
-import { hasActiveKey } from '../utils/aiHeaders.js';
+import { hasActiveKey } from '../utils/aiHeaders.jsx';
 
 // ─── Suggested prompts ───────────────────────────────────────────────────────
 const SUGGESTED_PROMPTS = [

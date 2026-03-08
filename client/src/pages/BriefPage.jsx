@@ -3,7 +3,7 @@ import { useGeolocation } from '../hooks/useGeolocation.js';
 import MorningBrief from '../components/MorningBrief.jsx';
 import { Wind, Map as MapIcon, RefreshCw, AlertTriangle } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-import { getAIHeaders } from '../utils/aiHeaders.js';
+import { getAIHeaders } from '../utils/aiHeaders.jsx';
 
 export default function BriefPage() {
     const { location, loading: locLoading, requestLocation } = useGeolocation();

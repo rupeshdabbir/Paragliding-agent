@@ -1,75 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Key, ExternalLink, Sparkles, Check, ChevronRight, Loader2, AlertTriangle } from 'lucide-react';
-import { getAIProvider, hasActiveKey } from '../utils/aiHeaders.js';
-
-// ─── Provider configuration ───────────────────────────────────────────────────
-const PROVIDERS = [
-    {
-        id: 'gemini',
-        name: 'Gemini',
-        company: 'Google',
-        badge: 'Free tier',
-        badgeColor: '#22c55e',
-        accentColor: '#4285f4',
-        gradient: 'linear-gradient(135deg, #4285f4, #34a853)',
-        placeholder: 'AIzaSy...',
-        storageKey: 'geminiApiKey',
-        keyUrl: 'https://aistudio.google.com/app/apikey',
-        keyLabel: 'Google AI Studio',
-        modelHint: 'gemini-3-flash-preview',
-        description: 'Recommended — free tier, full tool calling, AI forecasts',
-        emoji: '✦',
-    },
-    {
-        id: 'grok',
-        name: 'Grok',
-        company: 'xAI',
-        badge: 'Paid',
-        badgeColor: '#a855f7',
-        accentColor: '#7c3aed',
-        gradient: 'linear-gradient(135deg, #7c3aed, #a855f7)',
-        placeholder: 'xai-...',
-        storageKey: 'grokApiKey',
-        keyUrl: 'https://console.x.ai/',
-        keyLabel: 'xAI Console',
-        modelHint: 'grok-3-mini',
-        description: 'Ultra-fast responses, full tool calling — paid per call',
-        emoji: '⚡',
-    },
-    {
-        id: 'anthropic',
-        name: 'Claude',
-        company: 'Anthropic',
-        badge: 'Paid',
-        badgeColor: '#f59e0b',
-        accentColor: '#d97706',
-        gradient: 'linear-gradient(135deg, #d97706, #f59e0b)',
-        placeholder: 'sk-ant-...',
-        storageKey: 'anthropicApiKey',
-        keyUrl: 'https://console.anthropic.com/',
-        keyLabel: 'Anthropic Console',
-        modelHint: 'claude-3-5-haiku-latest',
-        description: 'Exceptional reasoning & safety analysis — paid per call',
-        emoji: '◆',
-    },
-    {
-        id: 'openai',
-        name: 'GPT',
-        company: 'OpenAI',
-        badge: 'Paid',
-        badgeColor: '#10b981',
-        accentColor: '#059669',
-        gradient: 'linear-gradient(135deg, #059669, #10b981)',
-        placeholder: 'sk-...',
-        storageKey: 'openaiApiKey',
-        keyUrl: 'https://platform.openai.com/api-keys',
-        keyLabel: 'OpenAI Platform',
-        modelHint: 'gpt-4.1-mini',
-        description: 'Industry standard, reliable tool calling — paid per call',
-        emoji: '◎',
-    },
-];
+import { getAIProvider, hasActiveKey, PROVIDERS } from '../utils/aiHeaders.jsx';
 
 function ProviderTab({ provider, isSelected, hasKey, onClick }) {
     const color = isSelected ? provider.accentColor : 'var(--color-text-dim)';
@@ -120,11 +52,12 @@ function ProviderTab({ provider, isSelected, hasKey, onClick }) {
                 }} />
             )}
             <span style={{
-                fontSize: '1.1rem',
-                filter: isSelected ? 'none' : 'grayscale(1) opacity(0.5)',
-                transition: 'filter 0.2s',
+                color: isSelected ? provider.accentColor : 'var(--color-text-dim)',
+                filter: isSelected ? 'drop-shadow(0 0 4px currentColor)' : 'none',
+                transition: 'all 0.2s',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-                {provider.emoji}
+                {provider.icon}
             </span>
             <span style={{
                 fontSize: '0.62rem', fontWeight: 700,
@@ -348,9 +281,11 @@ export default function SettingsModal({ open, onClose }) {
                             width: 32, height: 32, borderRadius: 10,
                             background: selectedProvider.gradient,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '1rem', boxShadow: `0 3px 10px ${selectedProvider.accentColor}30`,
+                            color: '#fff', boxShadow: `0 3px 10px ${selectedProvider.accentColor}30`,
                         }}>
-                            {selectedProvider.emoji}
+                            <div style={{ transform: 'scale(0.8)', display: 'flex' }}>
+                                {selectedProvider.icon}
+                            </div>
                         </div>
                         <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-heading)' }}>
