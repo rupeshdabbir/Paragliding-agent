@@ -158,7 +158,13 @@ export async function runAgent({ userMessage, history = [], userLocation = null,
             ...config
         });
 
-        const chat = model.startChat({ history });
+        // Convert the generic {role, content} history to Gemini's expected {role, parts: [{text}]} format
+        const geminiHistory = history.map(m => ({
+            role: m.role,
+            parts: [{ text: m.content }]
+        }));
+
+        const chat = model.startChat({ history: geminiHistory });
         const toolResults = [];
 
         // Send user message and run the agentic function-calling loop
