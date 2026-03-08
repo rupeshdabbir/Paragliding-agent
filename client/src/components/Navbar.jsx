@@ -4,6 +4,7 @@ import { MessageSquare, Map, Wind, Search, X, Sun, Moon, Sparkles } from 'lucide
 import { useTheme } from '../context/ThemeContext.jsx';
 import SettingsDropdown from './SettingsDropdown.jsx';
 import SettingsModal from './SettingsModal.jsx';
+import PilotProfileModal from './PilotProfileModal.jsx';
 
 export default function Navbar({ onSearchSelect }) {
     const location = useLocation();
@@ -13,6 +14,7 @@ export default function Navbar({ onSearchSelect }) {
     const searchInputRef = useRef(null);
     const { theme, toggleTheme } = useTheme();
     const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+    const [pilotProfileOpen, setPilotProfileOpen] = useState(false);
 
     // Auto-open settings if no API key is found
     useEffect(() => {
@@ -21,9 +23,18 @@ export default function Navbar({ onSearchSelect }) {
             setSettingsModalOpen(true);
         }
 
-        const handleOpenSettings = () => setSettingsModalOpen(true);
+        const handleOpenSettings = (e) => {
+            setSettingsModalOpen(true);
+        };
         window.addEventListener('open-settings', handleOpenSettings);
-        return () => window.removeEventListener('open-settings', handleOpenSettings);
+
+        const handleOpenPilotProfile = () => setPilotProfileOpen(true);
+        window.addEventListener('open-pilot-profile', handleOpenPilotProfile);
+
+        return () => {
+            window.removeEventListener('open-settings', handleOpenSettings);
+            window.removeEventListener('open-pilot-profile', handleOpenPilotProfile);
+        };
     }, []);
 
     useEffect(() => {
@@ -106,6 +117,7 @@ export default function Navbar({ onSearchSelect }) {
                 {/* Settings Dropdown */}
                 <SettingsDropdown onOpenSettings={() => setSettingsModalOpen(true)} />
                 <SettingsModal open={settingsModalOpen} onClose={() => setSettingsModalOpen(false)} />
+                <PilotProfileModal open={pilotProfileOpen} onClose={() => setPilotProfileOpen(false)} />
             </div>
         </nav>
     );

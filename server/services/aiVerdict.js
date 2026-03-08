@@ -40,10 +40,13 @@ function buildDaySummary(hours = [], date) {
  * @param {object} weather - Weather object from getExtendedWeather (7 days hourly)
  * @returns {Promise<{[date: string]: DayVerdict}>}
  */
-export async function getAiWeeklyVerdicts(site, weather, apiKey = null) {
+export async function getAiWeeklyVerdicts(site, weather, apiKey = null, pilotProfile = null) {
     const today = weather.current?.time?.slice(0, 10) || new Date().toISOString().slice(0, 10);
-    // Global cache across all users for the site + day
-    const cacheKey = `week_${site.lat?.toFixed(4)},${site.lng?.toFixed(4)},${today}`;
+    // Build profile hash for cache key so different pilot skill levels don't share verdicts
+    const profileKey = (pilotProfile && pilotProfile.certification && pilotProfile.flyingStyle)
+        ? `_${pilotProfile.certification}_${pilotProfile.flyingStyle}_${pilotProfile.wingType || ''}_${pilotProfile.experience || ''}`
+        : '_default';
+    const cacheKey = `week_${site.lat?.toFixed(4)},${site.lng?.toFixed(4)},${today}${profileKey}`;
 
     const cached = verdictCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
@@ -81,7 +84,36 @@ export async function getAiWeeklyVerdicts(site, weather, apiKey = null) {
             .join(', ')
         : 'Unknown';
 
-    const prompt = `You are an expert paragliding safety analyst. Analyze the following 7-day weather forecast for a specific site and produce a structured flyability verdict for EACH day.
+    const certLabels = { student: 'Student (in training)', p2: 'P2 (Novice)', p3: 'P3 (Intermediate)', p4: 'P4 (Advanced)', comp: 'Competition-level' };
+    const styleLabels = { thermal: 'Thermalling', ridge: 'Ridge Soaring', xc: 'Cross Country (XC)', hike: 'Hike & Fly' };
+    const wingLabels = { a: 'Beginner (A-class)', b: 'Intermediate (B-class)', c: 'Advanced (C/D-class)' };
+    const expLabels = { lt50: 'Under 50 hours', '50_200': '50–200 hours', '200_500': '200–500 hours', gt500: '500+ hours' };
+
+    let pilotProfileBlock = '';
+    if (pilotProfile && pilotProfile.certification) {
+        const cert = certLabels[pilotProfile.certification] || pilotProfile.certification;
+        const style = styleLabels[pilotProfile.flyingStyle] || pilotProfile.flyingStyle;
+        const wing = wingLabels[pilotProfile.wingType] || pilotProfile.wingType;
+        const exp = expLabels[pilotProfile.experience] || pilotProfile.experience;
+
+        let thresholdGuidance = 'Apply STANDARD thresholds.';
+        if (pilotProfile.certification === 'student' || pilotProfile.certification === 'p2') {
+            thresholdGuidance = 'Apply CONSERVATIVE thresholds. Rate MARGINAL when winds exceed 10 mph, NO_GO when winds exceed 13 mph or gusts exceed 15 mph. Populate safetyNotes with beginner-specific warnings about rotor, thermal triggers, and launch conditions.';
+        } else if (pilotProfile.certification === 'p4' || pilotProfile.certification === 'comp') {
+            thresholdGuidance = 'Apply EXPERIENCED thresholds. Include XC potential analysis, thermal cycle quality, and advanced atmospheric notes in reasoning and safetyNotes.';
+        }
+
+        pilotProfileBlock = `
+
+PILOT PROFILE (calibrate your GO/MARGINAL/NO_GO thresholds and safetyNotes for this pilot):
+- Certification: ${cert}
+- Style: ${style}
+- Wing: ${wing}
+- Experience: ${exp}
+- Guidance: ${thresholdGuidance}`;
+    }
+
+    const prompt = `You are an expert paragliding safety analyst. Analyze the following 7-day weather forecast for a specific site and produce a structured flyability verdict for EACH day.${pilotProfileBlock}
 
 SITE INFORMATION:
 - Name: ${site.name || 'Unknown'}
@@ -239,8 +271,18 @@ function buildFallbackWeekVerdicts(dates, errorMessage, usedModel = 'unknown') {
 /**
  * Perform a comparative analysis across multiple sites to find the best flight options.
  */
-export async function getRegionalComparativeVerdict(sitesData = [], apiKey = null) {
+export async function getRegionalComparativeVerdict(sitesData = [], apiKey = null, pilotProfile = null) {
     if (sitesData.length === 0) return { bestSite: null, rankings: [] };
+
+    // Build a pilot profile block for the prompt
+    const certLabels = { student: 'Student', p2: 'P2 (Novice)', p3: 'P3 (Intermediate)', p4: 'P4 (Advanced)', comp: 'Competition' };
+    const styleLabels = { thermal: 'Thermalling', ridge: 'Ridge Soaring', xc: 'Cross Country', hike: 'Hike & Fly' };
+    let pilotProfileBlock = '';
+    if (pilotProfile && pilotProfile.certification) {
+        const cert = certLabels[pilotProfile.certification] || pilotProfile.certification;
+        const style = styleLabels[pilotProfile.flyingStyle] || pilotProfile.flyingStyle;
+        pilotProfileBlock = `\n\nPILOT PROFILE: This brief is for a ${cert} pilot focused on ${style}. Weight site recommendations accordingly — prioritize calmer, more forgiving sites for beginners; technical, high-quality sites for advanced pilots.`;
+    }
 
     // Build a condensed summary for each site
     const siteSummaries = sitesData.map(({ site, weather }) => {
@@ -272,7 +314,7 @@ export async function getRegionalComparativeVerdict(sitesData = [], apiKey = nul
 ${site.starred ? '- User Preference: This is a STARRED/FAVORITE site by the user.' : ''}`;
     }).join('\n---\n');
 
-    const prompt = `You are an expert paragliding regional coordinator. Analyze the following paragliding sites and their conditions for TODAY to provide a ranked "Morning Brief" for pilots.
+    const prompt = `You are an expert paragliding regional coordinator. Analyze the following paragliding sites and their conditions for TODAY to provide a ranked "Morning Brief" for pilots.${pilotProfileBlock}
 
 Some sites are "STARRED/FAVORITE" by the user. While safety is the priority, give these sites extra consideration for "Site of the Day" if they are flyable (GO or MARGINAL).
 

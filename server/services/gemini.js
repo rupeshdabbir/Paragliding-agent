@@ -51,8 +51,38 @@ import { getGenAI } from '../utils/geminiClient.js';
  * Build site context string for the system prompt.
  * If an aiVerdict is available, inject it as ground truth so chat is consistent with the Forecast panel.
  */
-function buildContextStr(userLocation) {
-    if (!userLocation) return '';
+function buildPilotProfileBlock(pilotProfile) {
+    if (!pilotProfile) return '';
+    const { certification, flyingStyle, wingType, experience } = pilotProfile;
+    if (!certification || !flyingStyle || !wingType || !experience) return '';
+
+    const certLabels = { student: 'Student (in training)', p2: 'P2 (Novice)', p3: 'P3 (Intermediate)', p4: 'P4 (Advanced)', comp: 'Competition-level' };
+    const styleLabels = { thermal: 'Thermalling', ridge: 'Ridge Soaring', xc: 'Cross Country (XC)', hike: 'Hike & Fly' };
+    const wingLabels = { a: 'Beginner (A-class)', b: 'Intermediate (B-class)', c: 'Advanced (C/D-class)' };
+    const expLabels = { lt50: 'Under 50 hours', '50_200': '50–200 hours', '200_500': '200–500 hours', gt500: '500+ hours' };
+
+    let thresholdGuidance = '';
+    if (certification === 'student' || certification === 'p2') {
+        thresholdGuidance = 'Apply CONSERVATIVE thresholds. Flag MARGINAL when winds exceed 10 mph and NO-GO when winds exceed 13 mph or gusts exceed 15 mph. Recommend supervised flying and add explicit safety warnings. Keep advice simple and focus on safety first.';
+    } else if (certification === 'p3') {
+        thresholdGuidance = 'Apply STANDARD thresholds. Provide nuanced analysis, identify ideal learning windows for skill-building, and explain weather patterns in moderate detail.';
+    } else if (certification === 'p4' || certification === 'comp') {
+        thresholdGuidance = 'Apply EXPERIENCED thresholds. Include XC route analysis, thermal cycle strength, optimal launch timing for maximum altitude gain, and advanced atmospheric considerations including convergence, rotors, and wave lift potential.';
+    }
+
+    return `
+
+PILOT PROFILE — Personalize your entire response for this specific pilot:
+- Certification Level: ${certLabels[certification] || certification}
+- Primary Flying Style: ${styleLabels[flyingStyle] || flyingStyle}
+- Wing Type: ${wingLabels[wingType] || wingType}
+- Experience: ${expLabels[experience] || experience}
+- Analysis Guidance: ${thresholdGuidance}
+Adjust your tone, safety callouts, wind thresholds, and recommendations to match this pilot's exact skill level. A beginner needs conservative, safety-first advice. An advanced P4 pilot benefits from technical detail, XC potential analysis, and nuanced atmospheric assessment.`;
+}
+
+function buildContextStr(userLocation, pilotProfile = null) {
+    if (!userLocation) return buildPilotProfileBlock(pilotProfile);
 
     if (userLocation.name || userLocation.altitude) {
         let ctx = `\n\nThe user is currently analyzing the following paragliding site:
@@ -83,14 +113,15 @@ When the user asks about flying conditions, today's verdict, or whether it is sa
             ctx += `\n\nRefer to these details (especially altitude and takeoff notes) to provide safer, more accurate flying guidance when answering questions.`;
         }
 
+        ctx += buildPilotProfileBlock(pilotProfile);
         return ctx;
     }
 
     if (userLocation.lat && userLocation.lng) {
-        return `\n\nThe user's current GPS location is: lat=${userLocation.lat.toFixed(4)}, lng=${userLocation.lng.toFixed(4)}. Use this when they ask about sites or weather "near me" or "here".`;
+        return `\n\nThe user's current GPS location is: lat=${userLocation.lat.toFixed(4)}, lng=${userLocation.lng.toFixed(4)}. Use this when they ask about sites or weather "near me" or "here".` + buildPilotProfileBlock(pilotProfile);
     }
 
-    return '';
+    return buildPilotProfileBlock(pilotProfile);
 }
 
 /**
@@ -101,10 +132,10 @@ When the user asks about flying conditions, today's verdict, or whether it is sa
  * @param {string|null} apiKey - The provided API Key (if any)
  * @returns {Promise<{reply: string, toolResults: Array, usage: object}>}
  */
-export async function runAgent({ userMessage, history = [], userLocation = null, apiKey = null }) {
+export async function runAgent({ userMessage, history = [], userLocation = null, apiKey = null, pilotProfile = null }) {
     const ai = getGenAI(apiKey);
 
-    const contextStr = buildContextStr(userLocation);
+    const contextStr = buildContextStr(userLocation, pilotProfile);
 
     const config = {
         systemInstruction: SYSTEM_PROMPT + contextStr,

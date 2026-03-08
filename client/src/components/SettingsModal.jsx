@@ -33,14 +33,12 @@ export default function SettingsModal({ open, onClose }) {
 
     return createPortal(
         <div
-            onClick={(e) => {
-                if (e.target === e.currentTarget) onClose();
-            }}
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
             style={{
                 position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                 background: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(8px)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                zIndex: 99999, padding: 20
+                zIndex: 99999, padding: 20,
             }}
         >
             <div style={{
@@ -50,7 +48,7 @@ export default function SettingsModal({ open, onClose }) {
                 width: '100%', maxWidth: 440,
                 boxShadow: 'var(--color-elevation-lg)',
                 animation: 'slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                position: 'relative'
+                position: 'relative',
             }}>
                 <button onClick={onClose} style={{
                     position: 'absolute', top: 20, right: 20,
@@ -73,7 +71,7 @@ export default function SettingsModal({ open, onClose }) {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         boxShadow: '0 4px 16px rgba(0,200,255,0.25)',
                     }}>
-                        <SettingsIcon size={22} color="#fff" />
+                        <Sparkles size={22} color="#fff" />
                     </div>
                     <div>
                         <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-heading)', margin: 0 }}>API Settings</h2>
@@ -97,15 +95,19 @@ export default function SettingsModal({ open, onClose }) {
                                 border: '1px solid var(--color-border-base)',
                                 borderRadius: 12, padding: '12px 14px 12px 40px',
                                 color: 'var(--color-text-primary)', fontSize: '0.95rem',
-                                transition: 'all 0.2s ease', outline: 'none'
+                                transition: 'all 0.2s ease', outline: 'none', boxSizing: 'border-box',
                             }}
                             onFocus={e => e.currentTarget.style.borderColor = 'var(--color-border-glow)'}
                             onBlur={e => e.currentTarget.style.borderColor = 'var(--color-border-base)'}
                         />
                     </div>
                     <p style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)', marginTop: 10, lineHeight: 1.5 }}>
-                        This app connects to Gemini to provide flyability forecasts. Provide your own free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-sky)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3 }}>Google AI Studio <ExternalLink size={10} /></a> to use the app without limits.
-                        Your key is stored only in your browser.
+                        This app connects to Gemini to provide flyability forecasts. Provide your own free API key from{' '}
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer"
+                            style={{ color: 'var(--color-sky)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                            Google AI Studio <ExternalLink size={10} />
+                        </a>{' '}
+                        to use the app without limits. Your key is stored only in your browser.
                     </p>
                 </div>
 
@@ -116,15 +118,12 @@ export default function SettingsModal({ open, onClose }) {
                             width: '100%', padding: '14px', borderRadius: 12, border: 'none',
                             background: saved ? 'var(--color-go)' : 'var(--color-sky-gradient)',
                             color: '#fff', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer',
-                            transition: 'all 0.2s ease', boxShadow: saved ? '0 4px 16px rgba(16,185,129,0.3)' : '0 4px 16px rgba(0,200,255,0.25)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+                            transition: 'all 0.2s ease',
+                            boxShadow: saved ? '0 4px 16px rgba(16,185,129,0.3)' : '0 4px 16px rgba(0,200,255,0.25)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                         }}
                     >
-                        {saved ? (
-                            <>Saved Successfully</>
-                        ) : (
-                            <>Save Settings</>
-                        )}
+                        {saved ? '✓ Saved Successfully' : 'Save Settings'}
                     </button>
 
                     {!hasStoredKey && (
@@ -147,9 +146,4 @@ export default function SettingsModal({ open, onClose }) {
         </div>,
         document.body
     );
-}
-
-// Needed simple inner component for lucide icon
-function SettingsIcon({ ...props }) {
-    return <Sparkles {...props} />;
 }

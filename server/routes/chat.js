@@ -21,11 +21,19 @@ router.post('/', async (req, res) => {
 
         const apiKey = req.headers['x-gemini-api-key'] || null;
 
+        // Parse pilot profile from header (JSON string)
+        let pilotProfile = null;
+        const profileHeader = req.headers['x-pilot-profile'];
+        if (profileHeader && profileHeader.trim()) {
+            try { pilotProfile = JSON.parse(profileHeader); } catch { /* ignore malformed */ }
+        }
+
         const { reply, toolResults, usage, usedModel } = await runAgent({
             userMessage: message,
             history: geminiHistory,
             userLocation: location,
-            apiKey
+            apiKey,
+            pilotProfile,
         });
 
         res.json({ reply, toolResults, usage, usedModel });

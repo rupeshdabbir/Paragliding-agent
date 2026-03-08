@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Calendar, Clock, Wind, AlertTriangle, ChevronRight, CheckCircle, XCircle, MinusCircle, RefreshCw, Info, Sparkles, Key, Star } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Calendar, Clock, Wind, AlertTriangle, ChevronRight, CheckCircle, XCircle, MinusCircle, RefreshCw, Info, Sparkles, Key, Star, User } from 'lucide-react';
 import WindChart from './WindChart.jsx';
 import { FlyabilityBadge } from './FlyabilityBadge.jsx';
+import { formatProfileSummary, isProfileComplete } from '../hooks/usePilotProfile.js';
 
 const RATING_COLOR = { GO: 'var(--color-go)', MARGINAL: 'var(--color-marginal)', NO_GO: 'var(--color-no-go)' };
 const RATING_BG = { GO: 'var(--color-rating-go-bg)', MARGINAL: 'var(--color-rating-marginal-bg)', NO_GO: 'var(--color-rating-nogo-bg)' };
@@ -211,6 +212,33 @@ function AiVerdictCard({ verdict }) {
                         <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-text-heading)', marginTop: 3 }}>
                             {verdict.headline}
                         </div>
+                        {/* Pilot profile chip */}
+                        {(() => {
+                            try {
+                                const stored = localStorage.getItem('skypilot_pilot_profile');
+                                const profile = stored ? JSON.parse(stored) : null;
+                                const summary = profile && isProfileComplete(profile) ? formatProfileSummary(profile) : null;
+                                if (!summary) return null;
+                                return (
+                                    <button
+                                        onClick={() => window.dispatchEvent(new Event('open-pilot-profile'))}
+                                        title="Tailored for your pilot profile — click to edit"
+                                        style={{
+                                            marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 5,
+                                            background: 'var(--color-surface-3)', border: '1px solid var(--color-border-base)',
+                                            borderRadius: 100, padding: '3px 9px',
+                                            fontSize: '0.63rem', fontWeight: 600, color: 'var(--color-text-secondary)',
+                                            cursor: 'pointer', transition: 'all 0.2s',
+                                        }}
+                                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-glow)'; e.currentTarget.style.color = 'var(--color-sky)'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border-base)'; e.currentTarget.style.color = 'var(--color-text-secondary)'; }}
+                                    >
+                                        <User size={10} />
+                                        {summary}
+                                    </button>
+                                );
+                            } catch { return null; }
+                        })()}
                     </div>
                 </div>
                 <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
@@ -395,13 +423,29 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
     const [activeDayIndex, setActiveDayIndex] = useState(0);
     const [weatherModel, setWeatherModel] = useState('best_match');
     const [hasKey, setHasKey] = useState(!!localStorage.getItem('geminiApiKey'));
+    const [profileRefreshing, setProfileRefreshing] = useState(false);
 
     useEffect(() => {
-        // Poll for key changes since storage events only fire across tabs
         const interval = setInterval(() => {
             setHasKey(!!localStorage.getItem('geminiApiKey'));
         }, 1000);
         return () => clearInterval(interval);
+    }, []);
+
+    // Re-run the AI forecast when pilot profile changes
+    const fetchForecastRef = useRef(null);
+    useEffect(() => {
+        const handleProfileSaved = (e) => {
+            if (e.detail?.changed) {
+                setProfileRefreshing(true);
+                // Brief delay so the overlay animation plays, then reload
+                setTimeout(() => {
+                    fetchForecastRef.current?.();
+                }, 600);
+            }
+        };
+        window.addEventListener('pilot-profile-saved', handleProfileSaved);
+        return () => window.removeEventListener('pilot-profile-saved', handleProfileSaved);
     }, []);
 
     const fetchForecast = async () => {
@@ -409,9 +453,11 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
         setLoading(true); setError(null);
         try {
             const apiKey = (localStorage.getItem('geminiApiKey') || '').trim();
+            const pilotProfile = localStorage.getItem('skypilot_pilot_profile') || '';
             const res = await fetch(`/api/forecast?lat=${site.lat}&lng=${site.lng}&models=${weatherModel}`, {
                 headers: {
-                    'x-gemini-api-key': apiKey
+                    'x-gemini-api-key': apiKey,
+                    ...(pilotProfile ? { 'x-pilot-profile': pilotProfile } : {}),
                 }
             });
             if (!res.ok) throw new Error('Failed to load forecast');
@@ -439,9 +485,11 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
             setError(err.message);
         } finally {
             setLoading(false);
+            setProfileRefreshing(false);
         }
     };
 
+    useEffect(() => { fetchForecastRef.current = fetchForecast; });
     useEffect(() => { fetchForecast(); }, [site?.lat, site?.lng, weatherModel]);
 
     const today = forecast?.days?.[0];
@@ -453,7 +501,35 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
     const heroColor = RATING_COLOR[heroRating] || RATING_COLOR.NO_GO;
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
+
+            {/* Profile refresh banner */}
+            {profileRefreshing && (
+                <div style={{
+                    position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)',
+                    zIndex: 50, pointerEvents: 'none',
+                    animation: 'slide-down 0.35s cubic-bezier(0.16,1,0.3,1)',
+                }}>
+                    <div style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 9,
+                        background: 'linear-gradient(135deg, rgba(124,58,237,0.92), rgba(79,70,229,0.92))',
+                        border: '1px solid rgba(124,58,237,0.4)',
+                        borderRadius: 100, padding: '9px 18px',
+                        backdropFilter: 'blur(14px)',
+                        boxShadow: '0 8px 32px rgba(124,58,237,0.35)',
+                        color: '#fff', fontSize: '0.8rem', fontWeight: 700, whiteSpace: 'nowrap',
+                    }}>
+                        <div style={{
+                            width: 14, height: 14, borderRadius: '50%',
+                            border: '2px solid rgba(255,255,255,0.4)',
+                            borderTopColor: '#fff',
+                            animation: 'spin 0.75s linear infinite',
+                            flexShrink: 0,
+                        }} />
+                        Recalculating AI verdict for your profile…
+                    </div>
+                </div>
+            )}
 
             {/* ── Site Hero Header ── */}
             <div style={{

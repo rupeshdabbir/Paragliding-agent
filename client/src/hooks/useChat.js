@@ -60,11 +60,13 @@ export function useChat() {
 
         try {
             const apiKey = (localStorage.getItem('geminiApiKey') || '').trim();
+            const pilotProfile = localStorage.getItem('skypilot_pilot_profile') || '';
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'x-gemini-api-key': apiKey,
+                    'x-pilot-profile': pilotProfile,
                 },
                 body: JSON.stringify({ message: text, history, location }),
             });

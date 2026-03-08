@@ -16,8 +16,12 @@ export default function BriefPage() {
         setError(null);
         try {
             const apiKey = (localStorage.getItem('geminiApiKey') || '').trim();
+            const pilotProfile = localStorage.getItem('skypilot_pilot_profile') || '';
             const favorites = localStorage.getItem('skypilot_favorites') || '[]';
-            const headers = apiKey ? { 'x-gemini-api-key': apiKey } : {};
+            const headers = {
+                ...(apiKey ? { 'x-gemini-api-key': apiKey } : {}),
+                ...(pilotProfile ? { 'x-pilot-profile': pilotProfile } : {}),
+            };
 
             const res = await fetch(`/api/brief?lat=${loc.lat}&lng=${loc.lng}&favorites=${encodeURIComponent(favorites)}`, { headers });
             if (!res.ok) throw new Error('Failed to fetch morning brief');

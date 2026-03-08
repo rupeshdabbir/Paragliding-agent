@@ -69,7 +69,12 @@ router.get('/', async (req, res) => {
 
         // 5. Get AI Regional Verdict
         const apiKey = req.headers['x-gemini-api-key'] || null;
-        const brief = await getRegionalComparativeVerdict(validSitesData, apiKey);
+        let pilotProfile = null;
+        const profileHeader = req.headers['x-pilot-profile'];
+        if (profileHeader && profileHeader.trim()) {
+            try { pilotProfile = JSON.parse(profileHeader); } catch { /* ignore */ }
+        }
+        const brief = await getRegionalComparativeVerdict(validSitesData, apiKey, pilotProfile);
 
         res.json(brief);
     } catch (err) {

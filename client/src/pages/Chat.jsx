@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, LocateFixed, Trash2, Wind, ChevronRight, Sparkles, MapPin, Clock, Cloud } from 'lucide-react';
+import { Send, LocateFixed, Trash2, Wind, ChevronRight, Sparkles, MapPin, Clock, Cloud, User } from 'lucide-react';
 import { useChat } from '../hooks/useChat.js';
 import { useGeolocation } from '../hooks/useGeolocation.js';
 import ChatMessage, { ThinkingIndicator } from '../components/ChatMessage.jsx';
+import { usePilotProfile } from '../hooks/usePilotProfile.js';
 
 const SUGGESTED_PROMPTS = [
     { text: 'Can I fly today near me?', icon: '📍', category: 'Conditions' },
@@ -18,6 +19,7 @@ export default function Chat() {
     const [input, setInput] = useState('');
     const [useLocation, setUseLocation] = useState(false);
     const { location, loading: locLoading, requestLocation } = useGeolocation();
+    const { hasProfile, summary: profileSummary } = usePilotProfile();
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
 
@@ -203,6 +205,25 @@ export default function Chat() {
                                 <Trash2 size={12} /> Clear
                             </button>
                         )}
+
+                        {/* Pilot profile chip */}
+                        <button
+                            onClick={() => window.dispatchEvent(new Event('open-pilot-profile'))}
+                            title={hasProfile ? 'Edit your pilot profile' : 'Add your pilot profile for personalized advice'}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: 5,
+                                padding: '5px 12px', borderRadius: 100,
+                                background: hasProfile ? 'var(--color-surface-3)' : 'transparent',
+                                border: `1px solid ${hasProfile ? 'var(--color-border-base)' : 'var(--color-border-subtle)'}`,
+                                color: hasProfile ? 'var(--color-text-secondary)' : 'var(--color-text-dim)',
+                                fontSize: '0.78rem', cursor: 'pointer', transition: 'all 0.2s ease',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-border-glow)'; e.currentTarget.style.color = 'var(--color-sky)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = hasProfile ? 'var(--color-border-base)' : 'var(--color-border-subtle)'; e.currentTarget.style.color = hasProfile ? 'var(--color-text-secondary)' : 'var(--color-text-dim)'; }}
+                        >
+                            <User size={12} />
+                            {hasProfile ? profileSummary : 'Set Pilot Profile'}
+                        </button>
 
                         {/* Powered by tag */}
                         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.7rem', color: 'var(--color-text-faint)' }}>
