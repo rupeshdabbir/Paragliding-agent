@@ -1,36 +1,120 @@
+import { useState, useEffect, useRef } from 'react';
 import { FlyabilityBadge } from './FlyabilityBadge.jsx';
 import SiteCard from './SiteCard.jsx';
-import WeatherCard from './WeatherCard.jsx';
-import { Wind, Bot, User } from 'lucide-react';
+import { Wind, User, Loader2, Map, CloudSun, Compass } from 'lucide-react';
 
-// Typing indicator
-export function TypingIndicator() {
+// ─── Tool step icons map ──────────────────────────────────────────────────────
+const TOOL_ICONS = {
+    get_paragliding_sites: Map,
+    get_weather_forecast: CloudSun,
+    analyze_flying_conditions: Compass,
+};
+
+const TOOL_LABELS = {
+    get_paragliding_sites: 'Looking up nearby sites',
+    get_weather_forecast: 'Fetching live weather',
+    analyze_flying_conditions: 'Analyzing flying conditions',
+};
+
+// ─── Animated ThinkingIndicator ───────────────────────────────────────────────
+export function ThinkingIndicator({ step = 'Thinking...' }) {
+    const [displayStep, setDisplayStep] = useState(step);
+    const [visible, setVisible] = useState(true);
+    const prevStep = useRef(step);
+
+    // Cross-fade when step changes
+    useEffect(() => {
+        if (step === prevStep.current) return;
+        setVisible(false);
+        const t = setTimeout(() => {
+            setDisplayStep(step);
+            setVisible(true);
+            prevStep.current = step;
+        }, 220);
+        return () => clearTimeout(t);
+    }, [step]);
+
     return (
-        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', animation: 'fade-in 0.3s ease' }}>
-            <div style={{
-                width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-                background: 'linear-gradient(135deg, var(--color-sky), #0055cc)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-                <Wind size={16} color="#fff" />
+        <div style={{
+            display: 'flex', gap: 12, alignItems: 'flex-end',
+            animation: 'fade-up 0.3s ease',
+        }}>
+            {/* Avatar with pulsing glow */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+                <div style={{
+                    width: 34, height: 34, borderRadius: '50%',
+                    background: 'linear-gradient(135deg, var(--color-sky), #0055cc)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 0 0 0 rgba(0,200,255,0.5)',
+                    animation: 'thinking-pulse 1.8s ease-in-out infinite',
+                }}>
+                    <Wind size={16} color="#fff" />
+                </div>
             </div>
+
+            {/* Thinking bubble */}
             <div style={{
-                background: 'var(--color-bubble-bot-bg)', border: '1px solid var(--color-bubble-bot-border)',
-                borderRadius: '18px 18px 18px 4px', padding: '14px 18px',
-                display: 'flex', gap: 5, alignItems: 'center',
+                background: 'var(--color-bubble-bot-bg)',
+                border: '1px solid var(--color-bubble-bot-border)',
+                borderRadius: '18px 18px 18px 4px',
+                padding: '12px 16px',
+                display: 'flex', flexDirection: 'column', gap: 8,
+                minWidth: 220, maxWidth: 320,
+                backdropFilter: 'blur(12px)',
             }}>
-                {[0, 1, 2].map(i => (
-                    <div key={i} style={{
-                        width: 7, height: 7, borderRadius: '50%',
-                        background: 'var(--color-sky)',
-                        animation: `typing-dot 1.2s ease ${i * 0.2}s infinite`,
+                {/* Dots row */}
+                <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                    {[0, 1, 2].map(i => (
+                        <div key={i} style={{
+                            width: 6, height: 6, borderRadius: '50%',
+                            background: 'var(--color-sky)',
+                            opacity: 0.8,
+                            animation: `typing-dot 1.2s ease ${i * 0.2}s infinite`,
+                        }} />
+                    ))}
+                    <div style={{
+                        marginLeft: 'auto',
+                        animation: 'spin 1.4s linear infinite',
+                        color: 'var(--color-text-faint)',
+                        display: 'flex', alignItems: 'center',
+                    }}>
+                        <Loader2 size={11} />
+                    </div>
+                </div>
+
+                {/* Cycling step text */}
+                <div style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--color-text-secondary)',
+                    fontWeight: 500,
+                    lineHeight: 1.4,
+                    opacity: visible ? 1 : 0,
+                    transform: visible ? 'translateY(0)' : 'translateY(4px)',
+                    transition: 'opacity 0.22s ease, transform 0.22s ease',
+                    minHeight: '1.1rem',
+                }}>
+                    {displayStep}
+                </div>
+
+                {/* Shimmer progress bar */}
+                <div style={{
+                    height: 2, borderRadius: 100,
+                    background: 'var(--color-border-subtle)',
+                    overflow: 'hidden', position: 'relative',
+                }}>
+                    <div style={{
+                        position: 'absolute', top: 0, left: 0,
+                        height: '100%', width: '40%',
+                        background: 'linear-gradient(90deg, transparent, var(--color-sky), transparent)',
+                        animation: 'shimmer-slide 1.6s ease-in-out infinite',
                     }} />
-                ))}
+                </div>
             </div>
         </div>
     );
 }
 
+// ─── Chat message bubble ──────────────────────────────────────────────────────
 export default function ChatMessage({ message }) {
     const isUser = message.role === 'user';
     const toolResults = message.toolResults || [];
@@ -39,6 +123,13 @@ export default function ChatMessage({ message }) {
     const siteAnalyses = toolResults
         .filter(t => t.tool === 'analyze_flying_conditions' && t.result?.sites)
         .flatMap(t => t.result.sites);
+
+    // Derive tool chips from tool results (for bot messages)
+    const toolChips = !isUser ? toolResults.map(t => ({
+        tool: t.tool,
+        label: TOOL_LABELS[t.tool] || t.tool,
+        Icon: TOOL_ICONS[t.tool] || Compass,
+    })) : [];
 
     return (
         <div style={{
@@ -61,7 +152,27 @@ export default function ChatMessage({ message }) {
                 {isUser ? <User size={15} color="#fff" /> : <Wind size={15} color="#fff" />}
             </div>
 
-            <div style={{ maxWidth: 'min(680px, 85%)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ maxWidth: 'min(680px, 85%)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {/* Tool chips (shown above bot message bubble) */}
+                {toolChips.length > 0 && (
+                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                        {toolChips.map((chip, i) => (
+                            <div key={i} style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 4,
+                                padding: '3px 8px', borderRadius: 100,
+                                background: 'var(--color-sky-dim)',
+                                border: '1px solid rgba(0,200,255,0.18)',
+                                fontSize: '0.62rem', fontWeight: 600,
+                                color: 'var(--color-sky)',
+                                animation: `slide-up-in 0.3s ease ${i * 0.07}s both`,
+                            }}>
+                                <chip.Icon size={9} />
+                                {chip.label}
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 {/* Message bubble */}
                 <div style={{
                     background: isUser
@@ -98,17 +209,32 @@ export default function ChatMessage({ message }) {
                     </div>
                 )}
 
-                {/* Timestamp */}
-                {message.timestamp && (
-                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)', textAlign: isUser ? 'right' : 'left' }}>
-                        {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                )}
+                {/* Timestamp + model badge */}
+                <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    justifyContent: isUser ? 'flex-end' : 'flex-start',
+                }}>
+                    {message.timestamp && (
+                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-faint)' }}>
+                            {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                    )}
+                    {!isUser && message.usedModel && (
+                        <span style={{
+                            fontSize: '0.55rem', padding: '1px 5px', borderRadius: 4,
+                            background: 'var(--color-surface-3)', border: '1px solid var(--color-border-base)',
+                            color: 'var(--color-text-faint)', fontFamily: 'monospace',
+                        }}>
+                            {message.usedModel}
+                        </span>
+                    )}
+                </div>
             </div>
         </div>
     );
 }
 
+// ─── Markdown renderer ────────────────────────────────────────────────────────
 function MarkdownRenderer({ content }) {
     return (
         <div style={{ fontSize: '0.9rem', lineHeight: 1.65 }}>
@@ -133,13 +259,11 @@ function MarkdownRenderer({ content }) {
 }
 
 function formatInline(text) {
-    // Bold **text**
     const parts = text.split(/(\*\*[^*]+\*\*)/g);
     return parts.map((part, i) => {
         if (part.startsWith('**') && part.endsWith('**')) {
             return <strong key={i} style={{ color: 'var(--color-text-heading)', fontWeight: 600 }}>{part.slice(2, -2)}</strong>;
         }
-        // Inline code `text`
         return part.split(/(`[^`]+`)/g).map((p, j) => {
             if (p.startsWith('`') && p.endsWith('`')) {
                 return <code key={j} style={{ background: 'var(--color-sky-dim)', color: 'var(--color-sky)', padding: '1px 5px', borderRadius: 4, fontSize: '0.85em' }}>{p.slice(1, -1)}</code>;

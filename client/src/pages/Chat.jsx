@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, LocateFixed, Trash2, Wind, ChevronRight, Sparkles, MapPin, Clock, Cloud } from 'lucide-react';
 import { useChat } from '../hooks/useChat.js';
 import { useGeolocation } from '../hooks/useGeolocation.js';
-import ChatMessage, { TypingIndicator } from '../components/ChatMessage.jsx';
+import ChatMessage, { ThinkingIndicator } from '../components/ChatMessage.jsx';
 
 const SUGGESTED_PROMPTS = [
     { text: 'Can I fly today near me?', icon: '📍', category: 'Conditions' },
@@ -14,7 +14,7 @@ const SUGGESTED_PROMPTS = [
 ];
 
 export default function Chat() {
-    const { messages, loading, sendMessage, clearMessages } = useChat();
+    const { messages, loading, thinkingStep, sendMessage, clearMessages } = useChat();
     const [input, setInput] = useState('');
     const [useLocation, setUseLocation] = useState(false);
     const { location, loading: locLoading, requestLocation } = useGeolocation();
@@ -156,7 +156,7 @@ export default function Chat() {
                     {!isEmpty && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                             {messages.map((msg, i) => <ChatMessage key={i} message={msg} />)}
-                            {loading && <TypingIndicator />}
+                            {loading && <ThinkingIndicator step={thinkingStep} />}
                             <div ref={messagesEndRef} />
                         </div>
                     )}

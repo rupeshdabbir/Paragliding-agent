@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import SiteCard from '../components/SiteCard.jsx';
 import { FlyabilityBadge } from '../components/FlyabilityBadge.jsx';
-import ChatMessage, { TypingIndicator } from '../components/ChatMessage.jsx';
+import ChatMessage, { ThinkingIndicator } from '../components/ChatMessage.jsx';
 import SiteSearch from '../components/SiteSearch.jsx';
 import SiteForecast from '../components/SiteForecast.jsx';
 import QuickStatsBar from '../components/QuickStatsBar.jsx';
@@ -110,7 +110,7 @@ function MapClickHandler({ onClick }) {
 
 // ─── Chat Drawer (slides from right on desktop, full-screen on mobile) ────────
 function ChatDrawer({ open, onClose, location, contextSite, isMobile, chatWidthPx, setChatWidthPx, onDragStart }) {
-    const { messages, loading, sendMessage, clearMessages } = useChat();
+    const { messages, loading, thinkingStep, sendMessage, clearMessages } = useChat();
     const [input, setInput] = useState('');
     const [shareLocation, setShareLocation] = useState(true);
     const messagesEndRef = useRef(null);
@@ -219,7 +219,10 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, chatWidthP
                             Sky<span style={{ color: 'var(--color-sky)' }}>Pilot</span>
                         </div>
                         <div style={{ fontSize: '0.7rem', color: 'var(--color-text-dim)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span>{loading ? '✦ Thinking...' : 'AI Flight Advisor'}</span>
+                            <span style={{
+                                color: loading ? 'var(--color-sky)' : 'var(--color-text-dim)',
+                                transition: 'color 0.3s ease',
+                            }}>{loading ? '✦ Analyzing...' : 'AI Flight Advisor'}</span>
                             {messages.length > 0 && !loading && (
                                 <span style={{
                                     fontSize: '0.55rem', padding: '2px 6px', borderRadius: 4,
@@ -282,6 +285,21 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, chatWidthP
 
             {/* Messages */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                {/* Top shimmer progress bar while loading */}
+                {loading && (
+                    <div style={{
+                        position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+                        background: 'var(--color-border-subtle)',
+                        overflow: 'hidden', zIndex: 10, flexShrink: 0,
+                    }}>
+                        <div style={{
+                            position: 'absolute', top: 0, left: 0,
+                            height: '100%', width: '35%',
+                            background: 'linear-gradient(90deg, transparent, var(--color-sky), rgba(0,200,255,0.5), transparent)',
+                            animation: 'shimmer-slide 1.6s ease-in-out infinite',
+                        }} />
+                    </div>
+                )}
                 {!hasKey ? (
                     <div style={{
                         position: 'absolute', inset: 0,
@@ -365,7 +383,7 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, chatWidthP
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         {messages.map((msg, i) => <ChatMessage key={i} message={msg} />)}
-                        {loading && <TypingIndicator />}
+                        {loading && <ThinkingIndicator step={thinkingStep} />}
                         <div ref={messagesEndRef} />
                     </div>
                 )}

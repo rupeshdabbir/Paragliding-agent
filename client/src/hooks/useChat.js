@@ -1,9 +1,43 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+
+const THINKING_STEPS = [
+    'Checking wind conditions ⛰️',
+    'Reading weather models...',
+    'Fetching pilot sites near you 🗺️',
+    'Analyzing thermals & lift 🪂',
+    'Reading site wind limits...',
+    'Cross-referencing HRRR model...',
+    'Calculating best launch window...',
+    'Putting together your brief ✨',
+];
 
 export function useChat() {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [thinkingStep, setThinkingStep] = useState(THINKING_STEPS[0]);
+    const thinkingIntervalRef = useRef(null);
+    const stepIndexRef = useRef(0);
+
+    // Cycle through thinking steps while loading
+    useEffect(() => {
+        if (loading) {
+            stepIndexRef.current = 0;
+            setThinkingStep(THINKING_STEPS[0]);
+            thinkingIntervalRef.current = setInterval(() => {
+                stepIndexRef.current = (stepIndexRef.current + 1) % THINKING_STEPS.length;
+                setThinkingStep(THINKING_STEPS[stepIndexRef.current]);
+            }, 1600);
+        } else {
+            if (thinkingIntervalRef.current) {
+                clearInterval(thinkingIntervalRef.current);
+                thinkingIntervalRef.current = null;
+            }
+        }
+        return () => {
+            if (thinkingIntervalRef.current) clearInterval(thinkingIntervalRef.current);
+        };
+    }, [loading]);
 
     const sendMessage = useCallback(async (text, location = null) => {
         if (!text.trim()) return;
@@ -30,7 +64,7 @@ export function useChat() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-gemini-api-key': apiKey
+                    'x-gemini-api-key': apiKey,
                 },
                 body: JSON.stringify({ message: text, history, location }),
             });
@@ -55,12 +89,15 @@ export function useChat() {
             setMessages(prev => [...prev, aiMessage]);
         } catch (err) {
             setError(err.message);
-            setMessages(prev => [...prev, {
-                role: 'model',
-                content: `Sorry, I encountered an error: ${err.message}`, // Avoid dumping the API key text to users
-                timestamp: new Date().toISOString(),
-                usedModel: err.usedModel || 'gemini-3-flash-preview'
-            }]);
+            setMessages(prev => [
+                ...prev,
+                {
+                    role: 'model',
+                    content: `Sorry, I encountered an error: ${err.message}`,
+                    timestamp: new Date().toISOString(),
+                    usedModel: err.usedModel || 'gemini-3-flash-preview',
+                },
+            ]);
         } finally {
             setLoading(false);
         }
@@ -71,5 +108,5 @@ export function useChat() {
         setError(null);
     }, []);
 
-    return { messages, loading, error, sendMessage, clearMessages };
+    return { messages, loading, error, thinkingStep, sendMessage, clearMessages };
 }
