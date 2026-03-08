@@ -48,7 +48,11 @@ export async function getAiWeeklyVerdicts(site, weather, apiKey = null) {
     const cached = verdictCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
         console.log(`[aiVerdict] Cache hit for ${site.name} (week)`);
-        return cached.verdicts;
+        const cachedVerdicts = { ...cached.verdicts };
+        for (const date in cachedVerdicts) {
+            cachedVerdicts[date] = { ...cachedVerdicts[date], _isCached: true, _cachedAt: cached.cachedAt };
+        }
+        return cachedVerdicts;
     }
 
     // Group all hourly data by date
@@ -118,7 +122,11 @@ Respond with ONLY a valid JSON object (no markdown, no backticks) with this exac
         const attemptGenerate = async (modelName) => {
             const generativeModel = ai.getGenerativeModel({
                 model: modelName,
-                generationConfig: { temperature: 0.2, maxOutputTokens: 3000 },
+                generationConfig: {
+                    temperature: 0.2,
+                    maxOutputTokens: 8192,
+                    responseMimeType: 'application/json'
+                },
             });
             console.log(`[aiVerdict] Calling Gemini (7-day) for ${site.name} using ${modelName}…`);
             return await generativeModel.generateContent(prompt);
@@ -184,7 +192,7 @@ Respond with ONLY a valid JSON object (no markdown, no backticks) with this exac
             }
         });
 
-        verdictCache.set(cacheKey, { verdicts, expiresAt: Date.now() + CACHE_TTL_MS });
+        verdictCache.set(cacheKey, { verdicts, expiresAt: Date.now() + CACHE_TTL_MS, cachedAt: Date.now() });
         console.log(`[aiVerdict] Week verdicts for ${site.name}:`, Object.entries(verdicts).map(([d, v]) => `${d}:${v.rating}`).join(', '));
         return verdicts;
 
@@ -196,7 +204,7 @@ Respond with ONLY a valid JSON object (no markdown, no backticks) with this exac
         if (!errorDetail || errorDetail === '{}') errorDetail = String(err);
 
         // Can't reliably know usedModel here if it failed on the first call, but usually it means it failed completely.
-        const modelStr = errorDetail.includes('gemini-2.5-flash') ? 'gemini-2.5-flash' : 'gemini-3-flash-preview';
+        const modelStr = errorDetail.includes('gemini-2.0-flash') ? 'gemini-2.0-flash' : 'gemini-3-flash-preview';
 
         console.error('[aiVerdict] Gemini 7-day call FAILED for', site?.name, ':', errorDetail);
         return buildFallbackWeekVerdicts(dates, errorDetail, modelStr);
