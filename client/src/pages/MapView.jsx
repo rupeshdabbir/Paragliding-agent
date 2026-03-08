@@ -22,7 +22,7 @@ import { hasActiveKey } from '../utils/aiHeaders.js';
 // ─── Suggested prompts ───────────────────────────────────────────────────────
 const SUGGESTED_PROMPTS = [
     { text: 'Can I fly here today?', icon: '🪂' },
-    { text: 'Best sites within 30 miles?', icon: '🗺️' },
+    { text: 'Best sites within 40 miles?', icon: '🗺️' },
     { text: "Wind at altitude right now?", icon: '💨' },
     { text: 'Better window to fly later?', icon: '⏰' },
 ];
@@ -518,7 +518,7 @@ export default function MapView() {
     const [sites, setSites] = useState([]);
     const [loadingSites, setLoadingSites] = useState(false);
     const [selectedSite, setSelectedSite] = useState(null);
-    const [distance, setDistance] = useState(30);
+    const [distance, setDistance] = useState(40);
     const [mapCenter, setMapCenter] = useState([37.7749, -122.4194]);
     const [mapZoom, setMapZoom] = useState(10);
     const [filter, setFilter] = useState('all');
@@ -530,6 +530,7 @@ export default function MapView() {
     const [chatWidthPx, setChatWidthPx] = useState(440);
     const [chatContextSite, setChatContextSite] = useState(null);
     const [siteAiVerdict, setSiteAiVerdict] = useState(null);
+    const [searchedSite, setSearchedSite] = useState(null); // site selected via search that may be outside radius
     const [favorites, setFavorites] = useState(() => {
         try {
             return JSON.parse(localStorage.getItem('skypilot_favorites') || '[]');
@@ -590,6 +591,7 @@ export default function MapView() {
             setMapCenter([site.lat, site.lng]);
             setMapZoom(13);
             setSelectedSite(site);
+            setSearchedSite(site); // track so we can show a marker even if outside radius
             setChatOpen(false);
         }
     }, []);
@@ -604,7 +606,7 @@ export default function MapView() {
 
     const fetchSites = useCallback(async (loc, dist) => {
         if (!loc) return;
-        setLoadingSites(true); setSites([]); setSelectedSite(null);
+        setLoadingSites(true); setSites([]); setSelectedSite(null); setSearchedSite(null);
         try {
             const distKm = (dist * 1.60934).toFixed(1);
             const res = await fetch(`/api/sites?lat=${loc.lat}&lng=${loc.lng}&distance=${distKm}&limit=20`);
@@ -775,6 +777,68 @@ export default function MapView() {
                                 </Popup>
                             </Marker>
                         ))}
+                        {/* Render a marker for a searched site that isn't in the current radius results */}
+                        {searchedSite && searchedSite.lat && searchedSite.lng &&
+                            !filteredSites.some(s => s.lat === searchedSite.lat && s.lng === searchedSite.lng) && (
+                                <Marker
+                                    key="searched-site"
+                                    position={[searchedSite.lat, searchedSite.lng]}
+                                    icon={createMarkerIcon(searchedSite.rating || 'NO_GO')}
+                                    eventHandlers={{ click: () => { setSelectedSite(searchedSite); setChatOpen(false); } }}
+                                >
+                                    <Popup>
+                                        <div style={{ minWidth: 200, fontFamily: 'var(--font-body)' }}>
+                                            <div style={{ fontWeight: 700, marginBottom: 5, color: 'var(--color-text-heading)', fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                {searchedSite.name}
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); toggleFavorite(searchedSite); }}
+                                                    style={{
+                                                        background: 'transparent', border: 'none', cursor: 'pointer',
+                                                        padding: '0 4px', display: 'flex', alignItems: 'center',
+                                                        color: isFavorite(searchedSite) ? 'var(--color-amber)' : 'var(--color-text-dim)',
+                                                    }}
+                                                >
+                                                    <Star size={14} fill={isFavorite(searchedSite) ? 'var(--color-amber)' : 'none'} />
+                                                </button>
+                                            </div>
+                                            {searchedSite.altitude > 0 && (
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>
+                                                    ⛰️ {searchedSite.altitude}ft altitude
+                                                </div>
+                                            )}
+                                            <div style={{ fontSize: '0.72rem', color: 'var(--color-amber)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                📍 Outside your search radius
+                                            </div>
+                                            <div style={{ display: 'flex', gap: 6 }}>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setSelectedSite(searchedSite); setChatOpen(false); }}
+                                                    style={{
+                                                        flex: 1, padding: '7px 0',
+                                                        background: 'var(--color-surface-3)', border: '1px solid var(--color-border-base)',
+                                                        borderRadius: 8, color: 'var(--color-text-heading)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
+                                                        transition: 'background 0.2s',
+                                                    }}
+                                                    onMouseEnter={e => e.currentTarget.style.background = 'var(--color-glass-subtle-bg)'}
+                                                    onMouseLeave={e => e.currentTarget.style.background = 'var(--color-surface-3)'}
+                                                >
+                                                    Forecast
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setChatContextSite(searchedSite); setChatOpen(true); setSelectedSite(null); }}
+                                                    style={{
+                                                        flex: 1, padding: '7px 0',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                                                        background: 'var(--color-sky-gradient)',
+                                                        border: 'none', borderRadius: 8, color: '#fff', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
+                                                    }}
+                                                >
+                                                    <Sparkles size={11} /> Ask AI
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </Popup>
+                                </Marker>
+                            )}
                     </MapContainer>
 
                     {/* Quick Stats Bar */}
