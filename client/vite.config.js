@@ -22,7 +22,7 @@ export default defineConfig({
                 enabled: true
             },
             manifest: {
-                name: 'Paragliding Agent',
+                name: 'SkyPilot',
                 short_name: 'SkyPilot',
                 description: 'Flyability forecasts and AI assistant for paragliding sites',
                 theme_color: '#0088cc',
