@@ -22,7 +22,7 @@ import { hasActiveKey } from '../utils/aiHeaders.js';
 // ─── Suggested prompts ───────────────────────────────────────────────────────
 const SUGGESTED_PROMPTS = [
     { text: 'Can I fly here today?', icon: '🪂' },
-    { text: 'Best sites within 40 miles?', icon: '🗺️' },
+    { text: 'Best sites within 35 miles?', icon: '🗺️' },
     { text: "Wind at altitude right now?", icon: '💨' },
     { text: 'Better window to fly later?', icon: '⏰' },
 ];
@@ -106,6 +106,24 @@ function MapClickHandler({ onClick }) {
         map.on('click', handler);
         return () => map.off('click', handler);
     }, [map, onClick]);
+    return null;
+}
+
+// ─── Map Move Handler (for "Search this area") ────────────────────────────────
+function MapMoveHandler({ onMoveEnd, initialCenter }) {
+    const map = useMap();
+    const initialRef = useRef(initialCenter);
+    useEffect(() => {
+        const handler = () => {
+            const c = map.getCenter();
+            const init = initialRef.current;
+            // Only show the button if user has meaningfully panned (>0.05 deg)
+            const moved = init && (Math.abs(c.lat - init[0]) > 0.05 || Math.abs(c.lng - init[1]) > 0.05);
+            onMoveEnd({ lat: c.lat, lng: c.lng }, moved);
+        };
+        map.on('moveend', handler);
+        return () => map.off('moveend', handler);
+    }, [map, onMoveEnd]);
     return null;
 }
 
@@ -518,7 +536,7 @@ export default function MapView() {
     const [sites, setSites] = useState([]);
     const [loadingSites, setLoadingSites] = useState(false);
     const [selectedSite, setSelectedSite] = useState(null);
-    const [distance, setDistance] = useState(40);
+    const [distance, setDistance] = useState(35);
     const [mapCenter, setMapCenter] = useState([37.7749, -122.4194]);
     const [mapZoom, setMapZoom] = useState(10);
     const [filter, setFilter] = useState('all');
@@ -531,6 +549,8 @@ export default function MapView() {
     const [chatContextSite, setChatContextSite] = useState(null);
     const [siteAiVerdict, setSiteAiVerdict] = useState(null);
     const [searchedSite, setSearchedSite] = useState(null); // site selected via search that may be outside radius
+    const [showSearchHere, setShowSearchHere] = useState(false);
+    const [viewportCenter, setViewportCenter] = useState(null); // center of map when user panned
     const [favorites, setFavorites] = useState(() => {
         try {
             return JSON.parse(localStorage.getItem('skypilot_favorites') || '[]');
@@ -607,6 +627,7 @@ export default function MapView() {
     const fetchSites = useCallback(async (loc, dist) => {
         if (!loc) return;
         setLoadingSites(true); setSites([]); setSelectedSite(null); setSearchedSite(null);
+        setShowSearchHere(false);
         try {
             const distKm = (dist * 1.60934).toFixed(1);
             const res = await fetch(`/api/sites?lat=${loc.lat}&lng=${loc.lng}&distance=${distKm}&limit=20`);
@@ -615,6 +636,24 @@ export default function MapView() {
             setSites(data.sites || []);
         } catch (err) { console.error(err); }
         finally { setLoadingSites(false); }
+    }, []);
+
+    // Fetch sites centered on the current viewport (after user pans)
+    const fetchSitesHere = useCallback(() => {
+        if (!viewportCenter) return;
+        setLoadingSites(true); setSites([]); setSelectedSite(null); setSearchedSite(null);
+        setShowSearchHere(false);
+        const distKm = (distance * 1.60934).toFixed(1);
+        fetch(`/api/sites?lat=${viewportCenter.lat}&lng=${viewportCenter.lng}&distance=${distKm}&limit=20`)
+            .then(r => r.json())
+            .then(data => setSites(data.sites || []))
+            .catch(err => console.error(err))
+            .finally(() => setLoadingSites(false));
+    }, [viewportCenter, distance]);
+
+    const handleMapMoveEnd = useCallback((center, hasMoved) => {
+        setViewportCenter(center);
+        setShowSearchHere(hasMoved);
     }, []);
 
     const handleDistanceChange = (v) => { setDistance(v); if (location) fetchSites(location, v); };
@@ -691,6 +730,7 @@ export default function MapView() {
                             setSelectedSite(null);
                             setChatOpen(false);
                         }} />
+                        <MapMoveHandler onMoveEnd={handleMapMoveEnd} initialCenter={mapCenter} />
                         {/* Tile layer: CartoDB Voyager for light (vivid blue water), Stadia dark for dark mode */}
                         <TileLayer
                             key={theme}
@@ -712,7 +752,7 @@ export default function MapView() {
                                     center={[location.lat, location.lng]}
                                     radius={distance * 1609.34}
                                     pathOptions={{
-                                        color: 'rgba(0,200,255,0.35)',
+                                        color: 'rgba(0,200,255,0.28)',
                                         fillColor: 'rgba(0,200,255,0.03)',
                                         fillOpacity: 1,
                                         weight: 1.5,
@@ -840,6 +880,57 @@ export default function MapView() {
                                 </Marker>
                             )}
                     </MapContainer>
+
+                    {/* "Search this area" button — appears after user pans */}
+                    {showSearchHere && !loadingSites && (
+                        <div style={{
+                            position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)',
+                            zIndex: 1400, animation: 'fade-up 0.22s ease',
+                        }}>
+                            <button
+                                onClick={fetchSitesHere}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    padding: '9px 18px',
+                                    background: 'var(--color-surface-overlay)', backdropFilter: 'blur(20px)',
+                                    border: '1px solid var(--color-border-glow)',
+                                    borderRadius: 100, cursor: 'pointer',
+                                    color: 'var(--color-sky)', fontSize: '0.82rem', fontWeight: 700,
+                                    boxShadow: '0 4px 20px rgba(0,200,255,0.18)',
+                                    transition: 'all 0.2s ease',
+                                    whiteSpace: 'nowrap',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 28px rgba(0,200,255,0.32)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,200,255,0.18)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                            >
+                                <MapPin size={13} style={{ flexShrink: 0 }} />
+                                Search this area
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Radius label badge — shown when we have a location */}
+                    {location && !loadingSites && (
+                        <div style={{
+                            position: 'absolute', top: 14, right: 14,
+                            zIndex: 1300,
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            padding: '5px 10px', borderRadius: 100,
+                            background: 'var(--color-surface-overlay)', backdropFilter: 'blur(16px)',
+                            border: '1px solid rgba(0,200,255,0.2)',
+                            fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)',
+                            boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
+                            pointerEvents: 'none',
+                        }}>
+                            <span style={{ color: 'var(--color-sky)' }}>{distance} mi</span>
+                            {sites.length > 0 && (
+                                <>
+                                    <span style={{ color: 'var(--color-border-base)' }}>·</span>
+                                    <span>{sites.length} sites</span>
+                                </>
+                            )}
+                        </div>
+                    )}
 
                     {/* Quick Stats Bar */}
                     {sites.length > 0 && !loadingSites && (
