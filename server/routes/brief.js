@@ -68,13 +68,14 @@ router.get('/', async (req, res) => {
         const validSitesData = sitesWithWeather.filter(d => d !== null);
 
         // 5. Get AI Regional Verdict
-        const apiKey = req.headers['x-gemini-api-key'] || null;
+        const apiKey = req.headers['x-ai-api-key'] || req.headers['x-gemini-api-key'] || null;
+        const provider = (req.headers['x-ai-provider'] || 'gemini').toLowerCase();
         let pilotProfile = null;
         const profileHeader = req.headers['x-pilot-profile'];
         if (profileHeader && profileHeader.trim()) {
             try { pilotProfile = JSON.parse(profileHeader); } catch { /* ignore */ }
         }
-        const brief = await getRegionalComparativeVerdict(validSitesData, apiKey, pilotProfile);
+        const brief = await getRegionalComparativeVerdict(validSitesData, apiKey, pilotProfile, provider);
 
         res.json(brief);
     } catch (err) {

@@ -130,15 +130,17 @@ router.get('/', async (req, res) => {
             };
         });
 
-        // Get AI verdicts for all 7 days in a single Gemini call (non-blocking, cached)
-        const apiKey = req.headers['x-gemini-api-key'] || null;
+        // Get AI verdicts for all 7 days in a single LLM call (non-blocking, cached, provider-aware)
+        // Accept new unified header or legacy gemini-specific header
+        const apiKey = req.headers['x-ai-api-key'] || req.headers['x-gemini-api-key'] || null;
+        const provider = (req.headers['x-ai-provider'] || 'gemini').toLowerCase();
         let pilotProfile = null;
         const profileHeader = req.headers['x-pilot-profile'];
         if (profileHeader && profileHeader.trim()) {
             try { pilotProfile = JSON.parse(profileHeader); } catch { /* ignore */ }
         }
         const aiVerdicts = site
-            ? await getAiWeeklyVerdicts(site, rawWeather, apiKey, pilotProfile)
+            ? await getAiWeeklyVerdicts(site, rawWeather, apiKey, pilotProfile, provider)
             : null;
 
         // For convenience also include the today verdict at the top level

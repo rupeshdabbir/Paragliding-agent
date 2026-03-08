@@ -3,6 +3,7 @@ import { useGeolocation } from '../hooks/useGeolocation.js';
 import MorningBrief from '../components/MorningBrief.jsx';
 import { Wind, Map as MapIcon, RefreshCw, AlertTriangle } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import { getAIHeaders } from '../utils/aiHeaders.js';
 
 export default function BriefPage() {
     const { location, loading: locLoading, requestLocation } = useGeolocation();
@@ -15,11 +16,11 @@ export default function BriefPage() {
         setLoading(true);
         setError(null);
         try {
-            const apiKey = (localStorage.getItem('geminiApiKey') || '').trim();
+            const aiHeaders = getAIHeaders();
             const pilotProfile = localStorage.getItem('skypilot_pilot_profile') || '';
             const favorites = localStorage.getItem('skypilot_favorites') || '[]';
             const headers = {
-                ...(apiKey ? { 'x-gemini-api-key': apiKey } : {}),
+                ...aiHeaders,
                 ...(pilotProfile ? { 'x-pilot-profile': pilotProfile } : {}),
             };
 
@@ -34,6 +35,7 @@ export default function BriefPage() {
             setLoading(false);
         }
     };
+
 
     useEffect(() => {
         if (!location) {

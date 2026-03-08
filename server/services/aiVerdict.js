@@ -1,17 +1,142 @@
 /**
  * AI-powered flyability verdict service — 7-day weekly analysis.
- * Uses a SINGLE Gemini call to analyze the entire week at once, returning
+ * Uses a SINGLE LLM call to analyze the entire week at once, returning
  * a per-day verdict keyed by date. This is shared across:
  *   - Forecast panel (Today/Tomorrow cards, This Week list)
  *   - Ask SkyPilot chat (injected as ground truth)
  *
- * Cache: per site + week-start date, refreshed every 6 hours.
+ * Supports: gemini (default, unchanged), openai, grok, anthropic
+ * Cache: per site + week-start date + provider, refreshed every 6 hours.
+ *
+ * IMPORTANT: The Gemini path is untouched from the battle-tested original.
+ * Other providers use the same prompts with their own SDK JSON completion calls.
  */
 import { getGenAI } from '../utils/geminiClient.js';
 import { degreesToCardinal } from '../utils/windUtils.js';
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const verdictCache = new Map();
+
+// ─── Provider-agnostic JSON completion ───────────────────────────────────────
+
+/**
+ * Call any provider with a prompt and return the model's response as a parsed
+ * JSON object. This is the single abstraction point — all parsing, cleaning,
+ * and error handling lives here so the callers stay clean.
+ *
+ * @param {string} prompt  - The full prompt text (already includes JSON schema)
+ * @param {'gemini'|'openai'|'grok'|'anthropic'} provider
+ * @param {string|null} apiKey
+ * @param {{ temperature?: number, maxTokens?: number, modelOverrides?: object }} opts
+ * @returns {Promise<{ raw: string, parsed: object, usedModel: string }>}
+ */
+async function callJsonLLM(prompt, provider = 'gemini', apiKey = null, opts = {}) {
+    const temperature = opts.temperature ?? 0.2;
+    const maxTokens = opts.maxTokens ?? 8192;
+
+    // ── Gemini ────────────────────────────────────────────────────────────────
+    if (provider === 'gemini') {
+        const ai = getGenAI(apiKey);
+
+        const attemptGenerate = async (modelName) => {
+            const generativeModel = ai.getGenerativeModel({
+                model: modelName,
+                generationConfig: {
+                    temperature,
+                    maxOutputTokens: maxTokens,
+                    responseMimeType: 'application/json',
+                },
+            });
+            console.log(`[aiVerdict] Calling Gemini using ${modelName}…`);
+            return await generativeModel.generateContent(prompt);
+        };
+
+        let result;
+        let usedModel = opts.modelOverrides?.gemini || 'gemini-3-flash-preview';
+        try {
+            result = await attemptGenerate(usedModel);
+        } catch (err) {
+            const msg = err.message || '';
+            if (msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('too many requests')) {
+                console.warn(`[aiVerdict] 429 Quota on ${usedModel}. Falling back to gemini-2.5-flash`);
+                usedModel = 'gemini-2.5-flash';
+                result = await attemptGenerate(usedModel);
+            } else {
+                throw err;
+            }
+        }
+
+        const raw = (result?.response?.text && typeof result.response.text === 'function')
+            ? result.response.text().trim()
+            : '';
+        const cleaned = stripFences(raw);
+        return { raw, cleaned, usedModel };
+    }
+
+    // ── OpenAI / Grok ─────────────────────────────────────────────────────────
+    if (provider === 'openai' || provider === 'grok') {
+        const { default: OpenAI } = await import('openai');
+        const BASE_URLS = { openai: undefined, grok: 'https://api.x.ai/v1' };
+        const DEFAULT_MODELS = { openai: 'gpt-4.1-mini', grok: 'grok-3-mini' };
+
+        const client = new OpenAI({ apiKey, baseURL: BASE_URLS[provider] });
+        const usedModel = opts.modelOverrides?.[provider] || DEFAULT_MODELS[provider];
+
+        console.log(`[aiVerdict] Calling ${provider} (${usedModel}) for JSON completion…`);
+        const response = await client.chat.completions.create({
+            model: usedModel,
+            temperature,
+            max_tokens: maxTokens,
+            response_format: { type: 'json_object' },
+            messages: [
+                {
+                    role: 'system',
+                    content: 'You are an expert paragliding safety analyst. Always respond with valid JSON only — no markdown, no prose.',
+                },
+                { role: 'user', content: prompt },
+            ],
+        });
+
+        const raw = response.choices[0]?.message?.content?.trim() || '';
+        const cleaned = stripFences(raw);
+        return { raw, cleaned, usedModel };
+    }
+
+    // ── Anthropic ─────────────────────────────────────────────────────────────
+    if (provider === 'anthropic') {
+        const Anthropic = (await import('@anthropic-ai/sdk')).default;
+        const client = new Anthropic({ apiKey });
+        const usedModel = opts.modelOverrides?.anthropic || 'claude-3-5-haiku-latest';
+
+        console.log(`[aiVerdict] Calling Anthropic (${usedModel}) for JSON completion…`);
+        const response = await client.messages.create({
+            model: usedModel,
+            max_tokens: Math.min(maxTokens, 4096), // Anthropic max varies by model
+            temperature,
+            system: 'You are an expert paragliding safety analyst. Always respond with a single valid JSON object — no markdown fences, no prose, no explanation before or after the JSON.',
+            messages: [{ role: 'user', content: prompt }],
+        });
+
+        const raw = response.content.filter(b => b.type === 'text').map(b => b.text).join('').trim();
+        const cleaned = stripFences(raw);
+        return { raw, cleaned, usedModel };
+    }
+
+    throw new Error(`Unknown provider for JSON LLM: ${provider}`);
+}
+
+/**
+ * Strip markdown code fences from a string (some models include them despite instructions).
+ */
+function stripFences(raw) {
+    return raw
+        .replace(/^```json\s*/i, '')
+        .replace(/^```\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .trim();
+}
+
+// ─── Day summary builder (unchanged) ─────────────────────────────────────────
 
 /**
  * Build a compact per-day weather summary (daylight hours only).
@@ -32,25 +157,32 @@ function buildDaySummary(hours = [], date) {
     return `  ${date}: avg wind ${avgWind.toFixed(0)} mph from ${dirs}, max gusts ${maxGust.toFixed(0)} mph, cloud ${avgCloud.toFixed(0)}%, precip ${maxPrecip.toFixed(2)} mm/h`;
 }
 
+// ─── Weekly verdict ───────────────────────────────────────────────────────────
+
 /**
  * Get AI-generated flyability verdicts for a full 7-day period.
  * Returns a map of { [date]: verdict } for all available days.
  *
+ * Now supports all providers — same prompts, same output schema.
+ *
  * @param {object} site - Site object from ParaglidingEarth
  * @param {object} weather - Weather object from getExtendedWeather (7 days hourly)
- * @returns {Promise<{[date: string]: DayVerdict}>}
+ * @param {string|null} apiKey
+ * @param {object|null} pilotProfile
+ * @param {'gemini'|'openai'|'grok'|'anthropic'} provider
  */
-export async function getAiWeeklyVerdicts(site, weather, apiKey = null, pilotProfile = null) {
+export async function getAiWeeklyVerdicts(site, weather, apiKey = null, pilotProfile = null, provider = 'gemini') {
     const today = weather.current?.time?.slice(0, 10) || new Date().toISOString().slice(0, 10);
+
     // Build profile hash for cache key so different pilot skill levels don't share verdicts
     const profileKey = (pilotProfile && pilotProfile.certification && pilotProfile.flyingStyle)
         ? `_${pilotProfile.certification}_${pilotProfile.flyingStyle}_${pilotProfile.wingType || ''}_${pilotProfile.experience || ''}`
         : '_default';
-    const cacheKey = `week_${site.lat?.toFixed(4)},${site.lng?.toFixed(4)},${today}${profileKey}`;
+    const cacheKey = `week_${provider}_${site.lat?.toFixed(4)},${site.lng?.toFixed(4)},${today}${profileKey}`;
 
     const cached = verdictCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
-        console.log(`[aiVerdict] Cache hit for ${site.name} (week)`);
+        console.log(`[aiVerdict] Cache hit for ${site.name} (week, ${provider})`);
         const cachedVerdicts = { ...cached.verdicts };
         for (const date in cachedVerdicts) {
             cachedVerdicts[date] = { ...cachedVerdicts[date], _isCached: true, _cachedAt: cached.cachedAt };
@@ -113,6 +245,7 @@ PILOT PROFILE (calibrate your GO/MARGINAL/NO_GO thresholds and safetyNotes for t
 - Guidance: ${thresholdGuidance}`;
     }
 
+    // This prompt is identical for all providers — only the API call differs
     const prompt = `You are an expert paragliding safety analyst. Analyze the following 7-day weather forecast for a specific site and produce a structured flyability verdict for EACH day.${pilotProfileBlock}
 
 SITE INFORMATION:
@@ -149,47 +282,12 @@ Respond with ONLY a valid JSON object (no markdown, no backticks) with this exac
 }`;
 
     try {
-        const ai = getGenAI(apiKey);
+        const { cleaned, usedModel } = await callJsonLLM(prompt, provider, apiKey, {
+            temperature: 0.2,
+            maxTokens: 8192,
+        });
 
-        const attemptGenerate = async (modelName) => {
-            const generativeModel = ai.getGenerativeModel({
-                model: modelName,
-                generationConfig: {
-                    temperature: 0.2,
-                    maxOutputTokens: 8192,
-                    responseMimeType: 'application/json'
-                },
-            });
-            console.log(`[aiVerdict] Calling Gemini (7-day) for ${site.name} using ${modelName}…`);
-            return await generativeModel.generateContent(prompt);
-        };
-
-        let result;
-        let usedModel = 'gemini-3-flash-preview';
-        try {
-            result = await attemptGenerate('gemini-3-flash-preview');
-        } catch (err) {
-            const msg = err.message || '';
-            if (msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('too many requests')) {
-                console.warn(`[aiVerdict] 429 Quota Exceeded on gemini-3-flash-preview. Falling back to gemini-2.5-flash`);
-                usedModel = 'gemini-2.5-flash';
-                result = await attemptGenerate('gemini-2.5-flash');
-            } else {
-                throw err;
-            }
-        }
-
-        const raw = (result?.response?.text && typeof result.response.text === 'function')
-            ? result.response.text().trim()
-            : '';
-        console.log(`[aiVerdict] Raw 7-day response (first 500):`, raw.slice(0, 500));
-
-        // Strip markdown fences if present
-        const cleaned = raw
-            .replace(/^```json\s*/i, '')
-            .replace(/^```\s*/i, '')
-            .replace(/\s*```$/i, '')
-            .trim();
+        console.log(`[aiVerdict] Raw 7-day response (first 500):`, cleaned.slice(0, 500));
 
         if (!cleaned) {
             return buildFallbackWeekVerdicts(dates, 'Empty response from AI model', usedModel);
@@ -199,7 +297,7 @@ Respond with ONLY a valid JSON object (no markdown, no backticks) with this exac
         try {
             parsed = JSON.parse(cleaned);
         } catch (parseErr) {
-            console.error('[aiVerdict] JSON parse failed:', parseErr.message, '| raw:', raw.slice(0, 300));
+            console.error('[aiVerdict] JSON parse failed:', parseErr.message, '| raw:', cleaned.slice(0, 300));
             return buildFallbackWeekVerdicts(dates, `JSON parse failed: ${parseErr.message}`, usedModel);
         }
 
@@ -225,7 +323,7 @@ Respond with ONLY a valid JSON object (no markdown, no backticks) with this exac
         });
 
         verdictCache.set(cacheKey, { verdicts, expiresAt: Date.now() + CACHE_TTL_MS, cachedAt: Date.now() });
-        console.log(`[aiVerdict] Week verdicts for ${site.name}:`, Object.entries(verdicts).map(([d, v]) => `${d}:${v.rating}`).join(', '));
+        console.log(`[aiVerdict] Week verdicts for ${site.name} (${provider}):`, Object.entries(verdicts).map(([d, v]) => `${d}:${v.rating}`).join(', '));
         return verdicts;
 
     } catch (err) {
@@ -235,13 +333,12 @@ Respond with ONLY a valid JSON object (no markdown, no backticks) with this exac
         if (!errorDetail) errorDetail = JSON.stringify(err, Object.getOwnPropertyNames(err));
         if (!errorDetail || errorDetail === '{}') errorDetail = String(err);
 
-        // Can't reliably know usedModel here if it failed on the first call, but usually it means it failed completely.
-        const modelStr = errorDetail.includes('gemini-2.0-flash') ? 'gemini-2.0-flash' : 'gemini-3-flash-preview';
-
-        console.error('[aiVerdict] Gemini 7-day call FAILED for', site?.name, ':', errorDetail);
-        return buildFallbackWeekVerdicts(dates, errorDetail, modelStr);
+        console.error(`[aiVerdict] ${provider} 7-day call FAILED for`, site?.name, ':', errorDetail);
+        return buildFallbackWeekVerdicts(dates, errorDetail, provider);
     }
 }
+
+// ─── Fallback builders (unchanged) ───────────────────────────────────────────
 
 function buildFallbackDayVerdict(date, errorMessage = null, usedModel = 'unknown') {
     return {
@@ -256,7 +353,7 @@ function buildFallbackDayVerdict(date, errorMessage = null, usedModel = 'unknown
         safetyNotes: ['Verify conditions with local pilots before flying.'],
         _fallback: true,
         _error: errorMessage || 'Unknown error',
-        usedModel
+        usedModel,
     };
 }
 
@@ -267,16 +364,18 @@ function buildFallbackWeekVerdicts(dates, errorMessage, usedModel = 'unknown') {
     return result;
 }
 
+// ─── Regional comparative verdict ────────────────────────────────────────────
 
 /**
- * Perform a comparative analysis across multiple sites to find the best flight options.
+ * Perform a comparative analysis across multiple sites to find the best options.
+ * Now supports all providers.
  */
-export async function getRegionalComparativeVerdict(sitesData = [], apiKey = null, pilotProfile = null) {
+export async function getRegionalComparativeVerdict(sitesData = [], apiKey = null, pilotProfile = null, provider = 'gemini') {
     if (sitesData.length === 0) return { bestSite: null, rankings: [] };
 
-    // Build a pilot profile block for the prompt
     const certLabels = { student: 'Student', p2: 'P2 (Novice)', p3: 'P3 (Intermediate)', p4: 'P4 (Advanced)', comp: 'Competition' };
     const styleLabels = { thermal: 'Thermalling', ridge: 'Ridge Soaring', xc: 'Cross Country', hike: 'Hike & Fly' };
+
     let pilotProfileBlock = '';
     if (pilotProfile && pilotProfile.certification) {
         const cert = certLabels[pilotProfile.certification] || pilotProfile.certification;
@@ -284,12 +383,9 @@ export async function getRegionalComparativeVerdict(sitesData = [], apiKey = nul
         pilotProfileBlock = `\n\nPILOT PROFILE: This brief is for a ${cert} pilot focused on ${style}. Weight site recommendations accordingly — prioritize calmer, more forgiving sites for beginners; technical, high-quality sites for advanced pilots.`;
     }
 
-    // Build a condensed summary for each site
     const siteSummaries = sitesData.map(({ site, weather }) => {
         const today = weather.current?.time?.slice(0, 10) || new Date().toISOString().slice(0, 10);
         const hours = (weather?.hourly?.times || []).filter(t => t.startsWith(today));
-
-        // Find daylight hours (6am-8pm)
         const daylight = hours.filter(t => {
             const hr = parseInt(t.slice(11, 13), 10);
             return hr >= 6 && hr <= 20;
@@ -298,7 +394,6 @@ export async function getRegionalComparativeVerdict(sitesData = [], apiKey = nul
         const avgWind = daylight.reduce((s, t, i) => s + (weather.hourly.windSpeed10m[i] || 0), 0) / daylight.length;
         const maxGust = Math.max(...daylight.map((t, i) => weather.hourly.windGusts[i] || 0));
         const dirs = [...new Set(daylight.map((t, i) => degreesToCardinal(weather.hourly.windDirection10m[i] || 0)))].join('/');
-
         const windDirsSupported = site.windDirections
             ? Object.entries(site.windDirections)
                 .filter(([, s]) => parseInt(s) >= 1)
@@ -314,6 +409,7 @@ export async function getRegionalComparativeVerdict(sitesData = [], apiKey = nul
 ${site.starred ? '- User Preference: This is a STARRED/FAVORITE site by the user.' : ''}`;
     }).join('\n---\n');
 
+    // Identical prompt for all providers
     const prompt = `You are an expert paragliding regional coordinator. Analyze the following paragliding sites and their conditions for TODAY to provide a ranked "Morning Brief" for pilots.${pilotProfileBlock}
 
 Some sites are "STARRED/FAVORITE" by the user. While safety is the priority, give these sites extra consideration for "Site of the Day" if they are flyable (GO or MARGINAL).
@@ -345,45 +441,10 @@ Respond with ONLY a valid JSON object:
 }`;
 
     try {
-        const ai = getGenAI(apiKey);
-
-        const attemptGenerate = async (modelName) => {
-            const generativeModel = ai.getGenerativeModel({
-                model: modelName,
-                generationConfig: {
-                    temperature: 0.1,
-                    maxOutputTokens: 2000,
-                    responseMimeType: 'application/json'
-                },
-            });
-            console.log(`[aiVerdict] Calling Gemini for Regional Comparative Brief using ${modelName}...`);
-            return await generativeModel.generateContent(prompt);
-        };
-
-        let result;
-        let usedModel = 'gemini-3-flash-preview';
-        try {
-            result = await attemptGenerate('gemini-3-flash-preview');
-        } catch (err) {
-            const msg = err.message || '';
-            if (msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('too many requests')) {
-                console.warn(`[aiVerdict] 429 Quota Exceeded on gemini-3-flash-preview. Falling back to gemini-2.5-flash`);
-                usedModel = 'gemini-2.5-flash';
-                result = await attemptGenerate('gemini-2.5-flash');
-            } else {
-                throw err;
-            }
-        }
-
-        const raw = (result?.response?.text && typeof result.response.text === 'function')
-            ? result.response.text().trim()
-            : '';
-
-        const cleaned = raw
-            .replace(/^```json\s*/i, '')
-            .replace(/^```\s*/i, '')
-            .replace(/\s*```$/i, '')
-            .trim();
+        const { cleaned, usedModel } = await callJsonLLM(prompt, provider, apiKey, {
+            temperature: 0.1,
+            maxTokens: 2000,
+        });
 
         if (!cleaned) throw new Error('Empty AI response');
 
@@ -403,27 +464,27 @@ Respond with ONLY a valid JSON object:
 
         return parsed;
     } catch (err) {
-        console.error('[aiVerdict] Regional Brief FAILED:', err.message);
-        // Minimal fallback
+        console.error(`[aiVerdict] Regional Brief FAILED (${provider}):`, err.message);
         return {
-            regionHeadline: "Regional analysis unavailable.",
-            siteOfDay: sitesData[0]?.site?.name || "Unknown",
+            regionHeadline: 'Regional analysis unavailable.',
+            siteOfDay: sitesData[0]?.site?.name || 'Unknown',
             rankings: sitesData.map((d, i) => ({
                 siteName: d.site?.name,
                 rank: i + 1,
                 rating: 'MARGINAL',
-                reasoning: `AI analysis failed: ${err.message}`, // Added for debugging
-                recommendedMode: 'mixed'
+                reasoning: `AI analysis failed: ${err.message}`,
+                recommendedMode: 'mixed',
             })),
-            overallSafetyNote: "Always check local conditions before launching.",
-            _error: err.message
+            overallSafetyNote: 'Always check local conditions before launching.',
+            _error: err.message,
         };
     }
 }
 
-// Legacy single-day export (kept for backward compat — now delegates to weekly)
-export async function getAiVerdict(site, weather, apiKey = null) {
-    const verdicts = await getAiWeeklyVerdicts(site, weather, apiKey);
+// ─── Legacy single-day export (unchanged — backward compat) ──────────────────
+
+export async function getAiVerdict(site, weather, apiKey = null, provider = 'gemini') {
+    const verdicts = await getAiWeeklyVerdicts(site, weather, apiKey, null, provider);
     const today = weather.current?.time?.slice(0, 10) || new Date().toISOString().slice(0, 10);
     return verdicts[today] || buildFallbackDayVerdict(today, 'Today not in weekly verdicts', 'unknown');
 }

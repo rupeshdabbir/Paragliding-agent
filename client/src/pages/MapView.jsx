@@ -17,6 +17,7 @@ import DisclaimerModal from '../components/DisclaimerModal.jsx';
 import { useGeolocation } from '../hooks/useGeolocation.js';
 import { useChat } from '../hooks/useChat.js';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { hasActiveKey } from '../utils/aiHeaders.js';
 
 // ─── Suggested prompts ───────────────────────────────────────────────────────
 const SUGGESTED_PROMPTS = [
@@ -116,12 +117,12 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, chatWidthP
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
 
-    const [hasKey, setHasKey] = useState(!!localStorage.getItem('geminiApiKey'));
+    const [hasKey, setHasKey] = useState(() => hasActiveKey());
 
     useEffect(() => {
         // Poll for key changes since storage events only fire across tabs
         const interval = setInterval(() => {
-            setHasKey(!!localStorage.getItem('geminiApiKey'));
+            setHasKey(hasActiveKey());
         }, 1000);
         return () => clearInterval(interval);
     }, []);
@@ -319,7 +320,7 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, chatWidthP
                         </div>
                         <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text-heading)', margin: '0 0 12px 0' }}>Wake SkyPilot</h3>
                         <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', lineHeight: 1.6, marginBottom: 30, maxWidth: 320 }}>
-                            Provide your free Gemini API key to unlock personalized flying advice, real-time wind analysis, and site recommendations.
+                            Provide your free API key to unlock personalized flying advice, real-time wind analysis, and site recommendations.
                         </p>
                         <button
                             onClick={() => window.dispatchEvent(new Event('open-settings'))}

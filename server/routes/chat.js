@@ -1,7 +1,26 @@
 import express from 'express';
-import { runAgent } from '../services/gemini.js';
+import { runProviderAgent } from '../utils/aiClient.js';
+import { getSitesDeclaration, getSites } from '../tools/getSites.js';
+import { getWeatherDeclaration, getWeather } from '../tools/getWeather.js';
+import { analyzeFlyingConditionsDeclaration, analyzeFlyingConditions } from '../tools/analyzeFlyingConditions.js';
+
+// Bring in the same system prompt and context builder used by the Gemini agent
+// so non-Gemini providers get the exact same instructions.
+import { SYSTEM_PROMPT, buildContextStr } from '../services/gemini.js';
 
 const router = express.Router();
+
+const TOOL_HANDLERS = {
+    get_paragliding_sites: getSites,
+    get_weather_forecast: getWeather,
+    analyze_flying_conditions: analyzeFlyingConditions,
+};
+
+const TOOL_DECLARATIONS = [
+    getSitesDeclaration,
+    getWeatherDeclaration,
+    analyzeFlyingConditionsDeclaration,
+];
 
 // POST /api/chat
 // Body: { message: string, history: Array, location?: {lat, lng} }
@@ -13,13 +32,9 @@ router.post('/', async (req, res) => {
     }
 
     try {
-        // Convert history from client format to Gemini format
-        const geminiHistory = (history || []).map(turn => ({
-            role: turn.role, // 'user' or 'model'
-            parts: [{ text: turn.content }],
-        }));
-
-        const apiKey = req.headers['x-gemini-api-key'] || null;
+        // Read provider + key from the new unified headers (with fallback to old header name)
+        const provider = (req.headers['x-ai-provider'] || 'gemini').toLowerCase();
+        const apiKey = req.headers['x-ai-api-key'] || req.headers['x-gemini-api-key'] || null;
 
         // Parse pilot profile from header (JSON string)
         let pilotProfile = null;
@@ -28,28 +43,41 @@ router.post('/', async (req, res) => {
             try { pilotProfile = JSON.parse(profileHeader); } catch { /* ignore malformed */ }
         }
 
-        const { reply, toolResults, usage, usedModel } = await runAgent({
-            userMessage: message,
-            history: geminiHistory,
-            userLocation: location,
+        // Build the system prompt with location/pilot context (used by non-Gemini providers)
+        const contextStr = buildContextStr(location, pilotProfile);
+        const systemPrompt = SYSTEM_PROMPT + contextStr;
+
+        // Normalize history to {role, content} format
+        const normalizedHistory = (history || []).map(m => ({
+            role: m.role === 'user' ? 'user' : 'model',
+            content: m.content,
+        }));
+
+        const { reply, toolResults, usage, usedModel } = await runProviderAgent({
+            provider,
             apiKey,
+            userMessage: message,
+            history: normalizedHistory,
+            userLocation: location,
             pilotProfile,
+            systemPrompt,
+            toolDeclarations: TOOL_DECLARATIONS,
+            toolHandlers: TOOL_HANDLERS,
         });
 
         res.json({ reply, toolResults, usage, usedModel });
     } catch (err) {
-        console.error('[chat] Error from Gemini API:', err.message);
+        console.error(`[chat] Error:`, err.message);
 
-        // Attempt to extract the model from the error message to show fallback status
-        let attemptedModel = 'gemini-3-flash-preview';
-        if (err.message && err.message.includes('gemini-2.5-flash')) {
-            attemptedModel = 'gemini-2.5-flash';
-        }
+        let attemptedModel = 'unknown';
+        if (err.message?.includes('gemini')) attemptedModel = 'gemini-3-flash-preview';
+        else if (err.message?.includes('grok')) attemptedModel = 'grok-3-mini';
+        else if (err.message?.includes('claude')) attemptedModel = 'claude-3-5-haiku-latest';
+        else if (err.message?.includes('gpt')) attemptedModel = 'gpt-4.1-mini';
 
-        // Do not crash the server on API errors (like rate limits or bad keys)
         res.status(500).json({
             error: err.message || 'Internal server error from AI service',
-            usedModel: attemptedModel
+            usedModel: attemptedModel,
         });
     }
 });

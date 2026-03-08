@@ -52,20 +52,22 @@ export function useChat() {
         setLoading(true);
         setError(null);
 
-        // Build history for Gemini (all turns so far)
+        // Build history for the provider (all turns so far)
         const history = messages.map(m => ({
             role: m.role === 'user' ? 'user' : 'model',
             content: m.content,
         }));
 
         try {
-            const apiKey = (localStorage.getItem('geminiApiKey') || '').trim();
+            const { getAIHeaders } = await import('../utils/aiHeaders.js');
+            const aiHeaders = getAIHeaders();
             const pilotProfile = localStorage.getItem('skypilot_pilot_profile') || '';
+
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-gemini-api-key': apiKey,
+                    ...aiHeaders,
                     'x-pilot-profile': pilotProfile,
                 },
                 body: JSON.stringify({ message: text, history, location }),
@@ -85,7 +87,7 @@ export function useChat() {
                 content: data.reply,
                 toolResults: data.toolResults || [],
                 timestamp: new Date().toISOString(),
-                usedModel: data.usedModel || 'gemini-3-flash-preview',
+                usedModel: data.usedModel || 'unknown',
             };
 
             setMessages(prev => [...prev, aiMessage]);
@@ -97,7 +99,7 @@ export function useChat() {
                     role: 'model',
                     content: `Sorry, I encountered an error: ${err.message}`,
                     timestamp: new Date().toISOString(),
-                    usedModel: err.usedModel || 'gemini-3-flash-preview',
+                    usedModel: err.usedModel || 'unknown',
                 },
             ]);
         } finally {

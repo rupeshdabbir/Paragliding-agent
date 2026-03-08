@@ -3,6 +3,7 @@ import { Calendar, Clock, Wind, AlertTriangle, ChevronRight, CheckCircle, XCircl
 import WindChart from './WindChart.jsx';
 import { FlyabilityBadge } from './FlyabilityBadge.jsx';
 import { formatProfileSummary, isProfileComplete } from '../hooks/usePilotProfile.js';
+import { getAIHeaders, hasActiveKey } from '../utils/aiHeaders.js';
 
 const RATING_COLOR = { GO: 'var(--color-go)', MARGINAL: 'var(--color-marginal)', NO_GO: 'var(--color-no-go)' };
 const RATING_BG = { GO: 'var(--color-rating-go-bg)', MARGINAL: 'var(--color-rating-marginal-bg)', NO_GO: 'var(--color-rating-nogo-bg)' };
@@ -422,12 +423,12 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
     const [activeTab, setActiveTab] = useState('today');
     const [activeDayIndex, setActiveDayIndex] = useState(0);
     const [weatherModel, setWeatherModel] = useState('best_match');
-    const [hasKey, setHasKey] = useState(!!localStorage.getItem('geminiApiKey'));
+    const [hasKey, setHasKey] = useState(() => hasActiveKey());
     const [profileRefreshing, setProfileRefreshing] = useState(false);
 
     useEffect(() => {
         const interval = setInterval(() => {
-            setHasKey(!!localStorage.getItem('geminiApiKey'));
+            setHasKey(hasActiveKey());
         }, 1000);
         return () => clearInterval(interval);
     }, []);
@@ -452,11 +453,11 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
         if (!site?.lat || !site?.lng) return;
         setLoading(true); setError(null);
         try {
-            const apiKey = (localStorage.getItem('geminiApiKey') || '').trim();
+            const aiHeaders = getAIHeaders();
             const pilotProfile = localStorage.getItem('skypilot_pilot_profile') || '';
             const res = await fetch(`/api/forecast?lat=${site.lat}&lng=${site.lng}&models=${weatherModel}`, {
                 headers: {
-                    'x-gemini-api-key': apiKey,
+                    ...aiHeaders,
                     ...(pilotProfile ? { 'x-pilot-profile': pilotProfile } : {}),
                 }
             });

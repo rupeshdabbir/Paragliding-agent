@@ -3,7 +3,7 @@ import { getSitesDeclaration, getSites } from '../tools/getSites.js';
 import { getWeatherDeclaration, getWeather } from '../tools/getWeather.js';
 import { analyzeFlyingConditionsDeclaration, analyzeFlyingConditions } from '../tools/analyzeFlyingConditions.js';
 
-const SYSTEM_PROMPT = `You are SkyPilot, an expert AI assistant and paragliding coach. You help pilots and enthusiasts determine if conditions are safe to fly at paragliding sites near them.
+export const SYSTEM_PROMPT = `You are SkyPilot, an expert AI assistant and paragliding coach. You help pilots and enthusiasts determine if conditions are safe to fly at paragliding sites near them.
 
 Your personality:
 - Knowledgeable, safety-first, yet encouraging
@@ -81,7 +81,7 @@ PILOT PROFILE — Personalize your entire response for this specific pilot:
 Adjust your tone, safety callouts, wind thresholds, and recommendations to match this pilot's exact skill level. A beginner needs conservative, safety-first advice. An advanced P4 pilot benefits from technical detail, XC potential analysis, and nuanced atmospheric assessment.`;
 }
 
-function buildContextStr(userLocation, pilotProfile = null) {
+export function buildContextStr(userLocation, pilotProfile = null) {
     if (!userLocation) return buildPilotProfileBlock(pilotProfile);
 
     if (userLocation.name || userLocation.altitude) {
