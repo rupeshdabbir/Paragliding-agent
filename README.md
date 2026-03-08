@@ -14,12 +14,13 @@ SkyPilot is a full-stack AI-powered paragliding conditions advisor. It helps pil
 
 ## 🚀 Features
 
-- **Interactive Map:** View nearby paragliding sites with color-coded markers based on current flyability, sporting a custom dark-mode Stadia Maps theme.
-- **Hourly & 7-Day Forecasts:** detailed breakdowns of wind by altitude (33ft, 262ft, 394ft, 591ft), wind direction, gusts, and weather conditions mapped to colorful gradients.
+- **Interactive Map & Search:** View nearby paragliding sites with color-coded markers based on current flyability, sporting a custom dark-mode theme. Find any site using the Nominatim geocoding API combined with ParaglidingEarth data, prioritizing localized results.
+- **Favorites & Morning Brief:** Star your favorite paragliding sites and receive prioritized early morning summary assessments to start your day.
+- **Hourly & 7-Day Forecasts:** Detailed breakdowns of wind by altitude (33ft, 262ft, 394ft, 591ft), wind direction, gusts, and weather conditions mapped to colorful gradients.
+- **Multi-Provider AI Verdicts:** Full feature parity for 7-day extended forecasts and chat across Anthropic Claude, Grok, OpenAI, and Gemini. Choose your preferred AI provider to reliably analyze long-term flyability without rate-limit anxiety.
 - **Model Selection:** Choose your preferred weather model: Auto (HRRR for North America + GFS/ECMWF globally), GFS, ECMWF, or ICON.
-- **Site-Specific AI Chat:** A slide-out "Ask SkyPilot" drawer to chat about a specific site. Ask questions like "Can I fly Mussel Rock today?" or "When is the best window this week?"
-- **Search:** Find any site using the Nominatim geocoding API combined with ParaglidingEarth data, prioritizing localized results.
-- **BRING YOUR OWN KEY (BYOK) Growth UX:** Users without an API key can freely explore the interactive map and review the basic, rule-based weather forecasts. However, premium "Ask SkyPilot" chat options and 7-day semantic "AI Verdicts" are gated by a soft-lock upsell that prompts the user to easily configure their own, free Google Gemini API Key inside a settings menu to unlock unlimited analysis. 
+- **Site-Specific AI Chat:** A slide-out "Ask SkyPilot" drawer to chat about a specific site. Ask questions like "Can I fly Mussel Rock today?" or "When is the best window this week?" Features an engaging "Thinking" UI that provides visibility into the AI's processing stages.
+- **BRING YOUR OWN KEY (BYOK) Growth UX:** Users without an API key can freely explore the interactive map and basic weather forecasts. Premium chat options and 7-day "AI Verdicts" are gated by an intuitive upsell that prompts the user to easily configure their own, free API keys (Gemini, Claude, Grok, OpenAI) inside a dedicated **Pilot Profile Settings** modal.
 
 ---
 

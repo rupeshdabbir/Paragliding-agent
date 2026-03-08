@@ -1,0 +1,19 @@
+name: Enforce Agent PR Docs
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+      - master
+
+jobs:
+  validate-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Notify Agent Documentation Check
+        run: |
+          echo "Please ensure you have run the 'PR Documentation Validator' skill to update README.md!"
+          echo "Refer to .agents/skills/pr_documentation/SKILL.md for the instruction guide."
