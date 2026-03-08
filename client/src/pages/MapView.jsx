@@ -122,6 +122,14 @@ function MapMoveHandler({ onMoveEnd }) {
     }, [map, onMoveEnd]);
     return null;
 }
+// ─── Map Controller ──────────────────────────────────────────────────────────
+// Exposes the Leaflet map instance via a ref — the only safe way to access
+// the map object from outside the MapContainer in react-leaflet.
+function MapController({ mapRef }) {
+    const map = useMap();
+    useEffect(() => { mapRef.current = map; }, [map, mapRef]);
+    return null;
+}
 
 // ─── Chat Drawer (slides from right on desktop, full-screen on mobile) ────────
 function ChatDrawer({ open, onClose, location, contextSite, isMobile, chatWidthPx, setChatWidthPx, onDragStart }) {
@@ -488,7 +496,7 @@ function MobileForecaseSheet({ site, onClose, chatContextSite, setChatContextSit
                     </div>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <button
-                            onClick={() => { setChatContextSite({ ...site, aiVerdict: siteAiVerdict }); setChatOpen(true); onClose(); }}
+                            onClick={() => { openChatPanel({ ...site, aiVerdict: siteAiVerdict }); onClose(); }}
                             style={{
                                 display: 'flex', alignItems: 'center', gap: 5,
                                 padding: '5px 10px', borderRadius: 8, border: 'none', cursor: 'pointer',
@@ -576,6 +584,71 @@ export default function MapView() {
     const isDraggingForecast = useRef(false);
     const dragStartXForecast = useRef(0);
     const dragStartWForecast = useRef(440);
+
+    // Leaflet map instance (set by MapController)
+    const leafletMapRef = useRef(null);
+
+    // Pan the map so `site` appears centred in the visible strip between the two open panels.
+    // leftPanelW = forecast panel width (0 if closed), rightPanelW = chat panel width (0 if closed).
+    const panToSiteInView = useCallback((site, leftPanelW = 0, rightPanelW = 0) => {
+        const map = leafletMapRef.current;
+        if (!map || !site?.lat || !site?.lng) return;
+        const container = map.getContainer();
+        const totalW = container.offsetWidth;
+        const totalH = container.offsetHeight;
+        // Centre of the visible strip (between panels)
+        const visibleCenterX = leftPanelW + (totalW - leftPanelW - rightPanelW) / 2;
+        const visibleCenterY = totalH * 0.42; // slight upward bias — popup sits above marker
+        const sitePoint = map.latLngToContainerPoint([site.lat, site.lng]);
+        const panX = sitePoint.x - visibleCenterX;
+        const panY = sitePoint.y - visibleCenterY;
+        // Only pan if the marker isn't already reasonably centred
+        if (Math.abs(panX) > 40 || Math.abs(panY) > 40) {
+            map.panBy([panX, panY], { animate: true, duration: 0.55 });
+        }
+    }, []);
+
+    // Minimum map width that must remain visible when both panels are open.
+    const MIN_MAP_WIDTH = 380;
+
+    // Centralised handler for opening the chat panel.
+    // Handles smart collapse (closes forecast if there isn't enough room for both) and auto-pan.
+    const openChatPanel = useCallback((contextSite = null) => {
+        if (contextSite) setChatContextSite(contextSite);
+        // Determine whether the forecast panel would need to be collapsed
+        const forecastIsOpen = !!selectedSite;
+        const totalPanelW = (forecastIsOpen ? forecastWidthPx : 0) + chatWidthPx;
+        const shouldCollapse = forecastIsOpen && (totalPanelW > window.innerWidth - MIN_MAP_WIDTH);
+        if (shouldCollapse) setSelectedSite(null);
+        setChatOpen(true);
+        // Auto-pan after panel animation settles
+        const site = contextSite || (forecastIsOpen && selectedSite) || null;
+        if (site && !isMobile) {
+            setTimeout(() => {
+                panToSiteInView(site, shouldCollapse ? 0 : (forecastIsOpen ? forecastWidthPx : 0), chatWidthPx);
+            }, 180);
+        }
+    }, [selectedSite, forecastWidthPx, chatWidthPx, isMobile, panToSiteInView]);
+
+    // Auto-pan when forecast panel opens (marker clicked)
+    useEffect(() => {
+        if (!selectedSite || isMobile) return;
+        const t = setTimeout(() => {
+            panToSiteInView(selectedSite, forecastWidthPx, chatOpen ? chatWidthPx : 0);
+        }, 160);
+        return () => clearTimeout(t);
+    }, [selectedSite]); // eslint-disable-line
+
+    // Auto-pan when chat panel opens (keep context site visible)
+    useEffect(() => {
+        if (!chatOpen || isMobile) return;
+        const site = chatContextSite || selectedSite;
+        if (!site) return;
+        const t = setTimeout(() => {
+            panToSiteInView(site, selectedSite ? forecastWidthPx : 0, chatWidthPx);
+        }, 180);
+        return () => clearTimeout(t);
+    }, [chatOpen]); // eslint-disable-line
 
     // For chat drag
     const isDraggingChat = useRef(false);
@@ -743,6 +816,7 @@ export default function MapView() {
                             setChatOpen(false);
                         }} />
                         <MapMoveHandler onMoveEnd={handleMapMoveEnd} />
+                        <MapController mapRef={leafletMapRef} />
                         {/* Tile layer: CartoDB Voyager for light (vivid blue water), Stadia dark for dark mode */}
                         <TileLayer
                             key={theme}
@@ -813,7 +887,7 @@ export default function MapView() {
                                                 Forecast
                                             </button>
                                             <button
-                                                onClick={(e) => { e.stopPropagation(); setChatContextSite(site); setChatOpen(true); setSelectedSite(null); }}
+                                                onClick={(e) => { e.stopPropagation(); openChatPanel(site); }}
                                                 style={{
                                                     flex: 1, padding: '7px 0',
                                                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
@@ -875,7 +949,7 @@ export default function MapView() {
                                                     Forecast
                                                 </button>
                                                 <button
-                                                    onClick={(e) => { e.stopPropagation(); setChatContextSite(searchedSite); setChatOpen(true); setSelectedSite(null); }}
+                                                    onClick={(e) => { e.stopPropagation(); openChatPanel(searchedSite); }}
                                                     style={{
                                                         flex: 1, padding: '7px 0',
                                                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
@@ -1201,7 +1275,7 @@ export default function MapView() {
                                 </span>
                                 <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                                     <button
-                                        onClick={() => { setChatContextSite({ ...selectedSite, aiVerdict: siteAiVerdict }); setChatOpen(true); }}
+                                        onClick={() => openChatPanel({ ...selectedSite, aiVerdict: siteAiVerdict })}
                                         style={{
                                             display: 'flex', alignItems: 'center', gap: 5,
                                             padding: '5px 10px', borderRadius: 8, border: 'none', cursor: 'pointer',
@@ -1318,10 +1392,7 @@ export default function MapView() {
 
                             <button
                                 className="fab"
-                                onClick={() => {
-                                    if (selectedSite) setChatContextSite({ ...selectedSite, aiVerdict: siteAiVerdict });
-                                    setChatOpen(true);
-                                }}
+                                onClick={() => openChatPanel(selectedSite ? { ...selectedSite, aiVerdict: siteAiVerdict } : null)}
                                 title="Ask SkyPilot"
                                 style={{ position: 'relative', right: 'unset', bottom: 'unset' }}
                             >
@@ -1331,10 +1402,7 @@ export default function MapView() {
                     ) : (
                         // Desktop: vertical tab
                         <button
-                            onClick={() => {
-                                if (selectedSite) setChatContextSite({ ...selectedSite, aiVerdict: siteAiVerdict });
-                                setChatOpen(true);
-                            }}
+                            onClick={() => openChatPanel(selectedSite ? { ...selectedSite, aiVerdict: siteAiVerdict } : null)}
                             style={{
                                 position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)',
                                 zIndex: 3000,
