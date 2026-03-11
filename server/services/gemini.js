@@ -61,6 +61,9 @@ function buildPilotProfileBlock(pilotProfile) {
     const wingLabels = { a: 'Beginner (A-class)', b: 'Intermediate (B-class)', c: 'Advanced (C/D-class)' };
     const expLabels = { lt50: 'Under 50 hours', '50_200': '50–200 hours', '200_500': '200–500 hours', gt500: '500+ hours' };
 
+    const styleFlags = Array.isArray(flyingStyle) ? flyingStyle : [flyingStyle].filter(Boolean);
+    const styleStr = styleFlags.map(s => styleLabels[s] || s).join(', ');
+
     let thresholdGuidance = '';
     if (certification === 'student' || certification === 'p2') {
         thresholdGuidance = 'Apply CONSERVATIVE thresholds. Flag MARGINAL when winds exceed 10 mph and NO-GO when winds exceed 13 mph or gusts exceed 15 mph. Recommend supervised flying and add explicit safety warnings. Keep advice simple and focus on safety first.';
@@ -74,7 +77,7 @@ function buildPilotProfileBlock(pilotProfile) {
 
 PILOT PROFILE — Personalize your entire response for this specific pilot:
 - Certification Level: ${certLabels[certification] || certification}
-- Primary Flying Style: ${styleLabels[flyingStyle] || flyingStyle}
+- Primary Flying Style: ${styleStr}
 - Wing Type: ${wingLabels[wingType] || wingType}
 - Experience: ${expLabels[experience] || experience}
 - Analysis Guidance: ${thresholdGuidance}

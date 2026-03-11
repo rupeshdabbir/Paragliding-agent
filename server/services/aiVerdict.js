@@ -175,8 +175,11 @@ export async function getAiWeeklyVerdicts(site, weather, apiKey = null, pilotPro
     const today = weather.current?.time?.slice(0, 10) || new Date().toISOString().slice(0, 10);
 
     // Build profile hash for cache key so different pilot skill levels don't share verdicts
+    const styleCacheKey = pilotProfile?.flyingStyle
+        ? (Array.isArray(pilotProfile.flyingStyle) ? pilotProfile.flyingStyle.slice().sort().join('-') : pilotProfile.flyingStyle)
+        : '';
     const profileKey = (pilotProfile && pilotProfile.certification && pilotProfile.flyingStyle)
-        ? `_${pilotProfile.certification}_${pilotProfile.flyingStyle}_${pilotProfile.wingType || ''}_${pilotProfile.experience || ''}`
+        ? `_${pilotProfile.certification}_${styleCacheKey}_${pilotProfile.wingType || ''}_${pilotProfile.experience || ''}`
         : '_default';
     const cacheKey = `week_${provider}_${site.lat?.toFixed(4)},${site.lng?.toFixed(4)},${today}${profileKey}`;
 
@@ -224,7 +227,8 @@ export async function getAiWeeklyVerdicts(site, weather, apiKey = null, pilotPro
     let pilotProfileBlock = '';
     if (pilotProfile && pilotProfile.certification) {
         const cert = certLabels[pilotProfile.certification] || pilotProfile.certification;
-        const style = styleLabels[pilotProfile.flyingStyle] || pilotProfile.flyingStyle;
+        const styleFlags = Array.isArray(pilotProfile.flyingStyle) ? pilotProfile.flyingStyle : [pilotProfile.flyingStyle].filter(Boolean);
+        const style = styleFlags.map(s => styleLabels[s] || s).join(', ');
         const wing = wingLabels[pilotProfile.wingType] || pilotProfile.wingType;
         const exp = expLabels[pilotProfile.experience] || pilotProfile.experience;
 
@@ -379,8 +383,9 @@ export async function getRegionalComparativeVerdict(sitesData = [], apiKey = nul
     let pilotProfileBlock = '';
     if (pilotProfile && pilotProfile.certification) {
         const cert = certLabels[pilotProfile.certification] || pilotProfile.certification;
-        const style = styleLabels[pilotProfile.flyingStyle] || pilotProfile.flyingStyle;
-        pilotProfileBlock = `\n\nPILOT PROFILE: This brief is for a ${cert} pilot focused on ${style}. Weight site recommendations accordingly — prioritize calmer, more forgiving sites for beginners; technical, high-quality sites for advanced pilots.`;
+        const styleFlags = Array.isArray(pilotProfile.flyingStyle) ? pilotProfile.flyingStyle : [pilotProfile.flyingStyle].filter(Boolean);
+        const styleStr = styleFlags.map(s => styleLabels[s] || s).join(', ');
+        pilotProfileBlock = `\n\nPILOT PROFILE: This brief is for a ${cert} pilot focused on ${styleStr}. Weight site recommendations accordingly — prioritize calmer, more forgiving sites for beginners; technical, high-quality sites for advanced pilots.`;
     }
 
     const siteSummaries = sitesData.map(({ site, weather }) => {

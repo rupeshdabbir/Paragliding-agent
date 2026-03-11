@@ -28,7 +28,7 @@ function PillChip({ selected, onClick, emoji, label }) {
     );
 }
 
-function ProfileField({ label, options, value, onChange }) {
+function ProfileField({ label, options, value, onChange, multiple = false }) {
     return (
         <div style={{ marginBottom: 22 }}>
             <label style={{
@@ -42,8 +42,19 @@ function ProfileField({ label, options, value, onChange }) {
                 {options.map(opt => (
                     <PillChip
                         key={opt.value}
-                        selected={value === opt.value}
-                        onClick={() => onChange(opt.value)}
+                        selected={multiple ? (Array.isArray(value) && value.includes(opt.value)) : value === opt.value}
+                        onClick={() => {
+                            if (multiple) {
+                                const arr = Array.isArray(value) ? value : [];
+                                if (arr.includes(opt.value)) {
+                                    onChange(arr.filter(v => v !== opt.value));
+                                } else {
+                                    onChange([...arr, opt.value]);
+                                }
+                            } else {
+                                onChange(opt.value);
+                            }
+                        }}
                         emoji={opt.emoji}
                         label={opt.label}
                     />
@@ -89,7 +100,7 @@ export default function PilotProfileModal({ open, onClose }) {
     };
 
     const handleClear = () => {
-        const empty = { certification: '', flyingStyle: '', wingType: '', experience: '' };
+        const empty = { certification: '', flyingStyle: [], wingType: '', experience: '' };
         setLocalProfile(empty);
     };
 
@@ -174,6 +185,7 @@ export default function PilotProfileModal({ open, onClose }) {
                     options={PROFILE_OPTIONS.flyingStyle}
                     value={localProfile.flyingStyle}
                     onChange={val => setPField('flyingStyle', val)}
+                    multiple={true}
                 />
                 <ProfileField
                     label="Wing Type"

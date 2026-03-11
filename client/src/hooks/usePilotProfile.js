@@ -30,12 +30,13 @@ export const PROFILE_OPTIONS = {
 };
 
 export function getDefaultProfile() {
-    return { certification: '', flyingStyle: '', wingType: '', experience: '' };
+    return { certification: '', flyingStyle: [], wingType: '', experience: '' };
 }
 
 export function isProfileComplete(profile) {
     if (!profile) return false;
-    return !!(profile.certification && profile.flyingStyle && profile.wingType && profile.experience);
+    const hasStyle = Array.isArray(profile.flyingStyle) ? profile.flyingStyle.length > 0 : !!profile.flyingStyle;
+    return !!(profile.certification && hasStyle && profile.wingType && profile.experience);
 }
 
 /**
@@ -46,7 +47,8 @@ export function formatProfileSummary(profile) {
     if (!profile || !isProfileComplete(profile)) return null;
 
     const cert = PROFILE_OPTIONS.certification.find(o => o.value === profile.certification)?.label || profile.certification;
-    const style = PROFILE_OPTIONS.flyingStyle.find(o => o.value === profile.flyingStyle)?.label || profile.flyingStyle;
+    const styleFlags = Array.isArray(profile.flyingStyle) ? profile.flyingStyle : [profile.flyingStyle].filter(Boolean);
+    const style = styleFlags.map(s => PROFILE_OPTIONS.flyingStyle.find(o => o.value === s)?.label || s).join(', ');
     const wing = PROFILE_OPTIONS.wingType.find(o => o.value === profile.wingType)?.label || profile.wingType;
     const exp = PROFILE_OPTIONS.experience.find(o => o.value === profile.experience)?.label || profile.experience;
 
@@ -61,7 +63,8 @@ export function buildProfilePromptBlock(profile) {
 
     const cert = PROFILE_OPTIONS.certification.find(o => o.value === profile.certification)?.label || profile.certification;
     const certDesc = PROFILE_OPTIONS.certification.find(o => o.value === profile.certification)?.desc || '';
-    const style = PROFILE_OPTIONS.flyingStyle.find(o => o.value === profile.flyingStyle)?.label || profile.flyingStyle;
+    const styleFlags = Array.isArray(profile.flyingStyle) ? profile.flyingStyle : [profile.flyingStyle].filter(Boolean);
+    const style = styleFlags.map(s => PROFILE_OPTIONS.flyingStyle.find(o => o.value === s)?.label || s).join(', ');
     const wing = PROFILE_OPTIONS.wingType.find(o => o.value === profile.wingType)?.label || profile.wingType;
     const exp = PROFILE_OPTIONS.experience.find(o => o.value === profile.experience)?.label || profile.experience;
 
@@ -90,14 +93,27 @@ Adjust safety notes, recommended windows, and GO/MARGINAL thresholds in your ana
  */
 export function profileCacheKey(profile) {
     if (!profile || !isProfileComplete(profile)) return 'default';
-    return `${profile.certification}_${profile.flyingStyle}_${profile.wingType}_${profile.experience}`;
+    const styleKey = Array.isArray(profile.flyingStyle) ? profile.flyingStyle.slice().sort().join('-') : profile.flyingStyle;
+    return `${profile.certification}_${styleKey}_${profile.wingType}_${profile.experience}`;
 }
 
 export function usePilotProfile() {
     const [profile, setProfile] = useState(() => {
         try {
             const stored = localStorage.getItem(STORAGE_KEY);
-            return stored ? JSON.parse(stored) : getDefaultProfile();
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                // Migrate legacy string flyingStyle to array
+                if (parsed.flyingStyle && !Array.isArray(parsed.flyingStyle)) {
+                    parsed.flyingStyle = [parsed.flyingStyle];
+                    // Don't save it back immediately to avoid hydration issues, 
+                    // it will be saved next time they open and save the modal.
+                } else if (!parsed.flyingStyle) {
+                    parsed.flyingStyle = [];
+                }
+                return parsed;
+            }
+            return getDefaultProfile();
         } catch {
             return getDefaultProfile();
         }
