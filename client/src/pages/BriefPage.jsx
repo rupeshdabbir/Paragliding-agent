@@ -16,6 +16,9 @@ export default function BriefPage() {
         setLoading(true);
         setError(null);
         try {
+            import('posthog-js').then(({ default: posthog }) => {
+                posthog.capture('brief_requested');
+            });
             const aiHeaders = getAIHeaders();
             const pilotProfile = localStorage.getItem('skypilot_pilot_profile') || '';
             const favorites = localStorage.getItem('skypilot_favorites') || '[]';

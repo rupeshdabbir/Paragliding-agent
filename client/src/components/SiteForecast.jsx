@@ -522,6 +522,9 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
 
         setLoading(true); setError(null);
         try {
+            import('posthog-js').then(({ default: posthog }) => {
+                posthog.capture('forecast_requested', { model: weatherModel });
+            });
             const aiHeaders = getAIHeaders();
             const pilotProfile = localStorage.getItem('skypilot_pilot_profile') || '';
             const res = await fetch(`/api/forecast?lat=${site.lat}&lng=${site.lng}&models=${weatherModel}`, {

@@ -699,6 +699,9 @@ export default function MapView() {
         setLoadingSites(true); setSites([]); setSelectedSite(null); setSearchedSite(null);
         setShowSearchHere(false);
         try {
+            import('posthog-js').then(({ default: posthog }) => {
+                posthog.capture('sites_fetched', { distance: dist });
+            });
             const distKm = (dist * 1.60934).toFixed(1);
             const res = await fetch(`/api/sites?lat=${loc.lat}&lng=${loc.lng}&distance=${distKm}&limit=20`);
             if (!res.ok) throw new Error('Failed');

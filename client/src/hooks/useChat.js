@@ -73,6 +73,9 @@ export function useChat() {
         }));
 
         try {
+            import('posthog-js').then(({ default: posthog }) => {
+                posthog.capture('chat_message_sent', { hasLocation: !!location });
+            });
             const { getAIHeaders } = await import('../utils/aiHeaders.jsx');
             const aiHeaders = getAIHeaders();
             const pilotProfile = localStorage.getItem('skypilot_pilot_profile') || '';
