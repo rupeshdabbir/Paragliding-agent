@@ -123,6 +123,7 @@ export default function OnboardingStepper({ onComplete }) {
                 border: '1px solid var(--color-border-strong)',
                 borderRadius: 28,
                 width: '100%', maxWidth: 520,
+                maxHeight: '90dvh',
                 boxShadow: '0 24px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)',
                 display: 'flex', flexDirection: 'column',
                 overflow: 'hidden',
@@ -138,7 +139,7 @@ export default function OnboardingStepper({ onComplete }) {
                     }} />
                 </div>
 
-                <div style={{ padding: '40px 32px' }}>
+                <div style={{ padding: 'clamp(24px, 5vw, 40px) clamp(20px, 5vw, 32px)', overflowY: 'auto' }}>
 
                     {/* STEP 1: Intro */}
                     {step === 1 && (
