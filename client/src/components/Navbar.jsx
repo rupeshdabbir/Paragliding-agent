@@ -58,24 +58,9 @@ export default function Navbar({ onSearchSelect }) {
                 <span style={{
                     fontFamily: 'var(--font-heading)', fontWeight: 700,
                     fontSize: isMobile ? '0.95rem' : '1.05rem',
-                    color: 'var(--color-text-heading)', letterSpacing: '-0.02em',
-                    display: 'flex', alignItems: 'center', gap: '6px'
+                    color: 'var(--color-text-heading)', letterSpacing: '-0.02em'
                 }}>
-                    <span>Sky<span style={{ color: 'var(--color-sky)' }}>Pilot</span></span>
-                    <span style={{
-                        fontSize: '0.65rem',
-                        fontWeight: 800,
-                        backgroundColor: 'var(--color-sky)',
-                        color: '#fff',
-                        padding: isMobile ? '2px 4px' : '2px 6px',
-                        borderRadius: isMobile ? '6px' : '12px',
-                        letterSpacing: '0.05em',
-                        textTransform: 'uppercase',
-                        boxShadow: '0 2px 8px var(--color-sky-glow)',
-                        transform: 'translateY(-1px)'
-                    }}>
-                        {isMobile ? 'B' : 'Beta'}
-                    </span>
+                    Sky<span style={{ color: 'var(--color-sky)' }}>Pilot</span>
                 </span>
             </a>
 
