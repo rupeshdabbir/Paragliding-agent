@@ -75,7 +75,7 @@ router.post('/', async (req, res) => {
         let attemptedModel = 'unknown';
         if (err.message?.includes('gemini')) attemptedModel = 'gemini-3-flash-preview';
         else if (err.message?.includes('grok')) attemptedModel = 'grok-3-mini';
-        else if (err.message?.includes('claude')) attemptedModel = 'claude-3-5-haiku-latest';
+        else if (err.message?.includes('claude')) attemptedModel = 'claude-haiku-4-5-20251001';
         else if (err.message?.includes('gpt')) attemptedModel = 'gpt-4.1-mini';
 
         res.status(500).json({

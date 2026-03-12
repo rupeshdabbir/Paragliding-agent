@@ -60,7 +60,7 @@ export const PROVIDERS = [
         storageKey: 'anthropicApiKey',
         keyUrl: 'https://console.anthropic.com/',
         keyLabel: 'Anthropic Console',
-        modelHint: 'claude-3-5-haiku-latest',
+        modelHint: 'claude-haiku-4-5-20251001',
         description: 'Exceptional reasoning & safety analysis — paid per call',
         icon: (
             <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">

@@ -106,7 +106,7 @@ async function callJsonLLM(prompt, provider = 'gemini', apiKey = null, opts = {}
     if (provider === 'anthropic') {
         const Anthropic = (await import('@anthropic-ai/sdk')).default;
         const client = new Anthropic({ apiKey });
-        const usedModel = opts.modelOverrides?.anthropic || 'claude-3-5-haiku-latest';
+        const usedModel = opts.modelOverrides?.anthropic || 'claude-haiku-4-5-20251001';
 
         console.log(`[aiVerdict] Calling Anthropic (${usedModel}) for JSON completion…`);
         const response = await client.messages.create({

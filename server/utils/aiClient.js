@@ -15,7 +15,7 @@ const OPENAI_MODELS = {
     openai: 'gpt-4.1-mini',
     grok: 'grok-3-mini',
 };
-const ANTHROPIC_MODEL = 'claude-3-5-haiku-latest';
+const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
 
 const OPENAI_BASE_URLS = {
     openai: undefined, // use SDK default
