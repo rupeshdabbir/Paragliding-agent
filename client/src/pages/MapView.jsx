@@ -39,14 +39,13 @@ function useIsMobile() {
 }
 
 // ─── Colored pin markers ─────────────────────────────────────────────────────
-function createMarkerIcon(rating, isGo = false) {
+function createMarkerIcon(rating, aiRated = false) {
     const colors = {
         GO: '#22c55e',
         MARGINAL: '#f59e0b',
         NO_GO: '#ef4444'
     };
     const color = colors[rating] || '#ef4444';
-    const shadow = colors[rating] || '#ef4444';
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 34 44">
       <defs>
@@ -61,6 +60,8 @@ function createMarkerIcon(rating, isGo = false) {
         fill="${color}" filter="url(#dropshadow${rating})" opacity="0.95"/>
       <circle cx="17" cy="14" r="6.5" fill="white" opacity="0.97"/>
       <circle cx="17" cy="14" r="3.5" fill="${color}" opacity="0.7"/>
+      ${aiRated ? `<circle cx="27" cy="7" r="5.5" fill="${color}" opacity="0.95" stroke="white" stroke-width="1.5"/>
+      <text x="27" y="10.5" text-anchor="middle" font-size="7" fill="white" font-weight="bold">✦</text>` : ''}
     </svg>`;
 
     return L.divIcon({
@@ -479,7 +480,7 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, chatWidthP
 }
 
 // ─── Mobile Bottom Sheet for Site Forecast ───────────────────────────────────
-function MobileForecaseSheet({ site, onClose, chatContextSite, setChatContextSite, setChatOpen, siteAiVerdict, setSiteAiVerdict, isFavorite, onToggleFavorite, openChatPanel }) {
+function MobileForecaseSheet({ site, onClose, chatContextSite, setChatContextSite, setChatOpen, siteAiVerdict, onVerdictReady, isFavorite, onToggleFavorite, openChatPanel }) {
     return (
         <>
             {/* backdrop */}
@@ -522,7 +523,7 @@ function MobileForecaseSheet({ site, onClose, chatContextSite, setChatContextSit
                     <SiteForecast
                         site={site}
                         onClose={onClose}
-                        onVerdictReady={setSiteAiVerdict}
+                        onVerdictReady={onVerdictReady}
                         isFavorite={isFavorite}
                         onToggleFavorite={onToggleFavorite}
                     />
@@ -579,6 +580,21 @@ export default function MapView() {
     }, []);
 
     const isFavorite = (site) => favorites.some(f => f.id === site.id || (f.lat === site.lat && f.lng === site.lng));
+
+    // When SiteForecast loads an AI verdict, update the site's rating in the map so markers
+    // and QuickStatsBar stay consistent with what the forecast panel shows.
+    const handleVerdictReady = useCallback((aiVerdict, aiVerdicts) => {
+        setSiteAiVerdict(aiVerdict);
+        if (!aiVerdict || aiVerdict._fallback) return;
+        const today = new Date().toISOString().slice(0, 10);
+        const todayRating = aiVerdicts?.[today]?.rating || aiVerdict?.rating;
+        if (!todayRating) return;
+        setSites(prev => prev.map(s =>
+            (s.lat === selectedSite?.lat && s.lng === selectedSite?.lng)
+                ? { ...s, rating: todayRating, _aiRated: true }
+                : s
+        ));
+    }, [selectedSite]);
 
     // For forecast drag
     const isDraggingForecast = useRef(false);
@@ -853,7 +869,7 @@ export default function MapView() {
                             <Marker
                                 key={i}
                                 position={[site.lat, site.lng]}
-                                icon={createMarkerIcon(site.rating)}
+                                icon={createMarkerIcon(site.rating, site._aiRated)}
                                 eventHandlers={{ click: () => { setSelectedSite(site); setChatOpen(false); } }}
                             >
                                 <Popup>
@@ -871,7 +887,14 @@ export default function MapView() {
                                                 <Star size={14} fill={isFavorite(site) ? 'var(--color-amber)' : 'none'} />
                                             </button>
                                         </div>
-                                        <div style={{ marginBottom: 8 }}><FlyabilityBadge rating={site.rating} size="sm" /></div>
+                                        <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <FlyabilityBadge rating={site.rating} size="sm" />
+                                            {site._aiRated && (
+                                                <span style={{ fontSize: '0.62rem', color: 'var(--color-sky)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 2, letterSpacing: '0.03em' }}>
+                                                    <Sparkles size={9} /> AI
+                                                </span>
+                                            )}
+                                        </div>
                                         <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 10 }}>
                                             ⛰️ {site.altitude}ft altitude
                                         </div>
@@ -1318,7 +1341,7 @@ export default function MapView() {
                             <SiteForecast
                                 site={selectedSite}
                                 onClose={() => setSelectedSite(null)}
-                                onVerdictReady={(v) => setSiteAiVerdict(v)}
+                                onVerdictReady={handleVerdictReady}
                                 isFavorite={isFavorite(selectedSite)}
                                 onToggleFavorite={toggleFavorite}
                             />
@@ -1356,7 +1379,7 @@ export default function MapView() {
                             setChatContextSite={setChatContextSite}
                             setChatOpen={setChatOpen}
                             siteAiVerdict={siteAiVerdict}
-                            setSiteAiVerdict={setSiteAiVerdict}
+                            onVerdictReady={handleVerdictReady}
                             isFavorite={isFavorite(selectedSite)}
                             onToggleFavorite={toggleFavorite}
                             openChatPanel={openChatPanel}
