@@ -554,7 +554,7 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
                     console.error('[SkyPilot] AI Verdict FALLBACK — reason:', todayVerdict._error || 'unknown');
                 }
                 // Call via ref so this callback never needs onVerdictReady as a dep
-                onVerdictReadyRef.current?.(data.aiVerdict);
+                onVerdictReadyRef.current?.(data.aiVerdict, data.aiVerdicts);
             }
         } catch (err) {
             if (err.name === 'AbortError') {
