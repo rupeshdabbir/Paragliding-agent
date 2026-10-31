@@ -1,7 +1,7 @@
 {
   "name": "paragliding-agent-client",
   "private": true,
-  "version": "10.1.0",
+  "version": "10.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mlc-ai/web-llm": "^0.2.87",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.468.0",
     "posthog-js": "^1.360.0",

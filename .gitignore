@@ -1,3 +1,25 @@
-node_modules
-.vercel
-.env*.local
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+client/dist/
+client/dev-dist/
+dist/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+server/.env
+client/.env
+
+# Agent worktrees & OS metadata
+.claude/worktrees/
+.DS_Store
+**/.DS_Store
+
+# Deployment & logs
+.vercel/
+*.log
+npm-debug.log*

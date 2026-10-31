@@ -1,0 +1,202 @@
+[
+  {
+    "name": "Mussel Rock (The Dumps)",
+    "lat": 37.6672,
+    "lng": -122.4943,
+    "altitude": 180,
+    "country": "US",
+    "description": "Premier Bay Area coastal ridge soaring site in Daly City. Walk north from the parking lot to Walkers, Lemmings, Tomcat, or Jungle launches. Watch for rotor behind cliffs and high tide.",
+    "siteTypes": { "paragliding": true, "hanggliding": true, "thermaling": false, "ridgeSoaring": true, "winch": false },
+    "windDirections": { "N": 0, "NE": 0, "E": 0, "SE": 0, "S": 0, "SW": 1, "W": 2, "NW": 2 }
+  },
+  {
+    "name": "Fort Funston",
+    "lat": 37.7138,
+    "lng": -122.5029,
+    "altitude": 165,
+    "country": "US",
+    "description": "Iconic San Francisco coastal bluff site supporting hang gliding and paragliding. Smooth laminar Pacific marine layer winds.",
+    "siteTypes": { "paragliding": true, "hanggliding": true, "thermaling": false, "ridgeSoaring": true, "winch": false },
+    "windDirections": { "N": 0, "NE": 0, "E": 0, "SE": 0, "S": 0, "SW": 2, "W": 2, "NW": 1 }
+  },
+  {
+    "name": "Mount Tamalpais",
+    "lat": 37.9085,
+    "lng": -122.6205,
+    "altitude": 1950,
+    "country": "US",
+    "description": "Scenic mountain launch north of the Golden Gate Bridge with views of the Pacific and SF Bay. Landing at Stinson Beach.",
+    "siteTypes": { "paragliding": true, "hanggliding": true, "thermaling": true, "ridgeSoaring": true, "winch": false },
+    "windDirections": { "N": 0, "NE": 0, "E": 0, "SE": 0, "S": 1, "SW": 2, "W": 2, "NW": 1 }
+  },
+  {
+    "name": "Ed Levin County Park",
+    "lat": 37.4565,
+    "lng": -121.8558,
+    "altitude": 1750,
+    "country": "US",
+    "description": "Classic South Bay training hill and high launch (300ft, 600ft, and 1750ft Monument Peak) in Milpitas. Great for thermaling and ridge soaring.",
+    "siteTypes": { "paragliding": true, "hanggliding": true, "thermaling": true, "ridgeSoaring": true, "winch": false },
+    "windDirections": { "N": 0, "NE": 0, "E": 0, "SE": 0, "S": 1, "SW": 2, "W": 2, "NW": 2 }
+  },
+  {
+    "name": "Mission Peak",
+    "lat": 37.5126,
+    "lng": -121.8805,
+    "altitude": 2150,
+    "country": "US",
+    "description": "East Bay mountain launch in Fremont offering strong afternoon thermals and glass-off restitution flights.",
+    "siteTypes": { "paragliding": true, "hanggliding": true, "thermaling": true, "ridgeSoaring": true, "winch": false },
+    "windDirections": { "N": 0, "NE": 0, "E": 0, "SE": 0, "S": 1, "SW": 2, "W": 2, "NW": 1 }
+  },
+  {
+    "name": "Blue Rock (Vallejo)",
+    "lat": 38.1583,
+    "lng": -122.1856,
+    "altitude": 1060,
+    "country": "US",
+    "description": "Grassy hillside launch above Lake Herman Road in Vallejo. Reliable afternoon Bay breeze soaring and thermals.",
+    "siteTypes": { "paragliding": true, "hanggliding": false, "thermaling": true, "ridgeSoaring": true, "winch": false },
+    "windDirections": { "N": 0, "NE": 0, "E": 0, "SE": 0, "S": 1, "SW": 2, "W": 2, "NW": 0 }
+  },
+  {
+    "name": "Channing Hill (Benicia)",
+    "lat": 38.0672,
+    "lng": -122.1894,
+    "altitude": 320,
+    "country": "US",
+    "description": "Small coastal/strait ridge soaring site overlooking the Carquinez Strait.",
+    "siteTypes": { "paragliding": true, "hanggliding": false, "thermaling": false, "ridgeSoaring": true, "winch": false },
+    "windDirections": { "N": 0, "NE": 0, "E": 0, "SE": 0, "S": 1, "SW": 2, "W": 2, "NW": 0 }
+  },
+  {
+    "name": "Mount Diablo",
+    "lat": 37.8816,
+    "lng": -121.9142,
+    "altitude": 3849,
+    "country": "US",
+    "description": "High-altitude East Bay peak with strong XC thermal potential across the Central Valley.",
+    "siteTypes": { "paragliding": true, "hanggliding": true, "thermaling": true, "ridgeSoaring": false, "winch": false },
+    "windDirections": { "N": 1, "NE": 0, "E": 0, "SE": 0, "S": 2, "SW": 2, "W": 2, "NW": 2 }
+  },
+  {
+    "name": "Waddell Creek",
+    "lat": 37.0955,
+    "lng": -122.2764,
+    "altitude": 520,
+    "country": "US",
+    "description": "Coastal bluff launch north of Santa Cruz overlooking Waddell Beach.",
+    "siteTypes": { "paragliding": true, "hanggliding": false, "thermaling": false, "ridgeSoaring": true, "winch": false },
+    "windDirections": { "N": 0, "NE": 0, "E": 0, "SE": 0, "S": 0, "SW": 1, "W": 2, "NW": 2 }
+  },
+  {
+    "name": "Marina State Beach",
+    "lat": 36.6975,
+    "lng": -121.8094,
+    "altitude": 95,
+    "country": "US",
+    "description": "Sand dune soaring site on Monterey Bay. Smooth sea breeze and forgiving sandy slopes.",
+    "siteTypes": { "paragliding": true, "hanggliding": true, "thermaling": false, "ridgeSoaring": true, "winch": false },
+    "windDirections": { "N": 0, "NE": 0, "E": 0, "SE": 0, "S": 0, "SW": 1, "W": 2, "NW": 2 }
+  },
+  {
+    "name": "Torrey Pines Gliderport",
+    "lat": 32.8901,
+    "lng": -117.2521,
+    "altitude": 300,
+    "country": "US",
+    "description": "Historic coastal cliff soaring site in La Jolla, San Diego overlooking Black's Beach.",
+    "siteTypes": { "paragliding": true, "hanggliding": true, "thermaling": false, "ridgeSoaring": true, "winch": false },
+    "windDirections": { "N": 0, "NE": 0, "E": 0, "SE": 0, "S": 0, "SW": 1, "W": 2, "NW": 2 }
+  },
+  {
+    "name": "Marshall Peak (Crestline / Andy Jackson Airpark)",
+    "lat": 34.2225,
+    "lng": -117.3119,
+    "altitude": 4050,
+    "country": "US",
+    "description": "World-class Southern California mountain thermal and evening glass-off site in San Bernardino.",
+    "siteTypes": { "paragliding": true, "hanggliding": true, "thermaling": true, "ridgeSoaring": true, "winch": false },
+    "windDirections": { "N": 0, "NE": 0, "E": 0, "SE": 0, "S": 2, "SW": 2, "W": 1, "NW": 0 }
+  },
+  {
+    "name": "Santa Barbara (Elings Park & Parma)",
+    "lat": 34.4029,
+    "lng": -119.7294,
+    "altitude": 450,
+    "country": "US",
+    "description": "Famous training hill and coastal mountain flying hub in Santa Barbara.",
+    "siteTypes": { "paragliding": true, "hanggliding": true, "thermaling": true, "ridgeSoaring": true, "winch": false },
+    "windDirections": { "N": 0, "NE": 0, "E": 0, "SE": 1, "S": 2, "SW": 2, "W": 1, "NW": 0 }
+  },
+  {
+    "name": "Point of the Mountain (Flight Park South & North)",
+    "lat": 40.4533,
+    "lng": -111.9038,
+    "altitude": 4950,
+    "country": "US",
+    "description": "Legendary Utah ridge-soaring site in Draper/Lehi with morning south side and evening north side laminar winds.",
+    "siteTypes": { "paragliding": true, "hanggliding": true, "thermaling": true, "ridgeSoaring": true, "winch": false },
+    "windDirections": { "N": 2, "NE": 0, "E": 0, "SE": 0, "S": 2, "SW": 1, "W": 0, "NW": 1 }
+  },
+  {
+    "name": "Tiger Mountain",
+    "lat": 47.4995,
+    "lng": -121.9922,
+    "altitude": 2440,
+    "country": "US",
+    "description": "Premier Pacific Northwest mountain thermal and XC site in Issaquah near Seattle.",
+    "siteTypes": { "paragliding": true, "hanggliding": false, "thermaling": true, "ridgeSoaring": true, "winch": false },
+    "windDirections": { "N": 1, "NE": 0, "E": 0, "SE": 0, "S": 1, "SW": 2, "W": 2, "NW": 2 }
+  },
+  {
+    "name": "Woodrat Mountain",
+    "lat": 42.2289,
+    "lng": -123.0017,
+    "altitude": 3850,
+    "country": "US",
+    "description": "Iconic Applegate Valley site in Southern Oregon hosting national competitions.",
+    "siteTypes": { "paragliding": true, "hanggliding": true, "thermaling": true, "ridgeSoaring": true, "winch": false },
+    "windDirections": { "N": 1, "NE": 0, "E": 0, "SE": 0, "S": 1, "SW": 2, "W": 2, "NW": 2 }
+  },
+  {
+    "name": "Lookout Mountain (Golden)",
+    "lat": 39.7478,
+    "lng": -105.2392,
+    "altitude": 7250,
+    "country": "US",
+    "description": "Front Range mountain thermal site overlooking Golden and Denver, Colorado.",
+    "siteTypes": { "paragliding": true, "hanggliding": true, "thermaling": true, "ridgeSoaring": true, "winch": false },
+    "windDirections": { "N": 0, "NE": 2, "E": 2, "SE": 1, "S": 0, "SW": 0, "W": 0, "NW": 0 }
+  },
+  {
+    "name": "Annecy - Col de la Forclaz",
+    "lat": 45.8142,
+    "lng": 6.2464,
+    "altitude": 4100,
+    "country": "FR",
+    "description": "World-famous Alpine launch overlooking Lake Annecy with reliable valley breeze and XC routes.",
+    "siteTypes": { "paragliding": true, "hanggliding": true, "thermaling": true, "ridgeSoaring": true, "winch": false },
+    "windDirections": { "N": 0, "NE": 0, "E": 0, "SE": 0, "S": 1, "SW": 2, "W": 2, "NW": 2 }
+  },
+  {
+    "name": "Oludeniz - Babadag",
+    "lat": 36.5292,
+    "lng": 29.1856,
+    "altitude": 6430,
+    "country": "TR",
+    "description": "High coastal mountain launch in Turkey famous for SIV and acro flights over the Blue Lagoon.",
+    "siteTypes": { "paragliding": true, "hanggliding": false, "thermaling": true, "ridgeSoaring": true, "winch": false },
+    "windDirections": { "N": 2, "NE": 1, "E": 0, "SE": 1, "S": 2, "SW": 2, "W": 2, "NW": 2 }
+  },
+  {
+    "name": "Interlaken - Beatenberg (Amisbühl)",
+    "lat": 46.7119,
+    "lng": 7.8017,
+    "altitude": 4430,
+    "country": "CH",
+    "description": "Swiss Alps launch overlooking Interlaken, Lake Thun, and the Eiger-Mönch-Jungfrau massif.",
+    "siteTypes": { "paragliding": true, "hanggliding": true, "thermaling": true, "ridgeSoaring": false, "winch": false },
+    "windDirections": { "N": 0, "NE": 0, "E": 0, "SE": 2, "S": 2, "SW": 2, "W": 1, "NW": 0 }
+  }
+]

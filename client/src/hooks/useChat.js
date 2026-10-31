@@ -1,4 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { getAIHeaders, isWebAIActive, getAIModel } from '../utils/aiHeaders.jsx';
+import { runLocalChatAgent } from '../services/aiOrchestrator.js';
 
 const THINKING_STEPS = [
     'Checking wind conditions ⛰️',
@@ -14,6 +16,8 @@ const THINKING_STEPS = [
 function friendlyError(rawMessage) {
     if (!rawMessage) return { message: 'Something went wrong. Please try again.', code: 'unknown' };
     const m = rawMessage.toLowerCase();
+    if (m.includes('webgpu') || m.includes('chrome built-in'))
+        return { message: rawMessage, code: 'webai' };
     if (m.includes('503') || m.includes('service unavailable') || m.includes('high demand'))
         return { message: 'The AI model is under very high demand right now. This is temporary — try again in a moment.', code: '503' };
     if (m.includes('429') || m.includes('rate limit') || m.includes('quota'))
@@ -22,7 +26,7 @@ function friendlyError(rawMessage) {
         return { message: 'Your API key looks invalid or expired. Check your key in Settings.', code: 'auth' };
     if (m.includes('failed to fetch') || m.includes('networkerror') || m.includes('network'))
         return { message: 'Network error — check your connection and try again.', code: 'network' };
-    return { message: 'Something went wrong on our end. Please try again.', code: 'unknown' };
+    return { message: rawMessage || 'Something went wrong on our end. Please try again.', code: 'unknown' };
 }
 
 export function useChat() {
@@ -66,7 +70,6 @@ export function useChat() {
         setLoading(true);
         setError(null);
 
-        // Build history for the provider (all turns so far)
         const history = messages.map(m => ({
             role: m.role === 'user' ? 'user' : 'model',
             content: m.content,
@@ -76,10 +79,75 @@ export function useChat() {
             import('posthog-js').then(({ default: posthog }) => {
                 posthog.capture('chat_message_sent', { hasLocation: !!location });
             });
-            const { getAIHeaders } = await import('../utils/aiHeaders.jsx');
-            const aiHeaders = getAIHeaders();
             const pilotProfile = localStorage.getItem('skypilot_pilot_profile') || '';
 
+            // Branch 1: Free On-Device WebAI (WebLLM via WebGPU or Chrome Built-in Gemini Nano)
+            if (isWebAIActive()) {
+                let parsedProfile = null;
+                try { parsedProfile = pilotProfile ? JSON.parse(pilotProfile) : null; } catch { /* ignore */ }
+
+                const streamingMsgId = `webai_${Date.now()}`;
+                let addedPlaceholder = false;
+
+                const localRes = await runLocalChatAgent({
+                    message: text,
+                    history,
+                    location,
+                    pilotProfile: parsedProfile,
+                    onThinkingStep: (stepLabel) => {
+                        setThinkingStep(stepLabel);
+                    },
+                    onChunk: (_delta, fullText) => {
+                        if (!addedPlaceholder) {
+                            addedPlaceholder = true;
+                            setMessages(prev => [
+                                ...prev,
+                                {
+                                    id: streamingMsgId,
+                                    role: 'model',
+                                    content: fullText,
+                                    timestamp: new Date().toISOString(),
+                                    usedModel: getAIModel('webai'),
+                                },
+                            ]);
+                        } else {
+                            setMessages(prev =>
+                                prev.map(m => (m.id === streamingMsgId ? { ...m, content: fullText } : m))
+                            );
+                        }
+                    },
+                });
+
+                if (!addedPlaceholder) {
+                    setMessages(prev => [
+                        ...prev,
+                        {
+                            role: 'model',
+                            content: localRes.reply,
+                            toolResults: localRes.toolResults || [],
+                            timestamp: new Date().toISOString(),
+                            usedModel: localRes.usedModel || getAIModel('webai'),
+                        },
+                    ]);
+                } else {
+                    setMessages(prev =>
+                        prev.map(m =>
+                            m.id === streamingMsgId
+                                ? {
+                                    ...m,
+                                    content: localRes.reply,
+                                    toolResults: localRes.toolResults || [],
+                                    usedModel: localRes.usedModel || getAIModel('webai'),
+                                }
+                                : m
+                        )
+                    );
+                }
+                return;
+            }
+
+            // Branch 2: Cloud BYOK API
+            const aiHeaders = getAIHeaders();
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {

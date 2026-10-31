@@ -2,20 +2,10 @@
  * Unified AI client — multi-provider with full function/tool calling.
  *
  * Supports: gemini, grok (xAI), anthropic (Claude), openai (GPT)
- *
- * Each provider's tool-calling loop is fully implemented so all four give
- * an identical "agentic" experience — real-time site lookup, weather fetch,
- * and flying-conditions analysis, regardless of which key the user provides.
+ * Driven by server/config/aiCatalog.js so adding models requires zero edits here.
  */
 
-import { getGenAI } from './geminiClient.js';
-
-// ─── Provider constants ───────────────────────────────────────────────────────
-const OPENAI_MODELS = {
-    openai: 'gpt-4.1-mini',
-    grok: 'grok-3-mini',
-};
-const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
+import { getProviderFallbackChain, resolveProviderModel, isFallbackEligibleError } from '../config/aiCatalog.js';
 
 const OPENAI_BASE_URLS = {
     openai: undefined, // use SDK default
@@ -26,7 +16,6 @@ const OPENAI_BASE_URLS = {
 
 /**
  * Convert a Gemini-style function declaration to OpenAI tool format.
- * Gemini declarations are already in JSON-Schema format, just wrap them.
  */
 export function toOpenAITool(decl) {
     return {
@@ -52,22 +41,18 @@ export function toAnthropicTool(decl) {
 
 // ─── OpenAI / Grok agent loop ─────────────────────────────────────────────────
 
-/**
- * Run a full agentic tool-calling loop using the OpenAI-compatible API.
- * Works for both openai and grok providers.
- */
-async function runOpenAIAgent({ provider, apiKey, systemPrompt, messages, toolDeclarations, toolHandlers, modelOverride }) {
+async function runOpenAIAgent({ provider, apiKey, systemPrompt, messages, toolDeclarations, toolHandlers, preferredModel }) {
     const { default: OpenAI } = await import('openai');
 
     const client = new OpenAI({
         apiKey,
         baseURL: OPENAI_BASE_URLS[provider],
     });
-    const model = modelOverride || OPENAI_MODELS[provider];
+    const fallbackChain = getProviderFallbackChain(provider, preferredModel);
+    const model = fallbackChain[0];
 
     const tools = toolDeclarations.map(toOpenAITool);
 
-    // Convert history to OpenAI message format
     const oaiMessages = [
         { role: 'system', content: systemPrompt },
         ...messages.map(m => ({
@@ -91,7 +76,6 @@ async function runOpenAIAgent({ provider, apiKey, systemPrompt, messages, toolDe
         const assistantMsg = choice.message;
         oaiMessages.push(assistantMsg);
 
-        // No tool calls — we have the final text response
         if (!assistantMsg.tool_calls || assistantMsg.tool_calls.length === 0) {
             return {
                 reply: assistantMsg.content || '',
@@ -101,7 +85,6 @@ async function runOpenAIAgent({ provider, apiKey, systemPrompt, messages, toolDe
             };
         }
 
-        // Execute all tool calls in parallel
         const toolResponses = await Promise.all(
             assistantMsg.tool_calls.map(async (toolCall) => {
                 const { name } = toolCall.function;
@@ -143,27 +126,21 @@ async function runOpenAIAgent({ provider, apiKey, systemPrompt, messages, toolDe
             })
         );
 
-        // Add all tool responses back to the message history
         oaiMessages.push(...toolResponses);
     }
 
-    // Fallback if max iterations hit
     return { reply: 'I reached the maximum number of reasoning steps. Please try again.', toolResults, usedModel: model };
 }
 
 // ─── Anthropic agent loop ─────────────────────────────────────────────────────
 
-/**
- * Run a full agentic tool-calling loop using the Anthropic API.
- */
-async function runAnthropicAgent({ apiKey, systemPrompt, messages, toolDeclarations, toolHandlers, modelOverride }) {
+async function runAnthropicAgent({ apiKey, systemPrompt, messages, toolDeclarations, toolHandlers, preferredModel }) {
     const Anthropic = (await import('@anthropic-ai/sdk')).default;
     const client = new Anthropic({ apiKey });
-    const model = modelOverride || ANTHROPIC_MODEL;
+    const model = resolveProviderModel('anthropic', preferredModel);
 
     const tools = toolDeclarations.map(toAnthropicTool);
 
-    // Anthropic separates system prompt and has specific message format
     const anthropicMessages = messages.map(m => ({
         role: m.role === 'model' ? 'assistant' : m.role,
         content: m.content,
@@ -181,19 +158,15 @@ async function runAnthropicAgent({ apiKey, systemPrompt, messages, toolDeclarati
             messages: anthropicMessages,
         });
 
-        // Add assistant response to history
         anthropicMessages.push({ role: 'assistant', content: response.content });
 
-        // Check stop reason
         if (response.stop_reason === 'end_turn') {
-            // Extract text from content blocks
             const textBlocks = response.content.filter(b => b.type === 'text');
             const reply = textBlocks.map(b => b.text).join('\n');
             return { reply, toolResults, usage: response.usage, usedModel: model };
         }
 
         if (response.stop_reason === 'tool_use') {
-            // Find all tool_use blocks
             const toolUseBlocks = response.content.filter(b => b.type === 'tool_use');
 
             const toolResultBlocks = await Promise.all(
@@ -233,10 +206,8 @@ async function runAnthropicAgent({ apiKey, systemPrompt, messages, toolDeclarati
                 })
             );
 
-            // Add user message with all tool results
             anthropicMessages.push({ role: 'user', content: toolResultBlocks });
         } else {
-            // Unexpected stop reason — return whatever text we have
             const textBlocks = response.content.filter(b => b.type === 'text');
             const reply = textBlocks.map(b => b.text).join('\n');
             return { reply, toolResults, usage: response.usage, usedModel: model };
@@ -246,38 +217,19 @@ async function runAnthropicAgent({ apiKey, systemPrompt, messages, toolDeclarati
     return { reply: 'I reached the maximum number of reasoning steps. Please try again.', toolResults, usedModel: model };
 }
 
-// ─── Gemini agent loop (delegates to existing gemini.js) ─────────────────────
+// ─── Gemini agent loop ────────────────────────────────────────────────────────
 
-/**
- * Thin wrapper — Gemini's full tool-calling agent is in services/gemini.js.
- * We call it through here so the public interface is uniform.
- */
-async function runGeminiAgent({ apiKey, userMessage, history, userLocation, pilotProfile }) {
-    // Dynamic import to avoid circular dependency
+async function runGeminiAgent({ apiKey, userMessage, history, userLocation, pilotProfile, preferredModel }) {
     const { runAgent } = await import('../services/gemini.js');
-    return await runAgent({ userMessage, history, userLocation, apiKey, pilotProfile });
+    return await runAgent({ userMessage, history, userLocation, apiKey, pilotProfile, preferredModel });
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-/**
- * Run the SkyPilot agent for any provider with full tool calling.
- *
- * @param {object} opts
- * @param {'gemini'|'grok'|'openai'|'anthropic'} opts.provider
- * @param {string|null} opts.apiKey
- * @param {string} opts.userMessage
- * @param {Array} opts.history  - [{role: 'user'|'model', content: string}]
- * @param {object|null} opts.userLocation
- * @param {object|null} opts.pilotProfile
- * @param {string} opts.systemPrompt
- * @param {Array} opts.toolDeclarations  - Gemini-format declarations
- * @param {object} opts.toolHandlers     - { [name]: async (args) => result }
- * @returns {Promise<{reply, toolResults, usage, usedModel}>}
- */
 export async function runProviderAgent({
     provider = 'gemini',
     apiKey = null,
+    preferredModel = null,
     userMessage,
     history = [],
     userLocation = null,
@@ -288,16 +240,15 @@ export async function runProviderAgent({
 }) {
     switch (provider) {
         case 'gemini':
-            return await runGeminiAgent({ apiKey, userMessage, history, userLocation, pilotProfile });
+            return await runGeminiAgent({ apiKey, userMessage, history, userLocation, pilotProfile, preferredModel });
 
         case 'openai':
         case 'grok': {
-            // For non-Gemini providers we need flat conversation + current message appended
             const messages = [
                 ...history,
                 { role: 'user', content: userMessage },
             ];
-            return await runOpenAIAgent({ provider, apiKey, systemPrompt, messages, toolDeclarations, toolHandlers });
+            return await runOpenAIAgent({ provider, apiKey, systemPrompt, messages, toolDeclarations, toolHandlers, preferredModel });
         }
 
         case 'anthropic': {
@@ -305,7 +256,7 @@ export async function runProviderAgent({
                 ...history,
                 { role: 'user', content: userMessage },
             ];
-            return await runAnthropicAgent({ apiKey, systemPrompt, messages, toolDeclarations, toolHandlers });
+            return await runAnthropicAgent({ apiKey, systemPrompt, messages, toolDeclarations, toolHandlers, preferredModel });
         }
 
         default:

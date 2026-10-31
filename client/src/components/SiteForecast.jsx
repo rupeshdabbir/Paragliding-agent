@@ -3,7 +3,9 @@ import { Calendar, Clock, Wind, AlertTriangle, ChevronRight, CheckCircle, XCircl
 import WindChart from './WindChart.jsx';
 import { FlyabilityBadge } from './FlyabilityBadge.jsx';
 import { formatProfileSummary, isProfileComplete } from '../hooks/usePilotProfile.js';
-import { getAIHeaders, hasActiveKey, getAIProvider, PROVIDERS } from '../utils/aiHeaders.jsx';
+import { getAIHeaders, hasActiveKey, getAIProvider, isWebAIActive, PROVIDERS } from '../utils/aiHeaders.jsx';
+import { generateLocalWeeklyVerdicts } from '../services/aiOrchestrator.js';
+import { subscribeWebAiState } from '../services/webAiEngine.js';
 
 const RATING_COLOR = { GO: 'var(--color-go)', MARGINAL: 'var(--color-marginal)', NO_GO: 'var(--color-no-go)' };
 const RATING_BG = { GO: 'var(--color-rating-go-bg)', MARGINAL: 'var(--color-rating-marginal-bg)', NO_GO: 'var(--color-rating-nogo-bg)' };
@@ -215,13 +217,18 @@ function AiVerdictCard({ verdict }) {
                                 })()}
                             </span>
                             {verdict.usedModel && (
-                                <span style={{
-                                    fontSize: '0.5rem', padding: '1px 5px', borderRadius: 4,
-                                    background: 'var(--color-surface-3)', border: '1px solid var(--color-border-base)',
-                                    color: 'var(--color-text-dim)', fontFamily: 'monospace'
-                                }}>
+                                <button
+                                    onClick={() => window.dispatchEvent(new Event('open-settings'))}
+                                    title="Click to switch AI model"
+                                    style={{
+                                        fontSize: '0.52rem', padding: '1px 6px', borderRadius: 4,
+                                        background: 'var(--color-surface-3)', border: '1px solid var(--color-border-base)',
+                                        color: 'var(--color-text-dim)', fontFamily: 'monospace',
+                                        cursor: 'pointer', transition: 'all 0.2s',
+                                    }}
+                                >
                                     {verdict.usedModel}
-                                </span>
+                                </button>
                             )}
                         </div>
                         <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-text-heading)', marginTop: 3 }}>
@@ -478,12 +485,24 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
     const [weatherModel, setWeatherModel] = useState('best_match');
     const [hasKey, setHasKey] = useState(() => hasActiveKey());
     const [profileRefreshing, setProfileRefreshing] = useState(false);
+    const [webAiRunning, setWebAiRunning] = useState(false);
+    const [webAiState, setWebAiState] = useState({ status: 'idle', progress: 0, progressText: '' });
 
     useEffect(() => {
-        const interval = setInterval(() => {
+        const unsub = subscribeWebAiState(setWebAiState);
+        return unsub;
+    }, []);
+
+    useEffect(() => {
+        const sync = () => {
             setHasKey(hasActiveKey());
-        }, 1000);
-        return () => clearInterval(interval);
+        };
+        window.addEventListener('ai-config-changed', sync);
+        window.addEventListener('storage', sync);
+        return () => {
+            window.removeEventListener('ai-config-changed', sync);
+            window.removeEventListener('storage', sync);
+        };
     }, []);
 
     // Store onVerdictReady in a ref so it never needs to be a useCallback/useEffect dep.
@@ -492,7 +511,7 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
     const onVerdictReadyRef = useRef(onVerdictReady);
     useEffect(() => { onVerdictReadyRef.current = onVerdictReady; }); // no deps — always current
 
-    // Re-run the AI forecast when pilot profile changes
+    // Re-run the AI forecast when pilot profile or AI model config changes
     const fetchForecastRef = useRef(null);
     const abortControllerRef = useRef(null);
 
@@ -500,14 +519,20 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
         const handleProfileSaved = (e) => {
             if (e.detail?.changed) {
                 setProfileRefreshing(true);
-                // Brief delay so the overlay animation plays, then reload
                 setTimeout(() => {
                     fetchForecastRef.current?.();
                 }, 600);
             }
         };
+        const handleAiConfigChanged = () => {
+            fetchForecastRef.current?.();
+        };
         window.addEventListener('pilot-profile-saved', handleProfileSaved);
-        return () => window.removeEventListener('pilot-profile-saved', handleProfileSaved);
+        window.addEventListener('ai-config-changed', handleAiConfigChanged);
+        return () => {
+            window.removeEventListener('pilot-profile-saved', handleProfileSaved);
+            window.removeEventListener('ai-config-changed', handleAiConfigChanged);
+        };
     }, []);
 
     const fetchForecast = useCallback(async () => {
@@ -527,7 +552,17 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
             });
             const aiHeaders = getAIHeaders();
             const pilotProfile = localStorage.getItem('skypilot_pilot_profile') || '';
-            const res = await fetch(`/api/forecast?lat=${site.lat}&lng=${site.lng}&models=${weatherModel}`, {
+            const params = new URLSearchParams({
+                lat: String(site.lat),
+                lng: String(site.lng),
+                models: weatherModel,
+            });
+            if (site.name) params.set('siteName', site.name);
+            if (site.altitude) params.set('siteAlt', String(site.altitude));
+            if (site.windDirections) params.set('windDirs', JSON.stringify(site.windDirections));
+            if (site.siteTypes) params.set('siteTypes', JSON.stringify(site.siteTypes));
+
+            const res = await fetch(`/api/forecast?${params.toString()}`, {
                 signal: controller.signal,
                 headers: {
                     ...aiHeaders,
@@ -537,7 +572,31 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
             if (!res.ok) throw new Error('Failed to load forecast');
             const data = await res.json();
             setForecast(data);
-            if (data.aiVerdicts || data.aiVerdict) {
+
+            if (isWebAIActive() && data.days?.length > 0) {
+                // Run local WebAI inference in browser (WebGPU or Chrome Built-in Gemini Nano)
+                setWebAiRunning(true);
+                let parsedProfile = null;
+                try { parsedProfile = pilotProfile ? JSON.parse(pilotProfile) : null; } catch { /* ignore */ }
+                generateLocalWeeklyVerdicts(data.site || site, data.days, parsedProfile)
+                    .then((localRes) => {
+                        if (controller.signal.aborted) return;
+                        if (localRes?.aiVerdicts) {
+                            setForecast(prev => prev ? ({
+                                ...prev,
+                                aiVerdict: localRes.aiVerdict,
+                                aiVerdicts: localRes.aiVerdicts,
+                            }) : prev);
+                            onVerdictReadyRef.current?.(localRes.aiVerdict, localRes.aiVerdicts);
+                        }
+                    })
+                    .catch((err) => {
+                        console.warn('[SiteForecast] WebAI local verdict fallback:', err.message);
+                    })
+                    .finally(() => {
+                        if (!controller.signal.aborted) setWebAiRunning(false);
+                    });
+            } else if (data.aiVerdicts || data.aiVerdict) {
                 const todayVerdict = data.aiVerdict;
 
                 // Telemetry for caching
@@ -728,6 +787,34 @@ export default function SiteForecast({ site, onClose, onVerdictReady, isFavorite
                     <div style={{ paddingTop: 12 }}>
                         {hasKey && forecast.aiVerdict ? (
                             <AiVerdictCard verdict={forecast.aiVerdict} />
+                        ) : webAiRunning ? (
+                            <div style={{
+                                padding: '14px 16px', borderRadius: 16,
+                                background: 'rgba(16, 185, 129, 0.08)',
+                                border: '1px solid rgba(16, 185, 129, 0.3)',
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', fontWeight: 700, color: '#10b981', marginBottom: 6 }}>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <Sparkles size={13} /> Running On-Device WebAI...
+                                    </span>
+                                    {webAiState.status === 'loading' && (
+                                        <span>{Math.round((webAiState.progress || 0) * 100)}%</span>
+                                    )}
+                                </div>
+                                <div style={{ height: 5, borderRadius: 99, background: 'var(--color-surface-3)', overflow: 'hidden' }}>
+                                    <div style={{
+                                        width: webAiState.status === 'loading'
+                                            ? `${Math.max(6, Math.round((webAiState.progress || 0) * 100))}%`
+                                            : '100%',
+                                        height: '100%',
+                                        background: 'linear-gradient(90deg, #10b981, #34d399)',
+                                        transition: 'width 0.3s ease',
+                                    }} />
+                                </div>
+                                <div style={{ fontSize: '0.68rem', color: 'var(--color-text-dim)', marginTop: 6 }}>
+                                    {webAiState.progressText || 'Synthesizing 7-day paragliding forecast locally in your browser...'}
+                                </div>
+                            </div>
                         ) : !hasKey ? (
                             <div style={{
                                 background: 'var(--color-glass-subtle-bg)',

@@ -3,7 +3,8 @@ import { useGeolocation } from '../hooks/useGeolocation.js';
 import MorningBrief from '../components/MorningBrief.jsx';
 import { Wind, Map as MapIcon, RefreshCw, AlertTriangle } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-import { getAIHeaders } from '../utils/aiHeaders.jsx';
+import { getAIHeaders, isWebAIActive } from '../utils/aiHeaders.jsx';
+import { generateLocalRegionalBrief } from '../services/aiOrchestrator.js';
 
 export default function BriefPage() {
     const { location, loading: locLoading, requestLocation } = useGeolocation();
@@ -31,6 +32,23 @@ export default function BriefPage() {
             if (!res.ok) throw new Error('Failed to fetch morning brief');
             const data = await res.json();
             setBriefData(data);
+
+            if (isWebAIActive() && data.sitesSummary?.length > 0) {
+                let parsedProfile = null;
+                try { parsedProfile = pilotProfile ? JSON.parse(pilotProfile) : null; } catch { /* ignore */ }
+                generateLocalRegionalBrief(data.sitesSummary, parsedProfile)
+                    .then((localBrief) => {
+                        if (localBrief && localBrief.regionHeadline) {
+                            setBriefData(prev => prev ? ({
+                                ...prev,
+                                ...localBrief,
+                            }) : prev);
+                        }
+                    })
+                    .catch(err => {
+                        console.warn('[BriefPage] Local WebAI brief fallback:', err.message);
+                    });
+            }
         } catch (err) {
             console.error(err);
             setError(err.message);

@@ -18,26 +18,30 @@ router.get('/', async (req, res) => {
     const fRadius = parseFloat(radius);
 
     try {
-        // 1. Parse favorites
         let favSites = [];
         try {
             if (favorites) {
                 favSites = JSON.parse(favorites);
-                // Mark them as starred
                 favSites = favSites.map(s => ({ ...s, starred: true }));
             }
         } catch (e) {
             console.error('[brief] Failed to parse favorites:', e.message);
         }
 
-        // 2. Get nearby sites
-        const nearbySites = await getSites({ lat: fLat, lng: fLng, distance: fRadius, limit: 15 });
+        let nearbySites = [];
+        try {
+            nearbySites = await getSites({ lat: fLat, lng: fLng, distance: fRadius, limit: 15 });
+        } catch (siteErr) {
+            console.warn('[brief] getSites failed, continuing with favorites:', siteErr.message);
+        }
 
-        // 3. Combine and prioritize: Favorites first, then nearby, no duplicates
         const combined = [...favSites];
         for (const site of nearbySites) {
             if (combined.length >= 4) break;
-            const isDuplicate = combined.some(s => s.id === site.id || (s.lat === site.lat && s.lng === site.lng));
+            const isDuplicate = combined.some(s =>
+                (s.id && site.id && s.id === site.id) ||
+                (Math.abs(s.lat - site.lat) < 0.005 && Math.abs(s.lng - site.lng) < 0.005)
+            );
             if (!isDuplicate) {
                 combined.push(site);
             }
@@ -47,14 +51,14 @@ router.get('/', async (req, res) => {
 
         if (topSites.length === 0) {
             return res.json({
-                regionHeadline: "No paragliding sites found in your area.",
+                regionHeadline: 'No paragliding sites found in your area.',
                 siteOfDay: null,
                 rankings: [],
-                overallSafetyNote: "Try broadening your search radius."
+                overallSafetyNote: 'Try broadening your search radius.',
+                sitesSummary: [],
             });
         }
 
-        // 4. Fetch weather for each site in parallel
         const sitesWithWeather = await Promise.all(topSites.map(async (site) => {
             try {
                 const weather = await getExtendedWeather(site.lat, site.lng);
@@ -67,15 +71,16 @@ router.get('/', async (req, res) => {
 
         const validSitesData = sitesWithWeather.filter(d => d !== null);
 
-        // 5. Get AI Regional Verdict
         const apiKey = req.headers['x-ai-api-key'] || req.headers['x-gemini-api-key'] || null;
         const provider = (req.headers['x-ai-provider'] || 'gemini').toLowerCase();
+        const preferredModel = req.headers['x-ai-model'] || null;
         let pilotProfile = null;
         const profileHeader = req.headers['x-pilot-profile'];
         if (profileHeader && profileHeader.trim()) {
             try { pilotProfile = JSON.parse(profileHeader); } catch { /* ignore */ }
         }
-        const brief = await getRegionalComparativeVerdict(validSitesData, apiKey, pilotProfile, provider);
+
+        const brief = await getRegionalComparativeVerdict(validSitesData, apiKey, pilotProfile, provider, preferredModel);
 
         res.json(brief);
     } catch (err) {

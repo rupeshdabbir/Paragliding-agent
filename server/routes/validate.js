@@ -1,4 +1,5 @@
 import express from 'express';
+import { resolveProviderModel } from '../config/aiCatalog.js';
 
 const router = express.Router();
 
@@ -6,13 +7,21 @@ const router = express.Router();
 router.post('/', async (req, res) => {
     const { provider, apiKey } = req.body;
 
-    if (!provider || !apiKey) {
+    if (!provider) {
+        return res.status(400).json({ valid: false, error: 'Provider is required.' });
+    }
+
+    // Client-side WebAI requires no server API key
+    if (provider === 'webai') {
+        return res.json({ valid: true });
+    }
+
+    if (!apiKey) {
         return res.status(400).json({ valid: false, error: 'Provider and API key are required.' });
     }
 
     try {
         if (provider === 'gemini') {
-            // Lightweight gemini call: list models
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
             if (response.ok) {
                 return res.json({ valid: true });
@@ -22,27 +31,25 @@ router.post('/', async (req, res) => {
         }
         else if (provider === 'openai') {
             const response = await fetch('https://api.openai.com/v1/models', {
-                headers: { 'Authorization': `Bearer ${apiKey}` }
+                headers: { 'Authorization': `Bearer ${apiKey}` },
             });
             if (response.ok) return res.json({ valid: true });
             return res.json({ valid: false, error: 'Invalid OpenAI API Key' });
         }
         else if (provider === 'anthropic') {
-            // A simple messages ping
             const response = await fetch('https://api.anthropic.com/v1/messages', {
                 method: 'POST',
                 headers: {
                     'x-api-key': apiKey,
                     'anthropic-version': '2023-06-01',
-                    'content-type': 'application/json'
+                    'content-type': 'application/json',
                 },
                 body: JSON.stringify({
-                    model: 'claude-haiku-4-5-20251001',
+                    model: resolveProviderModel('anthropic'),
                     max_tokens: 1,
-                    messages: [{ role: 'user', content: 'hello' }]
-                })
+                    messages: [{ role: 'user', content: 'hello' }],
+                }),
             });
-            // Anthropic returns 401 for bad keys. If it's valid, it'll return 200 or potentially 400 if bad request body, but 401 is an invalid key.
             if (response.status === 401) {
                 return res.json({ valid: false, error: 'Invalid Anthropic API Key' });
             }
@@ -50,7 +57,7 @@ router.post('/', async (req, res) => {
         }
         else if (provider === 'grok') {
             const response = await fetch('https://api.x.ai/v1/models', {
-                headers: { 'Authorization': `Bearer ${apiKey}` }
+                headers: { 'Authorization': `Bearer ${apiKey}` },
             });
             if (response.ok) return res.json({ valid: true });
             return res.json({ valid: false, error: 'Invalid xAI Grok API Key' });

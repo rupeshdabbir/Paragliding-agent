@@ -16,8 +16,8 @@ export const getWeatherDeclaration = {
 };
 
 export async function getWeather({ lat, lng, timezone = 'auto', models = 'best_match', forecastDays = 2 }) {
-    // Generate cache key incorporating models
-    const cacheKey = `${lat},${lng},${models}`;
+    // Generate cache key incorporating models and forecastDays so 2-day and 7-day queries never collide
+    const cacheKey = `${lat},${lng},${models},${forecastDays}`;
     const cached = cache.getWeather(cacheKey);
     if (cached) {
         console.log(`[getWeather] Cache hit for ${cacheKey}`);

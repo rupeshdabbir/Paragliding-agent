@@ -1,7 +1,8 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSitesDeclaration, getSites } from '../tools/getSites.js';
 import { getWeatherDeclaration, getWeather } from '../tools/getWeather.js';
 import { analyzeFlyingConditionsDeclaration, analyzeFlyingConditions } from '../tools/analyzeFlyingConditions.js';
+import { getGenAI } from '../utils/geminiClient.js';
+import { getProviderFallbackChain, isFallbackEligibleError } from '../config/aiCatalog.js';
 
 export const SYSTEM_PROMPT = `You are SkyPilot, an expert AI assistant and paragliding coach. You help pilots and enthusiasts determine if conditions are safe to fly at paragliding sites near them.
 
@@ -39,19 +40,10 @@ Format your responses clearly with:
 
 Remember: YOU are the expert. Don't be overly cautious or hedge excessively — give clear, actionable advice backed by data.`;
 
-const toolHandlers = {
-    get_paragliding_sites: getSites,
-    get_weather_forecast: getWeather,
-    analyze_flying_conditions: analyzeFlyingConditions,
-};
-
-import { getGenAI } from '../utils/geminiClient.js';
-
 /**
- * Build site context string for the system prompt.
- * If an aiVerdict is available, inject it as ground truth so chat is consistent with the Forecast panel.
+ * Build pilot profile guidance block for system prompt.
  */
-function buildPilotProfileBlock(pilotProfile) {
+export function buildPilotProfileBlock(pilotProfile) {
     if (!pilotProfile) return '';
     const { certification, flyingStyle, wingType, experience } = pilotProfile;
     if (!certification || !flyingStyle || !wingType || !experience) return '';
@@ -84,6 +76,10 @@ PILOT PROFILE — Personalize your entire response for this specific pilot:
 Adjust your tone, safety callouts, wind thresholds, and recommendations to match this pilot's exact skill level. A beginner needs conservative, safety-first advice. An advanced P4 pilot benefits from technical detail, XC potential analysis, and nuanced atmospheric assessment.`;
 }
 
+/**
+ * Build site context string for the system prompt.
+ * If an aiVerdict is available, inject it as ground truth so chat is consistent with the Forecast panel.
+ */
 export function buildContextStr(userLocation, pilotProfile = null) {
     if (!userLocation) return buildPilotProfileBlock(pilotProfile);
 
@@ -128,17 +124,33 @@ When the user asks about flying conditions, today's verdict, or whether it is sa
 }
 
 /**
- * Run the SkyPilot agent with multi-turn function calling
- * @param {string} userMessage - The user's current message
- * @param {Array} history - Previous conversation turns [{role, parts: [{text}]}]
- * @param {object|null} userLocation - Optional {lat, lng, name, altitude, aiVerdict, ...} for context
- * @param {string|null} apiKey - The provided API Key (if any)
- * @returns {Promise<{reply: string, toolResults: Array, usage: object}>}
+ * Run the SkyPilot Gemini agent with multi-turn function calling and catalog-driven fallback.
+ * @param {object} opts
+ * @returns {Promise<{reply: string, toolResults: Array, usage: object, usedModel: string}>}
  */
-export async function runAgent({ userMessage, history = [], userLocation = null, apiKey = null, pilotProfile = null }) {
+export async function runAgent({
+    userMessage,
+    history = [],
+    userLocation = null,
+    apiKey = null,
+    pilotProfile = null,
+    preferredModel = null,
+}) {
     const ai = getGenAI(apiKey);
-
     const contextStr = buildContextStr(userLocation, pilotProfile);
+
+    const toolHandlers = {
+        get_paragliding_sites: getSites,
+        get_weather_forecast: getWeather,
+        analyze_flying_conditions: (args) =>
+            analyzeFlyingConditions({
+                ...args,
+                apiKey,
+                provider: 'gemini',
+                preferredModel,
+                pilotProfile,
+            }),
+    };
 
     const config = {
         systemInstruction: SYSTEM_PROMPT + contextStr,
@@ -158,13 +170,13 @@ export async function runAgent({ userMessage, history = [], userLocation = null,
     const attemptAgentRun = async (modelName) => {
         const model = ai.getGenerativeModel({
             model: modelName,
-            ...config
+            ...config,
         });
 
         // Convert the generic {role, content} history to Gemini's expected {role, parts: [{text}]} format
         const geminiHistory = history.map(m => ({
             role: m.role,
-            parts: [{ text: m.content }]
+            parts: [{ text: m.content }],
         }));
 
         const chat = model.startChat({ history: geminiHistory });
@@ -174,13 +186,11 @@ export async function runAgent({ userMessage, history = [], userLocation = null,
         let response = await chat.sendMessage(userMessage);
         let candidate = response.response;
 
-        // Agentic loop — keep calling tools until model produces a text response
         let maxIterations = 10;
         while (maxIterations-- > 0) {
             const functionCalls = candidate.functionCalls();
             if (!functionCalls || functionCalls.length === 0) break;
 
-            // Execute all function calls in parallel
             const toolResponses = await Promise.all(
                 functionCalls.map(async (call) => {
                     const handler = toolHandlers[call.name];
@@ -192,7 +202,6 @@ export async function runAgent({ userMessage, history = [], userLocation = null,
                     console.log(`[Gemini] Calling tool: ${call.name}`, call.args);
                     try {
                         let result = await handler(call.args);
-                        // Gemini function responses must be Objects, not Arrays
                         if (Array.isArray(result)) {
                             result = { items: result };
                         }
@@ -206,7 +215,6 @@ export async function runAgent({ userMessage, history = [], userLocation = null,
                 })
             );
 
-            // Send tool results back to the model
             response = await chat.sendMessage(
                 toolResponses.map(tr => ({
                     functionResponse: { name: tr.name, response: tr.response },
@@ -221,14 +229,20 @@ export async function runAgent({ userMessage, history = [], userLocation = null,
         return { reply, toolResults, usage, usedModel: modelName };
     };
 
-    try {
-        return await attemptAgentRun('gemini-3-flash-preview');
-    } catch (err) {
-        const msg = err.message || '';
-        if (msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('too many requests')) {
-            console.warn(`[Gemini] 429 Quota Exceeded on gemini-3-flash-preview. Falling back to gemini-2.5-flash`);
-            return await attemptAgentRun('gemini-2.5-flash');
+    const fallbackChain = getProviderFallbackChain('gemini', preferredModel);
+    let lastErr;
+    for (let i = 0; i < fallbackChain.length; i++) {
+        const modelName = fallbackChain[i];
+        try {
+            return await attemptAgentRun(modelName);
+        } catch (err) {
+            lastErr = err;
+            if (isFallbackEligibleError(err) && i < fallbackChain.length - 1) {
+                console.warn(`[Gemini] ${modelName} hit limit/unavailable (${(err.message || '').slice(0, 100)}). Falling back to ${fallbackChain[i + 1]}`);
+                continue;
+            }
+            throw err;
         }
-        throw err;
     }
+    throw lastErr;
 }

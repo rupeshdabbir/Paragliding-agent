@@ -2,13 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { Settings, Sun, Moon, Key, SlidersHorizontal, User } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { isProfileComplete } from '../hooks/usePilotProfile.js';
+import { hasActiveKey } from '../utils/aiHeaders.jsx';
 
 export default function SettingsDropdown({ onOpenSettings }) {
     const { theme, toggleTheme } = useTheme();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
     const buttonRef = useRef(null);
-    const [hasApiKey, setHasApiKey] = useState(!!localStorage.getItem('geminiApiKey'));
+    const [hasApiKey, setHasApiKey] = useState(() => hasActiveKey());
     const [hasProfile, setHasProfile] = useState(false);
     const [showWelcomeTooltip, setShowWelcomeTooltip] = useState(() => {
         return !localStorage.getItem('skypilot_welcome_seen');
@@ -17,17 +18,19 @@ export default function SettingsDropdown({ onOpenSettings }) {
     useEffect(() => {
         const check = () => {
             try {
-                setHasApiKey(!!localStorage.getItem('geminiApiKey'));
+                setHasApiKey(hasActiveKey());
                 const stored = localStorage.getItem('skypilot_pilot_profile');
                 setHasProfile(stored ? isProfileComplete(JSON.parse(stored)) : false);
             } catch { setHasProfile(false); }
         };
         check();
-        // React to profile saves and storage changes
+        // React to profile saves, AI config changes, and storage changes
         window.addEventListener('pilot-profile-saved', check);
+        window.addEventListener('ai-config-changed', check);
         window.addEventListener('storage', check);
         return () => {
             window.removeEventListener('pilot-profile-saved', check);
+            window.removeEventListener('ai-config-changed', check);
             window.removeEventListener('storage', check);
         };
     }, []);
@@ -157,7 +160,7 @@ export default function SettingsDropdown({ onOpenSettings }) {
 
                     <div style={{ height: 1, background: 'var(--color-border-subtle)', margin: '4px 0' }} />
 
-                    {menuItem(<Key size={14} />, 'API Key Settings',
+                    {menuItem(<Key size={14} />, 'AI Model & Key Settings',
                         () => { onOpenSettings(); setIsOpen(false); }
                     )}
 
