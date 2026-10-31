@@ -61,7 +61,7 @@ export default function OnboardingStepper({ onComplete }) {
 
     // Cloud BYOK state
     const [selectedProviderId, setSelectedProviderId] = useState('gemini');
-    const [selectedCloudModel, setSelectedCloudModel] = useState('gemini-3.7-flash');
+    const [selectedCloudModel, setSelectedCloudModel] = useState('gemini-3.5-flash-lite');
     const [apiKey, setApiKey] = useState('');
     const [isValidating, setIsValidating] = useState(false);
     const [validationError, setValidationError] = useState('');

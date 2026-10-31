@@ -264,7 +264,7 @@ function ChatDrawer({ open, onClose, location, contextSite, isMobile, chatWidthP
                                         cursor: 'pointer', transition: 'all 0.2s',
                                     }}
                                 >
-                                    {messages[messages.length - 1]?.usedModel || activeModelLabel || 'gemini-3.7-flash'}
+                                    {messages[messages.length - 1]?.usedModel || activeModelLabel || 'gemini-3.5-flash-lite'}
                                 </button>
                             )}
                         </div>

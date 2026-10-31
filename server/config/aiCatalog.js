@@ -8,18 +8,6 @@
 
 export const AI_MODELS = {
     // ── Google Gemini (Cloud BYOK) ───────────────────────────────────────────
-    'gemini-3.7-flash': {
-        id: 'gemini-3.7-flash',
-        providerId: 'gemini',
-        executionTarget: 'server-cloud',
-        name: 'Gemini 3.7 Flash',
-        shortLabel: '3.7 Flash',
-        creator: 'Google',
-        badge: '★ Recommended',
-        recommended: true,
-        description: 'Latest frontier Flash model with superior meteorological reasoning and multi-tool agent accuracy.',
-        specs: { speedRating: 5, reasoningRating: 5, costTier: 'Free Tier / Low Cost' },
-    },
     'gemini-3.5-flash-lite': {
         id: 'gemini-3.5-flash-lite',
         providerId: 'gemini',
@@ -27,10 +15,22 @@ export const AI_MODELS = {
         name: 'Gemini 3.5 Flash-Lite',
         shortLabel: '3.5 Flash-Lite',
         creator: 'Google',
-        badge: '⚡ Ultra-Fast · High Quota',
-        recommended: false,
+        badge: '★ Default · Ultra-Fast & High Quota',
+        recommended: true,
         description: 'Lightweight, lowest-latency Gemini model with the most generous free-tier rate limits.',
         specs: { speedRating: 5, reasoningRating: 4, costTier: 'Free Tier' },
+    },
+    'gemini-3.7-flash': {
+        id: 'gemini-3.7-flash',
+        providerId: 'gemini',
+        executionTarget: 'server-cloud',
+        name: 'Gemini 3.7 Flash',
+        shortLabel: '3.7 Flash',
+        creator: 'Google',
+        badge: '🧠 Deep Reasoning',
+        recommended: false,
+        description: 'Latest frontier Flash model with superior meteorological reasoning and multi-tool agent accuracy.',
+        specs: { speedRating: 5, reasoningRating: 5, costTier: 'Free Tier / Low Cost' },
     },
     'gemini-2.5-flash': {
         id: 'gemini-2.5-flash',
@@ -206,10 +206,10 @@ export const AI_PROVIDERS = {
         company: 'Google',
         track: 'cloud',
         requiresApiKey: true,
-        defaultModel: 'gemini-3.7-flash',
+        defaultModel: 'gemini-3.5-flash-lite',
         fallbackChain: [
-            'gemini-3.7-flash',
             'gemini-3.5-flash-lite',
+            'gemini-3.7-flash',
             'gemini-2.5-flash',
         ],
     },

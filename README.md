@@ -30,7 +30,7 @@ SkyPilot is a full-stack AI-powered paragliding conditions advisor. It helps pil
 | :--- | :--- | :--- | :--- |
 | **On-Device (Browser)** | **Chrome Built-in AI** | `chrome-built-in` (Gemini Nano) | **Free · 0 MB Download · No Key** |
 | **On-Device (WebGPU)** | **WebLLM (MLC)** | `Qwen 2.5 3B` (★ Recommended), `Hermes 3 3B`, `Qwen 2.5 1.5B`, `Phi 3.5 Mini` | **Free · Cached in Browser · No Key** |
-| **Cloud BYOK** | **Google Gemini** | `gemini-3.7-flash` (★ Default), `gemini-3.5-flash-lite`, `gemini-2.5-flash` | Free Tier / BYOK |
+| **Cloud BYOK** | **Google Gemini** | `gemini-3.5-flash-lite` (★ Default), `gemini-3.7-flash`, `gemini-2.5-flash` | Free Tier / BYOK |
 | **Cloud BYOK** | **Anthropic Claude** | `claude-haiku-4-5-20251001`, `claude-sonnet-4-5-20250929` | BYOK |
 | **Cloud BYOK** | **OpenAI** | `gpt-4.1-mini`, `gpt-4.1` | BYOK |
 | **Cloud BYOK** | **xAI Grok** | `grok-3-mini`, `grok-3` | BYOK |

@@ -98,9 +98,9 @@ describe('Declarative AI Model Catalog (aiCatalog.js)', () => {
     assert.ok(AI_MODELS['gemini-3.5-flash-lite']);
     assert.ok(AI_MODELS['gemini-2.5-flash']);
 
-    const chain = getProviderFallbackChain('gemini', 'gemini-3.5-flash-lite');
-    assert.equal(chain[0], 'gemini-3.5-flash-lite');
-    assert.ok(chain.includes('gemini-3.7-flash'));
+    const chain = getProviderFallbackChain('gemini', 'gemini-3.7-flash');
+    assert.equal(chain[0], 'gemini-3.7-flash');
+    assert.ok(chain.includes('gemini-3.5-flash-lite'));
     assert.ok(chain.includes('gemini-2.5-flash'));
   });
 
@@ -116,8 +116,8 @@ describe('Declarative AI Model Catalog (aiCatalog.js)', () => {
   });
 
   it('resolves preferred model or defaults cleanly across all providers', () => {
-    assert.equal(resolveProviderModel('gemini', 'gemini-3.5-flash-lite'), 'gemini-3.5-flash-lite');
-    assert.equal(resolveProviderModel('gemini', null), 'gemini-3.7-flash');
+    assert.equal(resolveProviderModel('gemini', 'gemini-3.7-flash'), 'gemini-3.7-flash');
+    assert.equal(resolveProviderModel('gemini', null), 'gemini-3.5-flash-lite');
     assert.equal(resolveProviderModel('openai', 'gpt-4.1'), 'gpt-4.1');
   });
 

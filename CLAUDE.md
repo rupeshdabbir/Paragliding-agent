@@ -59,7 +59,7 @@ Supported providers & models:
   - `Hermes-3-Llama-3.2-3B-q4f16_1-MLC` (Agentic / tool-tuned 3B)
   - `Qwen2.5-1.5B-Instruct-q4f16_1-MLC` (Ultra-lite 1.0 GB)
   - `Phi-3.5-mini-instruct-q4f16_1-MLC` (Deep reasoning 3.8B)
-- **Google Gemini (`gemini`)**: `gemini-3.7-flash` (default) → `gemini-3.5-flash-lite` → `gemini-2.5-flash`
+- **Google Gemini (`gemini`)**: `gemini-3.5-flash-lite` (default) → `gemini-3.7-flash` → `gemini-2.5-flash`
 - **Anthropic Claude (`anthropic`)**: `claude-haiku-4-5-20251001`, `claude-sonnet-4-5-20250929`
 - **OpenAI (`openai`)**: `gpt-4.1-mini`, `gpt-4.1`
 - **xAI Grok (`grok`)**: `grok-3-mini`, `grok-3`
